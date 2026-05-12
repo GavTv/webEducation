@@ -10,7 +10,6 @@ const app = express();
 serverConfig(app);
 
 app.use('/api', apiRouter);
-
 app.use('/', viewRouter);
 
 const server = http.createServer(app);
