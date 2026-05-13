@@ -1,12 +1,18 @@
 const router = require('express').Router();
-const {
-  getMyTasks,
-  submitAnswer,
-  getMyProgress,
-} = require('../controllers/StudentController');
+const StudentController = require('../controllers/StudentController');
 
-router.get('/tasks', getMyTasks);
-router.post('/tasks/:taskId/answer', submitAnswer);
-router.get('/progress', getMyProgress);
+// Профиль
+router.get('/profile', StudentController.getProfile);
+router.put('/profile', StudentController.updateProfile);
+
+// Ответы
+router.get('/answers', StudentController.getMyAnswers);
+router.post('/answers', StudentController.submitAnswer);
+
+// Прогресс
+router.get('/progress', StudentController.getProgress);
+
+// Комнаты
+router.get('/rooms', StudentController.getAvailableRooms);
 
 module.exports = router;
