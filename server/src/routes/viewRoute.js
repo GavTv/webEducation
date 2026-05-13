@@ -1,5 +1,8 @@
 const router = require('express').Router();
+const path = require('path');
 
-// Маршруты для отдачи страниц будут здесь
+router.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../public/index.html'));
+});
 
 module.exports = router;
