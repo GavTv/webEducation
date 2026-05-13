@@ -1,3 +1,6 @@
+const path = require('path');
+process.loadEnvFile(path.join(__dirname, '../.env'));
+
 const express = require('express');
 const http = require('http');
 const apiRouter = require('./routes/apiRoute');

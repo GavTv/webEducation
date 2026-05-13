@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Students', {
+    await queryInterface.createTable('Users', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -19,21 +19,9 @@ module.exports = {
         allowNull: false,
         unique: true,
       },
-      phone: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
       password: {
         type: Sequelize.STRING,
         allowNull: false,
-      },
-      avatar: {
-        type: Sequelize.STRING,
-        allowNull: true,
-      },
-      status: {
-        type: Sequelize.ENUM('online', 'offline'),
-        defaultValue: 'offline',
       },
       createdAt: {
         allowNull: false,
@@ -48,7 +36,7 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Students');
+  async down(queryInterface) {
+    await queryInterface.dropTable('Users');
   },
 };

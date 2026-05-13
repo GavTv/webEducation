@@ -1,5 +1,5 @@
 const removeXPoweredHeader = (req, res, next) => {
-  res.removeHeader('X-Powered-By');
+  res.setHeader('X-Powered-By', '');
   next();
 };
 

@@ -26,41 +26,17 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.fn('now'),
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.fn('now'),
       },
-    });
-
-    await queryInterface.addColumn('Teachers', 'adminId', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Admins',
-        key: 'id',
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    });
-
-    await queryInterface.addColumn('Students', 'adminId', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Admins',
-        key: 'id',
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('Students', 'adminId');
-    await queryInterface.removeColumn('Teachers', 'adminId');
     await queryInterface.dropTable('Admins');
   },
 };
