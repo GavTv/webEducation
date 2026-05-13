@@ -1,14 +1,21 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 type ApplicationLayoutProps = {
   children: React.ReactNode;
 };
 
-/**
- * Общая оболочка страниц (шапка / контент / подвал).
- * Сюда позже можно вынести навигацию и т.п.
- */
 export default function ApplicationLayout({
   children,
 }: ApplicationLayoutProps) {
+  const pathname = usePathname();
+  const hideChrome = pathname === "/";
+
+  if (hideChrome) {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <header className="app-header">
