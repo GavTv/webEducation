@@ -1,18 +1,20 @@
 const router = require('express').Router();
-const {
-  getAllUsers,
-  inviteTeacher,
-  inviteStudent,
-  bindTeacher,
-  bindStudent,
-  deleteUser,
-} = require('../controllers/AdminController');
+const AdminController = require('../controllers/AdminController');
 
-router.get('/users', getAllUsers);
-router.post('/invite/teacher', inviteTeacher);
-router.post('/invite/student', inviteStudent);
-router.post('/bind/teacher/:teacherId', bindTeacher);
-router.post('/bind/student/:studentId', bindStudent);
-router.delete('/users/:userId', deleteUser);
+// Приглашения
+router.post('/teachers/invite', AdminController.inviteTeacher);
+router.post('/students/invite', AdminController.inviteStudent);
+
+// Привязка существующих
+router.post('/teachers/assign', AdminController.assignTeacher);
+router.post('/students/assign', AdminController.assignStudent);
+
+// Списки
+router.get('/teachers', AdminController.getTeachers);
+router.get('/students', AdminController.getStudents);
+
+// Удаление
+router.delete('/teachers/:teacherId', AdminController.removeTeacher);
+router.delete('/students/:studentId', AdminController.removeStudent);
 
 module.exports = router;
