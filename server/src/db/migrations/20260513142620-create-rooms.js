@@ -3,24 +3,23 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Admins', {
+    await queryInterface.createTable('Rooms', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      name: {
+      title: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      email: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        unique: true,
+      type: {
+        type: Sequelize.ENUM('group', 'course'),
+        defaultValue: 'group',
       },
-      password: {
-        type: Sequelize.STRING,
+      createdBy: {
+        type: Sequelize.INTEGER,
         allowNull: false,
       },
       createdAt: {
@@ -37,6 +36,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Admins');
+    await queryInterface.dropTable('Rooms');
   },
 };
