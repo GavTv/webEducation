@@ -1,39 +1,75 @@
-const studentService = require('../services/StudentService');
+const { Student } = require('../db/models');
 
-const getMyTasks = async (req, res) => {
-  try {
-    const studentId = req.student.id;
-    const tasks = await studentService.getMyTasks(studentId);
-    res.json({ status: 200, data: tasks });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+class StudentController {
+  // Профиль ученика
+  static async getProfile(req, res) {
+    try {
+      const student = await Student.findByPk(req.student.id);
+      res.json({ status: 'success', data: student });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const submitAnswer = async (req, res) => {
-  try {
-    const studentId = req.student.id;
-    const { taskId } = req.params;
-    const { answer } = req.body;
-    const result = await studentService.submitAnswer(studentId, taskId, answer);
-    res.status(201).json({ status: 201, data: result });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Обновить профиль
+  static async updateProfile(req, res) {
+    try {
+      const { name, phone, avatar } = req.body;
+      const student = await Student.findByPk(req.student.id);
+      await student.update({ name, phone, avatar });
+      res.json({ status: 'success', data: student });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const getMyProgress = async (req, res) => {
-  try {
-    const studentId = req.student.id;
-    const progress = await studentService.getMyProgress(studentId);
-    res.json({ status: 200, data: progress });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Мои ответы
+  static async getMyAnswers(req, res) {
+    try {
+      // Заглушка — позже добавим модель Answer
+      res.json({ status: 'success', data: [], message: 'Answers coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-module.exports = {
-  getMyTasks,
-  submitAnswer,
-  getMyProgress,
-};
+  // Отправить ответ на задание
+  static async submitAnswer(req, res) {
+    try {
+      // Заглушка — позже добавим модель Answer
+      res.status(201).json({ status: 'success', message: 'Answer submission coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
+  }
+
+  // Прогресс ученика
+  static async getProgress(req, res) {
+    try {
+      // Заглушка — позже добавим модель Progress
+      res.json({
+        status: 'success',
+        data: {
+          completedAssignments: 0,
+          totalAssignments: 0,
+          score: 0,
+        },
+        message: 'Progress tracking coming soon',
+      });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
+  }
+
+  // Список доступных групп/комнат
+  static async getAvailableRooms(req, res) {
+    try {
+      // Заглушка — позже добавим модель Room
+      res.json({ status: 'success', data: [], message: 'Rooms coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
+  }
+}
+
+module.exports = StudentController;
