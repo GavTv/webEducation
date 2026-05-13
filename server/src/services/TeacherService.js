@@ -1,32 +1,14 @@
-const getGroups = async (teacherId) => {
-  return [];
-};
+const { Teacher } = require('../db/models');
 
-const createGroup = async (teacherId, name) => {
-  return { id: 1, name, teacherId };
-};
+class TeacherService {
+  static async getById(teacherId) {
+    return Teacher.findByPk(teacherId);
+  }
 
-const addStudentToGroup = async (groupId, studentId) => {
-  return { groupId, studentId };
-};
+  static async updateProfile(teacherId, data) {
+    const teacher = await Teacher.findByPk(teacherId);
+    return teacher.update(data);
+  }
+}
 
-const createTask = async (teacherId, title, description, groupId, dueDate) => {
-  return { id: 1, title, description, groupId, dueDate, teacherId };
-};
-
-const getTasks = async (teacherId) => {
-  return [];
-};
-
-const gradeTask = async (taskId, studentId, grade, feedback) => {
-  return { taskId, studentId, grade, feedback };
-};
-
-module.exports = {
-  getGroups,
-  createGroup,
-  addStudentToGroup,
-  createTask,
-  getTasks,
-  gradeTask,
-};
+module.exports = TeacherService;

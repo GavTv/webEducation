@@ -1,17 +1,14 @@
-const getMyTasks = async (studentId) => {
-  return [];
-};
+const { Student } = require('../db/models');
 
-const submitAnswer = async (studentId, taskId, answer) => {
-  return { studentId, taskId, answer, status: 'submitted' };
-};
+class StudentService {
+  static async getById(studentId) {
+    return Student.findByPk(studentId);
+  }
 
-const getMyProgress = async (studentId) => {
-  return { completedTasks: 0, totalTasks: 0, averageGrade: 0 };
-};
+  static async updateProfile(studentId, data) {
+    const student = await Student.findByPk(studentId);
+    return student.update(data);
+  }
+}
 
-module.exports = {
-  getMyTasks,
-  submitAnswer,
-  getMyProgress,
-};
+module.exports = StudentService;
