@@ -35,6 +35,16 @@ module.exports = {
         type: Sequelize.ENUM('online', 'offline'),
         defaultValue: 'offline',
       },
+      adminId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Admins',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
