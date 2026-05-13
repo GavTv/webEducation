@@ -1,73 +1,78 @@
-const teacherService = require('../services/TeacherService');
+const { Teacher } = require('../db/models');
 
-const getGroups = async (req, res) => {
-  try {
-    const teacherId = req.teacher.id;
-    const groups = await teacherService.getGroups(teacherId);
-    res.json({ status: 200, data: groups });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+class TeacherController {
+  // Профиль учителя
+  static async getProfile(req, res) {
+    try {
+      const teacher = await Teacher.findByPk(req.teacher.id);
+      res.json({ status: 'success', data: teacher });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const createGroup = async (req, res) => {
-  try {
-    const teacherId = req.teacher.id;
-    const { name } = req.body;
-    const group = await teacherService.createGroup(teacherId, name);
-    res.status(201).json({ status: 201, data: group });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Обновить профиль
+  static async updateProfile(req, res) {
+    try {
+      const { name, phone, avatar } = req.body;
+      const teacher = await Teacher.findByPk(req.teacher.id);
+      await teacher.update({ name, phone, avatar });
+      res.json({ status: 'success', data: teacher });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const addStudentToGroup = async (req, res) => {
-  try {
-    const { groupId, studentId } = req.params;
-    const result = await teacherService.addStudentToGroup(groupId, studentId);
-    res.json({ status: 200, data: result });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Группы (комнаты) учителя
+  static async getGroups(req, res) {
+    try {
+      // Заглушка — позже добавим модель Room
+      res.json({ status: 'success', data: [], message: 'Groups coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const createTask = async (req, res) => {
-  try {
-    const teacherId = req.teacher.id;
-    const { title, description, groupId, dueDate } = req.body;
-    const task = await teacherService.createTask(teacherId, title, description, groupId, dueDate);
-    res.status(201).json({ status: 201, data: task });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Создать группу (комнату)
+  static async createGroup(req, res) {
+    try {
+      // Заглушка — позже добавим модель Room
+      res.status(201).json({ status: 'success', message: 'Group creation coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const getTasks = async (req, res) => {
-  try {
-    const teacherId = req.teacher.id;
-    const tasks = await teacherService.getTasks(teacherId);
-    res.json({ status: 200, data: tasks });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Задания к уроку
+  static async getAssignments(req, res) {
+    try {
+      // Заглушка — позже добавим модель Assignment
+      res.json({ status: 'success', data: [], message: 'Assignments coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-const gradeTask = async (req, res) => {
-  try {
-    const { taskId } = req.params;
-    const { studentId, grade, feedback } = req.body;
-    const result = await teacherService.gradeTask(taskId, studentId, grade, feedback);
-    res.json({ status: 200, data: result });
-  } catch (error) {
-    res.status(500).json({ status: 500, error: error.message });
+  // Создать задание
+  static async createAssignment(req, res) {
+    try {
+      // Заглушка — позже добавим модель Assignment
+      res.status(201).json({ status: 'success', message: 'Assignment creation coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
   }
-};
 
-module.exports = {
-  getGroups,
-  createGroup,
-  addStudentToGroup,
-  createTask,
-  getTasks,
-  gradeTask,
-};
+  // Список учеников в группе
+  static async getStudents(req, res) {
+    try {
+      const { groupId } = req.params;
+      // Заглушка — позже добавим связь Room-Student
+      res.json({ status: 'success', data: [], message: 'Students list coming soon' });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message });
+    }
+  }
+}
+
+module.exports = TeacherController;
