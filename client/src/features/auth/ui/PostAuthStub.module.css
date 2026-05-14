@@ -3,7 +3,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0));
+  padding: var(--app-page-gutter-y) var(--app-page-gutter-x)
+    calc(24px + env(safe-area-inset-bottom, 0));
   background: #0d0d12;
   color: #fff;
   overflow-x: hidden;
@@ -11,9 +12,9 @@
 
 .card {
   width: 100%;
-  max-width: min(680px, calc(100vw - 40px));
+  max-width: min(680px, var(--app-shell-max-width));
   padding: 2rem 1.5rem;
-  border-radius: 16px;
+  border-radius: var(--app-shell-radius);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #12121a;
   text-align: center;
