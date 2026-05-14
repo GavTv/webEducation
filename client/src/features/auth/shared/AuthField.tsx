@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import styles from "@/features/auth/shared/eduChatForm.module.css";
+import styles from "./eduChatForm.module.css";
 
 export type AuthFieldProps = {
   label: string;

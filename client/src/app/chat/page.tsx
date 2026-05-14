@@ -7,6 +7,7 @@ import "./page.css";
 export default function ChatPage() {
   const [selectedId, setSelectedId] = useState(rooms[0]?.id ?? 1);
   const [draft, setDraft] = useState("");
+  
 
   const selected = useMemo(
     () => rooms.find((r) => r.id === selectedId) ?? rooms[0],
@@ -32,7 +33,7 @@ export default function ChatPage() {
           </nav>
 
           <div className="sidebar-card">
-            <span className="small-label">@botAi</span>
+            <span className="small-label">@botAi</span> 
             <p>AI-помощник для учебных чатов</p>
           </div>
         </aside>

@@ -18,8 +18,8 @@ import {
   checkEmailAvailability,
   checkUsernameAvailability,
 } from "@/shared/lib/authAvailabilityApi";
-import { AuthField } from "@/features/auth/shared/AuthField";
-import styles from "@/features/auth/shared/eduChatForm.module.css";
+import { AuthField } from "../../auth/shared/AuthField";
+import styles from "../../auth/shared/eduChatForm.module.css";
 import signUpStyles from "./SignUpForm.module.css";
 
 type SignUpFieldKey = "name" | "username" | "email" | "password" | "confirm";

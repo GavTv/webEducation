@@ -1,4 +1,4 @@
-const { Admin, Teacher, Student } = require('../db/models');
+const { Teacher, Student } = require('../db/models');
 
 class AdminController {
   // Пригласить учителя (создать)

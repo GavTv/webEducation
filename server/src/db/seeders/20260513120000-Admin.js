@@ -25,3 +25,7 @@ module.exports = {
     await queryInterface.bulkDelete('Admins', null, {});
   },
 };
+
+
+
+http%localhost/student/admin

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ApplicationLayout from "@/application/ApplicationLayout";
-import StoreProvider from "@/app/store/storeProvider";
+import StoreProvider from "./store/storeProvider";
 import UserProvider from "@/application/UserProvider";
 import "./globals.css";
 
