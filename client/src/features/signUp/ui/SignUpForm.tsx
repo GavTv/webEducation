@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AtSign, Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { registerThunk } from "@/entities/user/api/UserApiThunk";
@@ -18,6 +19,7 @@ import {
   checkEmailAvailability,
   checkUsernameAvailability,
 } from "@/shared/lib/authAvailabilityApi";
+import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { AuthField } from "../../auth/shared/AuthField";
 import styles from "../../auth/shared/eduChatForm.module.css";
 import signUpStyles from "./SignUpForm.module.css";
@@ -35,6 +37,7 @@ export default function SignUpForm({
   rememberMe,
   onRememberMeChange,
 }: SignUpFormProps) {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((s) => s.user);
 
@@ -178,6 +181,7 @@ export default function SignUpForm({
           rememberMe,
         }),
       ).unwrap();
+      router.push(clientRoutes.classes);
     } catch {
       /* ошибка уже в store */
     }

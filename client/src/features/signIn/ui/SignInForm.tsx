@@ -2,11 +2,13 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { loginThunk } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
 import { getRegisterEmailFormatError } from "@/shared/lib/registerFieldValidators";
+import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { AuthField } from "../../auth/shared/AuthField";
 import styles from "../../auth/shared/eduChatForm.module.css";
 
@@ -21,6 +23,7 @@ export default function SignInForm({
   rememberMe,
   onRememberMeChange,
 }: SignInFormProps) {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((s) => s.user);
 
@@ -61,6 +64,7 @@ export default function SignInForm({
       ).unwrap();
       if (rememberMe) localStorage.setItem("educhat_email", signInEmail.trim());
       else localStorage.removeItem("educhat_email");
+      router.push(clientRoutes.classes);
     } catch {
       /* ошибка уже в store */
     }

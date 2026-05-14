@@ -43,23 +43,7 @@ class StudentController {
     }
   }
 
-  // Прогресс ученика
-  static async getProgress(req, res) {
-    try {
-      // Заглушка — позже добавим модель Progress
-      res.json({
-        status: 'success',
-        data: {
-          completedAssignments: 0,
-          totalAssignments: 0,
-          score: 0,
-        },
-        message: 'Progress tracking coming soon',
-      });
-    } catch (error) {
-      res.status(500).json({ status: 'error', message: error.message });
-    }
-  }
+
 
   // Список доступных групп/комнат
   static async getAvailableRooms(req, res) {

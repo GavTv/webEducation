@@ -3,6 +3,8 @@
  */
 export const clientRoutes = {
   home: "/",
+  login: "/login",
+  signup: "/signup",
   classes: "/classes",
   chat: "/chat",
   profile: "/profile",

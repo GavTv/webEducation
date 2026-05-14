@@ -13,15 +13,18 @@ type AuthMode = "signIn" | "signUp";
 
 type EduChatAuthScreenProps = {
   hideBack?: boolean;
+  /** С какого режима открыть экран (например `/signup` → signUp). */
+  initialAuthMode?: AuthMode;
 };
 
 export default function EduChatAuthScreen({
   hideBack = false,
+  initialAuthMode = "signIn",
 }: EduChatAuthScreenProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const [authMode, setAuthMode] = useState<AuthMode>("signIn");
+  const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
