@@ -1,0 +1,39 @@
+.hint {
+  margin: -0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #7a7a88;
+  line-height: 1.4;
+}
+
+.legal {
+  margin: 1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--edu-muted);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.legal a {
+  color: var(--edu-purple);
+  text-decoration: none;
+  font-weight: 610;
+}
+
+/* .legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+} */
