@@ -7,7 +7,7 @@
 
   min-height: 100dvh;
   box-sizing: border-box;
-  padding: calc(12px + env(safe-area-inset-top, 0)) 20px
+  padding: calc(12px + env(safe-area-inset-top, 0)) var(--app-page-gutter-x)
     calc(24px + env(safe-area-inset-bottom, 0));
   background: var(--edu-bg);
   color: #fff;
@@ -48,7 +48,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 2.5rem;
-  width: min(660px, 100vw);
+  width: min(var(--app-shell-max-width), 100%);
   position: relative;
   left: 50%;
   transform: translateX(-50%);

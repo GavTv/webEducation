@@ -5,18 +5,19 @@
     radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 28rem),
     #070a13;
   color: #f7f7fb;
-  padding: 32px;
+  padding: var(--app-page-gutter-y) var(--app-page-gutter-x);
 }
 
 .classes-shell {
-  width: min(1180px, 100%);
-  min-height: calc(100vh - 64px);
+  width: var(--app-shell-max-width);
+  max-width: 100%;
+  min-height: var(--app-shell-min-height);
   margin: 0 auto;
   display: grid;
   grid-template-columns: 280px 1fr;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 32px;
+  border-radius: var(--app-shell-radius);
   background: rgba(9, 13, 25, 0.82);
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(18px);
@@ -373,11 +374,13 @@
 
 @media (max-width: 900px) {
   .classes-page {
-    padding: 16px;
+    padding: var(--app-page-gutter-y) var(--app-page-gutter-x);
   }
 
   .classes-shell {
     grid-template-columns: 1fr;
+    min-height: unset;
+    max-height: none;
   }
 
   .classes-sidebar {
