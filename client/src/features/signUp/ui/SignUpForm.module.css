@@ -16,9 +16,24 @@
 .legal a {
   color: var(--edu-purple);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 610;
 }
 
+/* .legal a:hover {
+  text-decoration: underline;
+}
 .legal a:hover {
   text-decoration: underline;
 }
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+}
+.legal a:hover {
+  text-decoration: underline;
+} */
