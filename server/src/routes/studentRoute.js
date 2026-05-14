@@ -9,8 +9,7 @@ router.put('/profile', StudentController.updateProfile);
 router.get('/answers', StudentController.getMyAnswers);
 router.post('/answers', StudentController.submitAnswer);
 
-// Прогресс
-router.get('/progress', StudentController.getProgress);
+
 
 // Комнаты
 router.get('/rooms', StudentController.getAvailableRooms);

@@ -1,5 +1,9 @@
-import { redirect } from "next/navigation";
+import HomeGate from "./HomeGate";
 
+/**
+ * «/» — вход / регистрация (если нет пользователя в store) или заглушка после входа.
+ * Dev: http://localhost:5173/
+ */
 export default function HomePage() {
-  redirect("/classes");
+  return <HomeGate />;
 }

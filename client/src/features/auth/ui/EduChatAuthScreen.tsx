@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { setError } from "@/entities/user/slice/userSlice";
-import SignInForm from "@/features/signIn/ui/SignInForm";
-import SignUpForm from "@/features/signUp/ui/SignUpForm";
+import SignInForm from "../../signIn/ui/SignInForm";
+import SignUpForm from "../../signUp/ui/SignUpForm";
 import styles from "./EduChatAuthScreen.module.css";
 
 type AuthMode = "signIn" | "signUp";

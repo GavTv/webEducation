@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
+
   Teacher.init(
     {
       name: {
@@ -49,5 +50,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+
+  
   return Teacher;
 };

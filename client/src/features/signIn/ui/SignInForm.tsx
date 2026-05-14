@@ -7,8 +7,8 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { loginThunk } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
 import { getRegisterEmailFormatError } from "@/shared/lib/registerFieldValidators";
-import { AuthField } from "@/features/auth/shared/AuthField";
-import styles from "@/features/auth/shared/eduChatForm.module.css";
+import { AuthField } from "../../auth/shared/AuthField";
+import styles from "../../auth/shared/eduChatForm.module.css";
 
 export type SignInFormProps = {
   onRequestSignUp: () => void;
