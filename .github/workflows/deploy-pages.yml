@@ -1,5 +1,6 @@
-# Статический Next.js (client/) → GitHub Pages.
-# В настройках репозитория: Settings → Pages → Source: GitHub Actions (не «Deploy from branch»).
+# Статический Next.js (client/) → папка web/ → GitHub Pages.
+# Вариант A: Settings → Pages → Source: GitHub Actions.
+# Вариант B: Deploy from branch → ветка dev → Folder: /web (в web/ должен быть index.html и CNAME).
 name: Deploy GitHub Pages
 
 on:
@@ -33,12 +34,17 @@ jobs:
           npm ci
           npm run build
 
-      - name: Add .nojekyll
-        run: touch client/out/.nojekyll
+      - name: Sync build into web/
+        run: |
+          touch client/out/.nojekyll
+          cd web
+          ls -A | grep -vx CNAME | xargs -r rm -rf
+          cp -a ../client/out/. .
+          touch .nojekyll
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: client/out
+          path: web
 
   deploy:
     needs: build
