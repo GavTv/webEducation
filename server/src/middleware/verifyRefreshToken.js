@@ -6,7 +6,12 @@ function verifyRefreshToken(req, res, next) {
   try {
     const { refreshToken } = req.cookies;
 
-    const { user } = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
+
+    const { user, remember } = decoded;
 
     if (!user) {
       return res
@@ -15,6 +20,7 @@ function verifyRefreshToken(req, res, next) {
     }
 
     res.locals.user = user;
+    res.locals.rememberMe = Boolean(remember);
 
     next();
   } catch (error) {

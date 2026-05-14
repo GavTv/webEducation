@@ -11,8 +11,10 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     static validateEmail(email) {
-      const emailPattern = /^[A-z0-9!-_%.]+@[A-z0-9.-]+\.[A-z]{2,}$/;
-      return emailPattern.test(email);
+      if (typeof email !== 'string' || !email.trim()) return false;
+      const e = email.toLowerCase().trim();
+      // имя@домен.зона — локаль и домен начинаются с латиницы/цифры, в домене есть точка, TLD ≥ 2 букв
+      return /^[a-z0-9][a-z0-9._%+-]*@[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(e);
     }
 
     static validatePassword(password) {
@@ -34,11 +36,31 @@ module.exports = (sequelize, DataTypes) => {
       return true;
     }
 
+    static validateUsername(username) {
+      const u = String(username).trim();
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(u)) return false;
+      if (!/[a-zA-Z]/.test(u)) return false;
+      return true;
+    }
+
     static validateRegistrationData(userData) {
-      const { name, email, password } = userData;
+      const { name, email, password, username } = userData;
 
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return { isValid: false, error: 'Некорректное имя пользователя' };
+      }
+
+      if (
+        !username ||
+        typeof username !== 'string' ||
+        username.trim().length === 0 ||
+        !this.validateUsername(username.trim())
+      ) {
+        return {
+          isValid: false,
+          error:
+            'Имя пользователя: 3–30 символов, только английские буквы, цифры и _; нужна хотя бы одна буква',
+        };
       }
 
       if (
@@ -86,12 +108,11 @@ module.exports = (sequelize, DataTypes) => {
       if (
         !password ||
         typeof password !== 'string' ||
-        password.trim().length === 0 ||
-        !this.validatePassword(password)
+        password.trim().length === 0
       ) {
         return {
           isValid: false,
-          error: 'Пароль не соответствует критериям валидации',
+          error: 'Введите пароль',
         };
       }
 
@@ -110,6 +131,11 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+      username: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
       password: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -122,6 +148,9 @@ module.exports = (sequelize, DataTypes) => {
       hooks: {
         beforeCreate: (newUser) => {
           newUser.email = newUser.email.toLowerCase().trim();
+          if (newUser.username) {
+            newUser.username = String(newUser.username).toLowerCase().trim();
+          }
         },
       },
     },
