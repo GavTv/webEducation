@@ -1,5 +1,5 @@
-import HomeGate from "./HomeGate";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <HomeGate />;
+  redirect("/classes");
 }
