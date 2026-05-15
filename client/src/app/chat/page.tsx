@@ -1,21 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import "./page.css";
 
+function getApiOrigin() {
+  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+  return raw.replace(/\/+$/, "").replace(/\/api$/i, "");
+}
+
+function getAvatarSrc(avatarUrl?: string | null) {
+  if (!avatarUrl) {
+    return "";
+  }
+
+  if (avatarUrl.startsWith("http")) {
+    return avatarUrl;
+  }
+
+  return `${getApiOrigin()}${avatarUrl}`;
+}
+
+
+
 const MOBILE_BP = "(max-width: 900px)";
 
 function ChatPageContent() {
+  const user = useAppSelector((state) => state.user.user);
+  const userName = user?.name?.trim() || "Пользователь";
+  const firstName = userName.split(/\s+/)[0] || "Пользователь";
+  const avatarSrc = getAvatarSrc(user?.avatarUrl);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const chatGreeting = isMounted && firstName
+    ? `Привет, ${firstName}! 👋`
+    : "\u00A0";
+
+  const chatAvatarFallbackLetter = isMounted && firstName
+    ? firstName.charAt(0).toUpperCase()
+    : "";
+
+  const safeFirstName = isMounted ? firstName : "Пользователь";
+  const safeAvatarSrc = isMounted ? avatarSrc : "";
+
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState(rooms[0]?.id ?? 1);
   const [draft, setDraft] = useState("");
@@ -97,15 +133,22 @@ function ChatPageContent() {
           <section className="chat-panel">
             <header className="topbar">
               <div>
-                <h1>Привет, Иван! 👋</h1>
+                <h1 suppressHydrationWarning>{chatGreeting}</h1>
                 <p>Выберите чат, чтобы начать общение</p>
               </div>
 
               <div className="profile-mini">
+                {isMounted && avatarSrc ? (
                 <img
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&h=160&fit=crop&crop=faces"
-                  alt="Профиль"
+                  className="chat-current-user-avatar"
+                  src={avatarSrc}
+                  alt={firstName || "Пользователь"}
                 />
+              ) : (
+                <div className="chat-current-user-avatar chat-current-user-avatar--empty">
+                  {chatAvatarFallbackLetter}
+                </div>
+              )}
                 <span />
               </div>
             </header>
@@ -217,6 +260,11 @@ function ChatFallback() {
 }
 
 export default function ChatPage() {
+  const user = useAppSelector((state) => state.user.user);
+  const userName = user?.name?.trim() || "Пользователь";
+  const firstName = userName.split(/\s+/)[0] || "Пользователь";
+  const avatarSrc = getAvatarSrc(user?.avatarUrl);
+
   return (
     <Suspense fallback={<ChatFallback />}>
       <ChatPageContent />

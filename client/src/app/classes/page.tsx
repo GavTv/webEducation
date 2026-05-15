@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import "./page.css";
 
 const classes = [
@@ -26,6 +29,11 @@ const classes = [
 ];
 
 export default function ClassesPage() {
+  const user = useAppSelector((state) => state.user.user);
+  const userName = user?.name?.trim() || "Пользователь";
+  const firstName = userName.split(/\s+/)[0] || "Пользователь";
+  const avatarLetter = firstName.charAt(0).toUpperCase();
+
   return (
     <main className="classes-page">
       <section className="classes-shell">
@@ -68,7 +76,7 @@ export default function ClassesPage() {
             <div className="classes-profile-chip">
               <div className="classes-profile-avatar">И</div>
               <div>
-                <strong>Иван</strong>
+                <strong>{firstName}</strong>
                 <span>Онлайн</span>
               </div>
             </div>

@@ -3,6 +3,16 @@ const formatResponse = require('../utils/formatResponse');
 const { User } = require('../db/models');
 const bcrypt = require('bcrypt');
 const generateTokens = require('../utils/generateTokens');
+
+function getLocalRefreshCookieConfig() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    path: '/',
+    maxAge: 1000 * 60 * 60 * 24 * 30,
+  };
+}
 const {
   getRefreshCookieConfig,
   clearRefreshCookie,
@@ -568,6 +578,75 @@ class AuthController {
     }
   }
 
+
+  static async updateProfile(req, res) {
+    try {
+      const currentUser = res.locals.user;
+
+      if (!currentUser?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
+
+      const updateData = {};
+
+      if (typeof req.body.name === 'string') {
+        const name = req.body.name.trim();
+
+        if (name.length < 2) {
+          return res
+            .status(400)
+            .json(formatResponse(400, 'ФИО должно быть минимум 2 символа'));
+        }
+
+        updateData.name = name;
+      }
+
+      if (req.file) {
+        updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        const user = await AuthService.findPublicUserById(currentUser.id);
+
+        return res
+          .status(200)
+          .json(formatResponse(200, 'Нет изменений', { user }));
+      }
+
+      const user = await AuthService.updateUserProfileById(
+        currentUser.id,
+        updateData,
+      );
+
+      if (!user) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      const { accessToken, refreshToken } = generateTokens({ user });
+
+      return res
+        .status(200)
+        .cookie('refreshToken', refreshToken, getLocalRefreshCookieConfig())
+        .json(
+          formatResponse(200, 'Профиль обновлён', {
+            user,
+            accessToken,
+          }),
+        );
+    } catch (error) {
+      console.log('======== AuthController.updateProfile =========');
+      console.log(error);
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при обновлении профиля'));
+    }
+  }
+
   static async deleteAccount(req, res) {
     try {
       const user = res.locals.user;
@@ -777,23 +856,28 @@ class AuthController {
   }
 
   static async refreshTokens(req, res) {
-    // Достаём данные о пользователе из res.locals (их туда положила мидлварка verifyRefreshToken)
-
-    const { user, rememberMe } = res.locals;
+    const tokenUser = res.locals.user;
 
     try {
-      const { accessToken, refreshToken } = generateTokens(
-        { user },
-        { rememberMe },
-      );
+      if (!tokenUser?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
+
+      const user = await AuthService.findPublicUserById(tokenUser.id);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      const { accessToken, refreshToken } = generateTokens({ user });
 
       return res
         .status(200)
-        .cookie(
-          'refreshToken',
-          refreshToken,
-          getRefreshCookieConfig(rememberMe),
-        )
+        .cookie('refreshToken', refreshToken, getLocalRefreshCookieConfig())
         .json(
           formatResponse(200, 'Пользовательская сессия продлена', {
             user,
@@ -803,9 +887,10 @@ class AuthController {
     } catch (error) {
       console.log('======== AuthController.refreshTokens =========');
       console.log(error);
+
       return res
         .status(500)
-        .json(formatResponse(500, 'Ошибка сервера при продлении сессии'));
+        .json(formatResponse(500, 'Ошибка сервера при обновлении токена'));
     }
   }
 }
