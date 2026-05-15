@@ -12,15 +12,19 @@ import { AxiosError } from "axios";
 const USER_THUNK_NAMES = {
   REGISTER: "user/register",
   LOGIN: "user/login",
+  LOGIN_OAUTH: "user/loginOAuth",
   REFRESH: "user/refresh",
   LOGOUT: "user/logout",
+  DELETE_ACCOUNT: "user/deleteAccount",
 } as const;
 
 const USER_API_URLS = {
   REGISTER: "auth/register",
   LOGIN: "auth/login",
+  LOGIN_OAUTH: "auth/oauth",
   REFRESH: "auth/refresh",
   LOGOUT: "auth/logout",
+  DELETE_ACCOUNT: "auth/me",
 } as const;
 
 export const refreshTokenThunk = createAsyncThunk<
@@ -91,6 +95,33 @@ export const loginThunk = createAsyncThunk<
   }
 });
 
+export const loginWithOAuthThunk = createAsyncThunk<
+  UserType,
+  { provider: "google" | "github"; accessToken: string; rememberMe: boolean },
+  { rejectValue: string }
+>(USER_THUNK_NAMES.LOGIN_OAUTH, async (payload, { rejectWithValue }) => {
+  try {
+    const { data } = await axiosInstance.post<
+      ServerResponseType<UserWithTokenType>
+    >(USER_API_URLS.LOGIN_OAUTH, {
+      provider: payload.provider,
+      accessToken: payload.accessToken,
+      rememberMe: payload.rememberMe,
+    });
+
+    if (data.statusCode === 200 && data.data?.user) {
+      setAccessToken(data.data.accessToken ?? "");
+      return data.data.user;
+    }
+    return rejectWithValue(data.message ?? "Ошибка при входе через соцсеть");
+  } catch (error) {
+    const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
+    return rejectWithValue(
+      d?.error ?? d?.message ?? "Ошибка при входе через соцсеть",
+    );
+  }
+});
+
 export const logoutThunk = createAsyncThunk<
   null,
   void,
@@ -110,6 +141,29 @@ export const logoutThunk = createAsyncThunk<
     const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
     return rejectWithValue(
       d?.error ?? d?.message ?? "Ошибка при выходе из приложения",
+    );
+  }
+});
+
+export const deleteAccountThunk = createAsyncThunk<
+  null,
+  void,
+  { rejectValue: string }
+>(USER_THUNK_NAMES.DELETE_ACCOUNT, async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await axiosInstance.delete<ServerResponseType<null>>(
+      USER_API_URLS.DELETE_ACCOUNT,
+    );
+
+    if (data.statusCode === 200) {
+      setAccessToken("");
+      return null;
+    }
+    return rejectWithValue(data.message ?? "Ошибка при удалении аккаунта");
+  } catch (error) {
+    const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
+    return rejectWithValue(
+      d?.error ?? d?.message ?? "Ошибка при удалении аккаунта",
     );
   }
 });

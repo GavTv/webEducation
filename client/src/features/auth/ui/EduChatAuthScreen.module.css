@@ -47,19 +47,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2.5rem;
+  margin-top: clamp(28px, 7vh, 72px);
+  margin-bottom: 2.75rem;
   width: min(var(--app-shell-max-width), 100%);
   position: relative;
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--edu-bg);
+  /* Смещение transform не должно перехватывать клики по форме ниже */
+  pointer-events: none;
 }
 
 .brandLogoImg {
   display: block;
-  height: 144px;
+  height: clamp(200px, 32vw, 260px);
   width: auto;
   max-width: 100%;
   object-fit: contain;
   mix-blend-mode: screen;
+  pointer-events: auto;
 }

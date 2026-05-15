@@ -8,6 +8,12 @@ module.exports = (sequelize, DataTypes) => {
       if (models.Task) {
         User.hasMany(models.Task, { foreignKey: 'user_id', as: 'tasks' });
       }
+      if (models.Room) {
+        User.hasMany(models.Room, {
+          foreignKey: 'createdBy',
+          as: 'createdRooms',
+        });
+      }
     }
 
     static validateEmail(email) {
@@ -138,7 +144,17 @@ module.exports = (sequelize, DataTypes) => {
       },
       password: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
+      },
+      google_sub: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      github_sub: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
       },
     },
     {

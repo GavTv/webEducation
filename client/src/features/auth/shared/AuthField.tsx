@@ -16,6 +16,11 @@ export type AuthFieldProps = {
   onBlurField?: () => void;
   onFocusField?: () => void;
   isChecking?: boolean;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  pattern?: string;
+  /** Border/state invalid, but error text is rendered elsewhere (e.g. under «Забыли пароль?»). */
+  hideInlineError?: boolean;
 };
 
 export function AuthField({
@@ -30,6 +35,10 @@ export function AuthField({
   onBlurField,
   onFocusField,
   isChecking,
+  maxLength,
+  inputMode,
+  pattern,
+  hideInlineError,
 }: AuthFieldProps) {
   const invalid = Boolean(errorMessage);
   return (
@@ -48,6 +57,9 @@ export function AuthField({
             onBlur={onBlurField}
             onFocus={onFocusField}
             autoComplete={autoComplete}
+            maxLength={maxLength}
+            inputMode={inputMode}
+            pattern={pattern}
           />
         </div>
         {isChecking ? (
@@ -57,7 +69,7 @@ export function AuthField({
         ) : null}
         {end ? <span className={styles.fieldEnd}>{end}</span> : null}
       </div>
-      {errorMessage ? (
+      {errorMessage && !hideInlineError ? (
         <p className={styles.fieldError} role="alert">
           {errorMessage}
         </p>

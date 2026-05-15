@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       Message.belongsTo(models.Room, {
         foreignKey: 'roomId',
         as: 'room',
+        onDelete: 'CASCADE',
       });
     }
   }
