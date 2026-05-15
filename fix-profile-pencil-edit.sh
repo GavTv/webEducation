@@ -1,3 +1,10 @@
+#!/bin/bash
+
+set -e
+
+cd client
+
+cat > src/app/profile/page.tsx <<'EOF'
 "use client";
 
 import {
@@ -16,7 +23,6 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
   deleteAccountThunk,
   logoutThunk,
-  refreshTokenThunk,
   updateProfileThunk,
 } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
@@ -75,27 +81,12 @@ export default function ProfilePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setAuthChecked(true);
-      return;
+    if (isInitialized && !user) {
+      router.replace("/");
     }
-
-    if (!isInitialized) {
-      return;
-    }
-
-    dispatch(refreshTokenThunk())
-      .unwrap()
-      .then(() => {
-        setAuthChecked(true);
-      })
-      .catch(() => {
-        router.replace("/");
-      });
-  }, [dispatch, isInitialized, router, user]);
+  }, [isInitialized, user, router]);
 
   useEffect(() => {
     if (user) {
@@ -198,16 +189,8 @@ export default function ProfilePage() {
     setIsFirstNameEditable(true);
 
     setTimeout(() => {
-      const input = firstNameInputRef.current;
-
-      if (!input) {
-        return;
-      }
-
-      const end = input.value.length;
-
-      input.focus();
-      input.setSelectionRange(end, end);
+      firstNameInputRef.current?.focus();
+      firstNameInputRef.current?.select();
     }, 0);
   }, []);
 
@@ -215,16 +198,8 @@ export default function ProfilePage() {
     setIsLastNameEditable(true);
 
     setTimeout(() => {
-      const input = lastNameInputRef.current;
-
-      if (!input) {
-        return;
-      }
-
-      const end = input.value.length;
-
-      input.focus();
-      input.setSelectionRange(end, end);
+      lastNameInputRef.current?.focus();
+      lastNameInputRef.current?.select();
     }, 0);
   }, []);
 
@@ -254,7 +229,7 @@ export default function ProfilePage() {
     [avatarFile, dispatch, fullName],
   );
 
-  if (!isInitialized || !authChecked || !user) {
+  if (!isInitialized || !user) {
     return (
       <main className="profile-page profile-page--centered">
         <div className="profile-loading" aria-busy="true">
@@ -440,3 +415,39 @@ export default function ProfilePage() {
     </main>
   );
 }
+EOF
+
+cat >> src/app/profile/page.css <<'EOF'
+
+/* Pencil edit fix */
+.profile-edit-input[readonly] {
+  cursor: default;
+  opacity: 0.92;
+}
+
+.profile-edit-input:not([readonly]) {
+  cursor: text;
+  color: #ffffff;
+}
+
+.info-card button {
+  pointer-events: auto;
+}
+
+.info-card button:hover {
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.avatar-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  color: #a7a7b4;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+EOF
+
+echo "DONE: profile pencil edit fixed"

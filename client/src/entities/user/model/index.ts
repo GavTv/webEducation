@@ -3,6 +3,7 @@ export type UserType = {
   name: string;
   email: string;
   username: string;
+  avatarUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

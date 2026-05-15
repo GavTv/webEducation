@@ -2,6 +2,7 @@ const authRouter = require('express').Router();
 const AuthController = require('../controllers/AuthController');
 const verifyRefreshToken = require('../middleware/verifyRefreshToken');
 const verifyAccessToken = require('../middleware/verifyAccessToken');
+const uploadAvatar = require('../middleware/uploadAvatar');
 
 authRouter
   .route('/check-email')
@@ -19,6 +20,7 @@ authRouter
   .post('/oauth', AuthController.oauthLogin)
   .post('/google', AuthController.googleLogin)
   .post('/logout', AuthController.logout)
+  .patch('/me', verifyAccessToken, uploadAvatar, AuthController.updateProfile)
   .post('/forgot-password', AuthController.forgotPassword)
   .post('/verify-reset-code', AuthController.verifyResetCode)
   .post('/reset-password', AuthController.resetPasswordWithToken)

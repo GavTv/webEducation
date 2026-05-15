@@ -158,7 +158,7 @@
   font-size: 18px;
 }
 
-.profile-card {
+.classes-user-card {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -169,7 +169,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.profile-avatar {
+.classes-user-avatar {
   position: relative;
   width: 48px;
   height: 48px;
@@ -181,7 +181,7 @@
   font-weight: 900;
 }
 
-.profile-avatar::after {
+.classes-user-avatar::after {
   content: "";
   position: absolute;
   right: 1px;
@@ -193,12 +193,12 @@
   border: 3px solid #111827;
 }
 
-.profile-card strong,
-.profile-card span {
+.classes-user-card strong,
+.classes-user-card span {
   display: block;
 }
 
-.profile-card span {
+.classes-user-card span {
   color: #9aa1b8;
   font-size: 13px;
 }

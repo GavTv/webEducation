@@ -7,6 +7,7 @@ import {
   logoutThunk,
   refreshTokenThunk,
   registerThunk,
+  updateProfileThunk,
 } from "../api/UserApiThunk";
 
 const userSlice = createSlice({
@@ -105,6 +106,24 @@ const userSlice = createSlice({
       state.isLoading = false;
       state.isInitialized = true;
       state.error = action.payload ?? "Ошибка при выходе из приложения";
+    });
+
+
+    builder.addCase(updateProfileThunk.pending, (state) => {
+      state.error = null;
+      state.isLoading = true;
+    });
+
+    builder.addCase(updateProfileThunk.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.user = action.payload;
+      state.error = null;
+    });
+
+    builder.addCase(updateProfileThunk.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload ?? "Ошибка при обновлении профиля";
     });
 
     builder.addCase(deleteAccountThunk.pending, (state) => {

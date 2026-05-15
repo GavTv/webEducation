@@ -9,6 +9,7 @@ const serverConfig = require('./config/serverConfig');
 
 const PORT = process.env.PORT ?? 3000;
 const app = express();
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 serverConfig(app);
 
