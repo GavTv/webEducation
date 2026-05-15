@@ -6,6 +6,10 @@ function verifyRefreshToken(req, res, next) {
   try {
     const { refreshToken } = req.cookies;
 
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      return res.status(401).json(formatResponse(401, 'Невалидный refreshToken'));
+    }
+
     const decoded = jwt.verify(
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET,

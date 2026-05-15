@@ -47,8 +47,8 @@ export default function EduChatAuthScreen({
             src="/educhat-logo.png"
             alt="EduChat"
             className={styles.brandLogoImg}
-            width={660}
-            height={144}
+            width={920}
+            height={200}
             decoding="async"
           />
         </header>

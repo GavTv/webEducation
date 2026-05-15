@@ -1,3 +1,5 @@
+import AuthSuccessToast from "@/features/auth/ui/AuthSuccessToast";
+
 type ApplicationLayoutProps = {
   children: React.ReactNode;
 };
@@ -5,5 +7,10 @@ type ApplicationLayoutProps = {
 export default function ApplicationLayout({
   children,
 }: ApplicationLayoutProps) {
-  return children;
+  return (
+    <>
+      {children}
+      <AuthSuccessToast />
+    </>
+  );
 }

@@ -295,7 +295,6 @@ export default function SignUpForm({
             </button>
           }
         />
-        <p className={signUpStyles.hint}>{PASSWORD_RULES_MSG}</p>
         <AuthField
           label="Подтвердите пароль"
           icon={purpleIcon(<Lock size={20} strokeWidth={2} />)}
@@ -328,6 +327,7 @@ export default function SignUpForm({
             </button>
           }
         />
+        <p className={signUpStyles.hint}>{PASSWORD_RULES_MSG}</p>
 
         <div className={styles.rowRememberOnly}>
           <label className={styles.check}>

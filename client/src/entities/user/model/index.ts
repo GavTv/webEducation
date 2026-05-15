@@ -28,6 +28,8 @@ export type UserStateType = {
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;
+  /** Краткое уведомление после входа/регистрации; сбрасывается через 5 с в UI */
+  authSuccessToast: string | null;
 };
 
 export const initialUserState: UserStateType = {
@@ -35,4 +37,5 @@ export const initialUserState: UserStateType = {
   isLoading: false,
   error: null,
   isInitialized: false,
+  authSuccessToast: null,
 };

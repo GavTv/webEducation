@@ -145,11 +145,30 @@
   background: rgba(99, 56, 242, 0.12);
 }
 
-.rowBetween {
+.forgotUnderPassword {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  margin: -0.35rem 0 0;
+}
+
+.messagesBelowForgot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0.35rem 0 0;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.messagesBelowForgot .fieldError,
+.messagesBelowForgot .formError {
+  margin: 0;
+}
+
+.rememberBelowLogin {
+  display: flex;
+  justify-content: center;
+  width: 100%;
   margin-top: 0.25rem;
 }
 
@@ -183,6 +202,8 @@
   cursor: pointer;
   padding: 0;
   white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .linkBtn:hover {
@@ -267,4 +288,76 @@
 
 .inlineLink:hover {
   text-decoration: underline;
+}
+
+.oauthRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.googleBtn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid var(--edu-line);
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.googleBtn:hover:not(:disabled) {
+  background: #f6f6f7;
+}
+
+.googleBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.githubBtn {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #24292f;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.githubBtn:hover:not(:disabled) {
+  background: #2f353c;
+}
+
+.githubBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.googleIcon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.dividerTight {
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
 }

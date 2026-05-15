@@ -4,6 +4,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Room extends Model {
     static associate(models) {
+      Room.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        as: 'creator',
+        onDelete: 'CASCADE',
+      });
       Room.hasMany(models.Message, {
         foreignKey: 'roomId',
         as: 'messages',
