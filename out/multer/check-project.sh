@@ -1,14 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$ROOT_DIR" || exit 1
+
 
 echo "========== CHECK PROJECT =========="
 
 if [ ! -d "server" ]; then
-  echo "❌ Нет папки server. Запусти скрипт из корня webEducation"
+  echo "❌ Нет папки server. Запусти: bash out/multer/check-project.sh (из любой папки)"
   exit 1
 fi
 
 if [ ! -d "client" ]; then
-  echo "❌ Нет папки client. Запусти скрипт из корня webEducation"
+  echo "❌ Нет папки client. Запусти: bash out/multer/check-project.sh (из любой папки)"
   exit 1
 fi
 
