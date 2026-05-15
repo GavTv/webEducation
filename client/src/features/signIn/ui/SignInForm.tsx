@@ -214,7 +214,6 @@ export default function SignInForm({
           }}
           autoComplete="email"
           errorMessage={signInFieldErrors.email}
-          hideInlineError
         />
         <AuthField
           label="Пароль"
@@ -235,7 +234,6 @@ export default function SignInForm({
           }}
           autoComplete="current-password"
           errorMessage={signInFieldErrors.password}
-          hideInlineError
           end={
             <button
               type="button"
@@ -261,17 +259,9 @@ export default function SignInForm({
           </Link>
         </div>
 
-        {signInFieldErrors.email ||
-        signInFieldErrors.password ||
-        error ? (
+        {error ? (
           <div className={styles.messagesBelowForgot} role="alert">
-            {signInFieldErrors.email ? (
-              <p className={styles.fieldError}>{signInFieldErrors.email}</p>
-            ) : null}
-            {signInFieldErrors.password ? (
-              <p className={styles.fieldError}>{signInFieldErrors.password}</p>
-            ) : null}
-            {error ? <p className={styles.formError}>{error}</p> : null}
+            <p className={styles.formError}>{error}</p>
           </div>
         ) : null}
 

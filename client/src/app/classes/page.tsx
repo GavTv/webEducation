@@ -139,17 +139,6 @@ export default function ClassesPage() {
               </Link>
             ))}
           </div>
-
-          <section className="safe-card">
-            <div className="safe-icon">🛡</div>
-            <div>
-              <h3>Безопасное обучение</h3>
-              <p>
-                Все классы защищены паролем. Только участники вашего класса
-                могут присоединиться к чату.
-              </p>
-            </div>
-          </section>
         </section>
       </section>
     </main>
