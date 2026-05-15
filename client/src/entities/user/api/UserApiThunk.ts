@@ -16,6 +16,7 @@ const USER_THUNK_NAMES = {
   REFRESH: "user/refresh",
   LOGOUT: "user/logout",
   DELETE_ACCOUNT: "user/deleteAccount",
+  UPDATE_PROFILE: "user/updateProfile",
 } as const;
 
 const USER_API_URLS = {
@@ -25,6 +26,7 @@ const USER_API_URLS = {
   REFRESH: "auth/refresh",
   LOGOUT: "auth/logout",
   DELETE_ACCOUNT: "auth/me",
+  UPDATE_PROFILE: "auth/me",
 } as const;
 
 export const refreshTokenThunk = createAsyncThunk<
@@ -141,6 +143,41 @@ export const logoutThunk = createAsyncThunk<
     const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
     return rejectWithValue(
       d?.error ?? d?.message ?? "Ошибка при выходе из приложения",
+    );
+  }
+});
+
+
+
+export const updateProfileThunk = createAsyncThunk<
+  UserType,
+  { name: string; avatar?: File | null },
+  { rejectValue: string }
+>(USER_THUNK_NAMES.UPDATE_PROFILE, async (payload, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+
+    formData.append("name", payload.name);
+
+    if (payload.avatar) {
+      formData.append("avatar", payload.avatar);
+    }
+
+    const { data } = await axiosInstance.patch<
+      ServerResponseType<UserWithTokenType>
+    >(USER_API_URLS.UPDATE_PROFILE, formData);
+
+    if (data.statusCode === 200 && data.data?.user) {
+      setAccessToken(data.data.accessToken ?? "");
+      return data.data.user;
+    }
+
+    return rejectWithValue(data.message ?? "Ошибка при обновлении профиля");
+  } catch (error) {
+    const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
+
+    return rejectWithValue(
+      d?.error ?? d?.message ?? "Ошибка при обновлении профиля",
     );
   }
 });

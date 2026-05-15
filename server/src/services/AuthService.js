@@ -75,6 +75,21 @@ class AuthService {
   }
 
   /** @returns {Promise<boolean>} true если строка удалена */
+
+  static async findPublicUserById(id) {
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    return user ? user.get() : null;
+  }
+
+  static async updateUserProfileById(id, profileData) {
+    await User.update(profileData, { where: { id } });
+
+    return this.findPublicUserById(id);
+  }
+
   static async deleteUserById(id) {
     const n = await User.destroy({ where: { id } });
     return n > 0;
