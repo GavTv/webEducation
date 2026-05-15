@@ -69,12 +69,12 @@ export default function ClassesPage() {
         <section className="classes-content">
           <header className="classes-header">
             <div>
-              <h1>Добро пожаловать, Иван! 👋</h1>
+              <h1>Добро пожаловать, {firstName}! 👋</h1>
               <p>Выберите класс, чтобы начать общение</p>
             </div>
 
             <div className="classes-profile-chip">
-              <div className="classes-profile-avatar">И</div>
+              <div className="classes-profile-avatar">{avatarLetter}</div>
               <div>
                 <strong>{firstName}</strong>
                 <span>Онлайн</span>
