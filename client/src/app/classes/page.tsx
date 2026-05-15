@@ -69,13 +69,12 @@ export default function ClassesPage() {
         <section className="classes-content">
           <header className="classes-header">
             <div>
-              <p className="eyebrow">Учебная платформа</p>
-              <h1>Добро пожаловать, {firstName}! 👋</h1>
+              <h1>Добро пожаловать, Иван! 👋</h1>
               <p>Выберите класс, чтобы начать общение</p>
             </div>
 
-            <div className="classes-user-card">
-              <div className="classes-user-avatar">{avatarLetter}</div>
+            <div className="classes-profile-chip">
+              <div className="classes-profile-avatar">И</div>
               <div>
                 <strong>{firstName}</strong>
                 <span>Онлайн</span>

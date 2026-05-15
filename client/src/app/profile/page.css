@@ -14,7 +14,7 @@
   padding: var(--app-page-gutter-y) var(--app-page-gutter-x);
 }
 
-.profile-card {
+.profile-page .profile-card {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -387,7 +387,7 @@
 }
 
 @media (max-width: 1023px) {
-  .profile-card {
+  .profile-page .profile-card {
     min-height: unset;
   }
 }
