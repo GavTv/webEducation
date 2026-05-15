@@ -135,15 +135,6 @@
   margin-bottom: 44px;
 }
 
-.eyebrow {
-  margin: 0 0 8px;
-  color: #8b5cf6;
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-
 .classes-header h1 {
   margin: 0;
   max-width: 740px;
@@ -158,49 +149,58 @@
   font-size: 18px;
 }
 
-.profile-card {
+.classes-profile-chip {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 160px;
-  padding: 12px;
-  border-radius: 22px;
+  gap: 10px;
+  flex-shrink: 0;
+  width: auto;
+  max-width: 220px;
+  padding: 10px 14px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.profile-avatar {
+.classes-profile-avatar {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(135deg, #222b45, #101525);
   color: #ffffff;
+  font-size: 15px;
   font-weight: 900;
 }
 
-.profile-avatar::after {
+.classes-profile-avatar::after {
   content: "";
   position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 12px;
-  height: 12px;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #d8e92f;
-  border: 3px solid #111827;
+  border: 2px solid #111827;
 }
 
-.profile-card strong,
-.profile-card span {
+.classes-profile-chip strong,
+.classes-profile-chip span {
   display: block;
 }
 
-.profile-card span {
+.classes-profile-chip strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.classes-profile-chip span {
   color: #9aa1b8;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .classes-top {
@@ -391,10 +391,53 @@
     padding: 26px;
   }
 
-  .classes-header,
   .classes-top {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .classes-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 10px;
+    align-items: start;
+  }
+
+  .classes-header > div:first-child {
+    display: contents;
+  }
+
+  .classes-profile-chip {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    max-width: min(220px, 42vw);
+    padding: 8px 12px;
+  }
+
+  .classes-profile-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .classes-header h1 {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
+    margin: 0;
+    padding-right: 8px;
+    font-size: clamp(26px, 7.5vw, 36px);
+  }
+
+  .classes-header > div:first-child > p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+    font-size: 15px;
   }
 
   .class-card {
