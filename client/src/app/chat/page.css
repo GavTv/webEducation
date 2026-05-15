@@ -40,8 +40,10 @@
 .chat-mobile-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 800;
+  gap: 14px;
+}
+
+.chat-mobile-brand .brand-name {
   font-size: 18px;
 }
 
@@ -77,13 +79,13 @@
   height: var(--app-shell-min-height);
   max-height: var(--app-shell-max-height);
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--app-shell-radius);
-  background: rgba(8, 13, 26, 0.78);
-  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(24px);
+  background: rgba(9, 13, 25, 0.82);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
 }
 
 .desktop-shell--loading {
@@ -120,83 +122,113 @@
   color: #fff;
 }
 
-.sidebar {
+/* Сайдбар — те же классы и стили, что на странице «Классы» */
+.educhat-page .classes-sidebar {
   display: flex;
   flex-direction: column;
-  padding: 30px 22px;
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(3, 7, 18, 0.8));
+  gap: 34px;
+  padding: 34px 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 10, 19, 0.78);
 }
 
-.brand {
+.educhat-page .brand {
   display: flex;
-  gap: 12px;
   align-items: center;
-  font-size: 22px;
-  font-weight: 800;
+  gap: 14px;
 }
 
-.logo {
-  width: 44px;
-  height: 44px;
+.educhat-page .brand-icon {
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c3cff, #5129d8);
-  box-shadow: 0 10px 25px rgba(124, 60, 255, 0.35);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7c3aed, #3b1bbd);
+  color: #ffffff;
+  font-size: 24px;
+  box-shadow: 0 14px 35px rgba(124, 58, 237, 0.35);
 }
 
-.logo--sm {
-  width: 38px;
-  height: 38px;
+.educhat-page .brand-icon--sm {
+  width: 40px;
+  height: 40px;
   font-size: 18px;
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
 }
 
-.side-nav {
+.educhat-page .brand-name {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.educhat-page .sidebar-nav {
   display: grid;
-  gap: 12px;
-  margin-top: 42px;
+  gap: 10px;
 }
 
-.side-link {
-  height: 48px;
-  border: 0;
-  border-radius: 16px;
-  color: #9ca3af;
-  text-align: left;
-  padding: 0 18px;
-  background: transparent;
-  cursor: pointer;
-  text-decoration: none;
+.educhat-page .nav-link {
   display: flex;
   align-items: center;
-  box-sizing: border-box;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  color: #9aa1b8;
+  text-decoration: none;
+  font-weight: 700;
+  transition: 0.2s ease;
 }
 
-.side-link.active,
-.side-link:hover {
+.educhat-page .nav-link:hover,
+.educhat-page .nav-link.active {
   color: #ffffff;
-  background: rgba(124, 60, 255, 0.16);
+  background: rgba(124, 58, 237, 0.15);
 }
 
-.sidebar-card {
+.educhat-page .nav-link.active {
+  box-shadow: inset 3px 0 0 #7c3aed;
+}
+
+.educhat-page .nav-icon {
+  color: #7c3aed;
+}
+
+.educhat-page .sidebar-info {
   margin-top: auto;
+  display: flex;
+  gap: 14px;
   padding: 18px;
   border-radius: 22px;
-  background: rgba(15, 23, 42, 0.86);
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.small-label {
-  color: #8b5cf6;
-  font-weight: 800;
+.educhat-page .shield-mini {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.18);
 }
 
-.sidebar-card p {
-  margin: 8px 0 0;
-  color: #aeb7c8;
-  line-height: 1.5;
+.educhat-page .sidebar-info h3,
+.educhat-page .sidebar-info p {
+  margin: 0;
+}
+
+.educhat-page .sidebar-info h3 {
+  font-size: 15px;
+}
+
+.educhat-page .sidebar-info p {
+  margin-top: 4px;
+  color: #9aa1b8;
+  font-size: 13px;
 }
 
 .chat-panel {
@@ -564,7 +596,7 @@
     border-radius: 20px;
   }
 
-  .sidebar {
+  .educhat-page .classes-sidebar {
     display: none;
   }
 

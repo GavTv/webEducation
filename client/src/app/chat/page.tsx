@@ -97,8 +97,10 @@ function ChatPageContent() {
     <main className="educhat-page">
       <header className="chat-mobile-topbar" aria-label="Мобильная шапка">
         <div className="chat-mobile-brand">
-          <div className="logo logo--sm">↻</div>
-          <span>EduChat</span>
+          <div className="brand-icon brand-icon--sm">
+            <span>✦</span>
+          </div>
+          <span className="brand-name">EduChat</span>
         </div>
         <Link className="chat-mobile-toplink" href={clientRoutes.classes}>
           Классы
@@ -106,24 +108,36 @@ function ChatPageContent() {
       </header>
 
       <section className="desktop-shell">
-        <aside className="sidebar">
+        <aside className="classes-sidebar">
           <div className="brand">
-            <div className="logo">↻</div>
-            <span>EduChat</span>
+            <div className="brand-icon">
+              <span>✦</span>
+            </div>
+            <span className="brand-name">EduChat</span>
           </div>
 
-          <nav className="side-nav">
-            <button type="button" className="side-link active">
+          <nav className="sidebar-nav">
+            <Link className="nav-link active" href={clientRoutes.chat}>
+              <span className="nav-icon">●</span>
               Чаты
-            </button>
-            <Link className="side-link" href={clientRoutes.profile}>
+            </Link>
+            <Link className="nav-link" href={clientRoutes.classes}>
+              <span className="nav-icon">●</span>Ё
+              ЪЭ?
+              Классы
+            </Link>
+            <Link className="nav-link" href={clientRoutes.profile}>
+              <span className="nav-icon">♙</span>
               Профиль
             </Link>
           </nav>
 
-          <div className="sidebar-card">
-            <span className="small-label">@botAi</span>
-            <p>AI-помощник для учебных чатов</p>
+          <div className="sidebar-info">
+            <div className="shield-mini">🛡</div>
+            <div>
+              <h3>Безопасное обучение</h3>
+              <p>Все классы защищены паролем.</p>
+            </div>
           </div>
         </aside>
 

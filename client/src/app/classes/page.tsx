@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { clientRoutes } from "@/shared/consts/clientRoutes";
 import "./page.css";
 
 const classes = [
@@ -46,12 +47,16 @@ export default function ClassesPage() {
           </div>
 
           <nav className="sidebar-nav">
-            <Link className="nav-link active" href="/classes">
+            <Link className="nav-link" href={clientRoutes.chat}>
+              <span className="nav-icon">●</span>
+              Чаты
+            </Link>
+            <Link className="nav-link active" href={clientRoutes.classes}>
               <span className="nav-icon">●</span>
               Классы
             </Link>
 
-            <Link className="nav-link" href="/profile">
+            <Link className="nav-link" href={clientRoutes.profile}>
               <span className="nav-icon">♙</span>
               Профиль
             </Link>
