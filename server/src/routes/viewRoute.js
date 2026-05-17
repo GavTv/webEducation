@@ -1,8 +1,12 @@
 const router = require('express').Router();
-const path = require('path');
 
+/** Фронт на Vercel; корень API — подсказка, без public/index.html */
 router.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../public/index.html'));
+  res.status(200).json({
+    ok: true,
+    service: 'webEducation API',
+    docs: 'Используйте префикс /api (например /api/auth/login)',
+  });
 });
 
 module.exports = router;
