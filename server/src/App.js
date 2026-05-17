@@ -9,6 +9,11 @@ const serverConfig = require('./config/serverConfig');
 
 const PORT = process.env.PORT ?? 3000;
 const app = express();
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 serverConfig(app);

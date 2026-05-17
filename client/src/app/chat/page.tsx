@@ -122,8 +122,7 @@ function ChatPageContent() {
               Чаты
             </Link>
             <Link className="nav-link" href={clientRoutes.classes}>
-              <span className="nav-icon">●</span>Ё
-              ЪЭ?
+              <span className="nav-icon">●</span>
               Классы
             </Link>
             <Link className="nav-link" href={clientRoutes.profile}>

@@ -4,15 +4,6 @@ const { User } = require('../db/models');
 const bcrypt = require('bcrypt');
 const generateTokens = require('../utils/generateTokens');
 
-function getLocalRefreshCookieConfig() {
-  return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-    path: '/',
-    maxAge: 1000 * 60 * 60 * 24 * 30,
-  };
-}
 const {
   getRefreshCookieConfig,
   clearRefreshCookie,
@@ -626,11 +617,14 @@ class AuthController {
           .json(formatResponse(404, 'Пользователь не найден'));
       }
 
-      const { accessToken, refreshToken } = generateTokens({ user });
+      const { accessToken, refreshToken } = generateTokens(
+        { user },
+        { rememberMe: true },
+      );
 
       return res
         .status(200)
-        .cookie('refreshToken', refreshToken, getLocalRefreshCookieConfig())
+        .cookie('refreshToken', refreshToken, getRefreshCookieConfig(true))
         .json(
           formatResponse(200, 'Профиль обновлён', {
             user,
@@ -873,11 +867,15 @@ class AuthController {
           .json(formatResponse(404, 'Пользователь не найден'));
       }
 
-      const { accessToken, refreshToken } = generateTokens({ user });
+      const remember = Boolean(res.locals.rememberMe);
+      const { accessToken, refreshToken } = generateTokens(
+        { user },
+        { rememberMe: remember },
+      );
 
       return res
         .status(200)
-        .cookie('refreshToken', refreshToken, getLocalRefreshCookieConfig())
+        .cookie('refreshToken', refreshToken, getRefreshCookieConfig(remember))
         .json(
           formatResponse(200, 'Пользовательская сессия продлена', {
             user,

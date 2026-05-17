@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { getAvatarSrc, getFirstName } from "@/shared/lib/userAvatar";
 import "./page.css";
 
 const classes = [
@@ -31,8 +33,14 @@ const classes = [
 
 export default function ClassesPage() {
   const user = useAppSelector((state) => state.user.user);
-  const userName = user?.name?.trim() || "Пользователь";
-  const firstName = userName.split(/\s+/)[0] || "Пользователь";
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const firstName = isMounted ? getFirstName(user?.name) : "Пользователь";
+  const avatarSrc = isMounted ? getAvatarSrc(user?.avatarUrl) : "";
   const avatarLetter = firstName.charAt(0).toUpperCase();
 
   return (
@@ -74,12 +82,22 @@ export default function ClassesPage() {
         <section className="classes-content">
           <header className="classes-header">
             <div>
-              <h1>Добро пожаловать, Иван! 👋</h1>
+              <h1>Добро пожаловать, {firstName}! 👋</h1>
               <p>Выберите класс, чтобы начать общение</p>
             </div>
 
             <div className="classes-profile-chip">
-              <div className="classes-profile-avatar">И</div>
+              <div className="classes-profile-avatar">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt={firstName}
+                    className="classes-profile-avatar-img"
+                  />
+                ) : (
+                  avatarLetter
+                )}
+              </div>
               <div>
                 <strong>{firstName}</strong>
                 <span>Онлайн</span>
