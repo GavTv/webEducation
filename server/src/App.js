@@ -1,5 +1,5 @@
 const path = require('path');
-process.loadEnvFile(path.join(__dirname, '../.env'));
+require('./utils/loadEnv')();
 
 const express = require('express');
 const http = require('http');

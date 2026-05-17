@@ -1,5 +1,4 @@
-const path = require('path');
-process.loadEnvFile(path.join(__dirname, '../../.env'));
+require('../utils/loadEnv')();
 const nodemailer = require('nodemailer');
 
 function isSmtpConfigured() {
