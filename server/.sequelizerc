@@ -1,5 +1,13 @@
 const path = require('path');
-process.loadEnvFile(path.join(__dirname, './.env'));
+const fs = require('fs');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  try {
+    process.loadEnvFile(envPath);
+  } catch {
+    // ignore
+  }
+}
 
 module.exports = {
   config: path.resolve('src', 'db', 'config', 'database.json'),

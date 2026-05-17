@@ -3,7 +3,12 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const table = await queryInterface.describeTable('Users');
+    let table;
+    try {
+      table = await queryInterface.describeTable('Users');
+    } catch {
+      return;
+    }
 
     if (!table.username) {
       await queryInterface.addColumn('Users', 'username', {
