@@ -58,8 +58,7 @@ npm run dev
 
 ## Модели и авторизация
 
-Как у преподавателя: Sequelize поднимается в `src/db/models/index.js` из `database.json` и переменных **`DB`** / **`DB_TEST`** / **`DB_PROD`**. Экспортируются `Admin`, `Teacher`, `Student` и фасад **`User`**: `findOne({ where: { email } })` ищет email в трёх таблицах по очереди; **`User.create({ ...fields, role })`** создаёт запись в нужной таблице (`role` по умолчанию `student`, поле `role` в БД не пишется). `AuthService` импортирует только `User`, как в учебном примере.
+
 
 ## CORS
 
-В `src/config/serverConfig.js` для dev разрешён origin `http://localhost:5173` (типичный порт Vite).
