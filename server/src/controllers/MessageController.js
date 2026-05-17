@@ -43,6 +43,18 @@ class MessageController {
     }
   }
 
+//   const group = await MessageService.createGroup({
+//     title: title.trim(),
+//     creatorId,
+//     memberIds,
+//     role,
+//   });
+//   return res.status(201).json(formatResponse(201, 'Группа создана', group));
+// } catch (error) {
+//   return res.status(500).json(formatResponse(500, 'Ошибка сервера', null, error.message));
+// }
+// }
+
   // GET /api/messenger/groups/:groupId/messages
   static async listGroupMessages(req, res) {
     try {
