@@ -23,15 +23,23 @@ module.exports = {
       process.env.ADMIN_USER_USERNAME || 'admin'
     ).toLowerCase();
 
-    const [rows] = await queryInterface.sequelize.query(
-      'SELECT id FROM "Users" WHERE email = :email LIMIT 1',
-      { replacements: { email } },
+    const existing = await queryInterface.sequelize.query(
+      `SELECT id, email FROM "Users"
+       WHERE email = :email OR username = :username
+       LIMIT 1`,
+      {
+        replacements: { email, username },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      },
     );
 
-    if (rows.length > 0) {
+    if (existing.length > 0) {
       await queryInterface.sequelize.query(
-        'UPDATE "Users" SET role = \'admin\', "updatedAt" = NOW() WHERE email = :email',
-        { replacements: { email } },
+        `UPDATE "Users" SET role = 'admin', "updatedAt" = NOW() WHERE id = :id`,
+        { replacements: { id: existing[0].id } },
+      );
+      console.log(
+        `Admin user seed skipped: already exists (${existing[0].email})`,
       );
       return;
     }
