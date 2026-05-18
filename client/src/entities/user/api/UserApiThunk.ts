@@ -151,13 +151,14 @@ export const logoutThunk = createAsyncThunk<
 
 export const updateProfileThunk = createAsyncThunk<
   UserType,
-  { name: string; avatar?: File | null },
+  { name: string; phone?: string; avatar?: File | null },
   { rejectValue: string }
 >(USER_THUNK_NAMES.UPDATE_PROFILE, async (payload, { rejectWithValue }) => {
   try {
     const formData = new FormData();
 
     formData.append("name", payload.name);
+    formData.append("phone", payload.phone?.trim() ?? "");
 
     if (payload.avatar) {
       formData.append("avatar", payload.avatar);

@@ -14,6 +14,7 @@ function trimAuthBaseUrls() {
 trimAuthBaseUrls();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  basePath: "/api/auth",
   trustHost: true,
   /** Не включайте в проде: в лог попадают токены. Только AUTH_DEBUG=1 для отладки. */
   debug: process.env.AUTH_DEBUG === "1",

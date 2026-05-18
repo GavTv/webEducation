@@ -18,6 +18,8 @@ import {
   checkEmailAvailability,
   checkUsernameAvailability,
 } from "@/shared/lib/authAvailabilityApi";
+import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { AuthField } from "../../auth/shared/AuthField";
 import styles from "../../auth/shared/eduChatForm.module.css";
 import signUpStyles from "./SignUpForm.module.css";
@@ -52,6 +54,12 @@ export default function SignUpForm({
   const [usernameChecking, setUsernameChecking] = useState(false);
   const emailCheckGen = useRef(0);
   const usernameCheckGen = useRef(0);
+
+  const hasSignUpFieldErrors = Object.values(signUpErrors).some(Boolean);
+
+  useAutoDismiss(hasSignUpFieldErrors, () => {
+    setSignUpErrors({});
+  });
 
   const clearSignUpField = useCallback((key: SignUpFieldKey) => {
     setSignUpErrors((p) => ({ ...p, [key]: null }));
@@ -340,7 +348,7 @@ export default function SignUpForm({
           </label>
         </div>
 
-        {error ? <p className={styles.formError}>{error}</p> : null}
+        <FadeAlert text={error} className={styles.formError} />
 
         <button
           type="submit"

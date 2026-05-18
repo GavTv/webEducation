@@ -10,6 +10,8 @@ import {
 } from "react";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { AuthField } from "@/features/auth/shared/AuthField";
+import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import styles from "@/features/auth/shared/eduChatForm.module.css";
 import otpStyles from "./ForgotPasswordForm.module.css";
 import {
@@ -176,6 +178,16 @@ export default function ForgotPasswordForm({
     password?: string | null;
     confirm?: string | null;
   }>({});
+
+  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+
+  useAutoDismiss(hasFieldErrors, () => {
+    setFieldErrors({});
+  });
+
+  useAutoDismiss(Boolean(formError), () => {
+    setFormError(null);
+  });
 
   useEffect(() => {
     if (cooldownSec <= 0) return undefined;
@@ -380,12 +392,8 @@ export default function ForgotPasswordForm({
             disabled={isSubmitting}
             invalid={codeInvalid}
           />
-          {fieldErrors.code ? (
-            <p className={styles.fieldError} role="alert">
-              {fieldErrors.code}
-            </p>
-          ) : null}
-          {formError ? <p className={styles.formError}>{formError}</p> : null}
+          <FadeAlert text={fieldErrors.code} className={styles.fieldError} />
+          <FadeAlert text={formError} className={styles.formError} />
 
           <div className={otpStyles.resendRow}>
             <button

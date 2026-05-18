@@ -63,6 +63,16 @@ export async function updateClass(
   return data.data.class;
 }
 
+export async function deleteClass(id: number): Promise<void> {
+  const { data } = await axiosInstance.delete<ServerResponseType<null>>(
+    `classes/${id}`,
+  );
+
+  if (data.statusCode !== 200) {
+    throw new Error(data.message ?? "Не удалось удалить класс");
+  }
+}
+
 export async function setClassPassword(
   id: number,
   joinPassword: string,

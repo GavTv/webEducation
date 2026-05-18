@@ -135,6 +135,32 @@ class ClassController {
     }
   }
 
+  static async remove(req, res) {
+    try {
+      const user = res.locals.user;
+      const roomId = Number(req.params.id);
+
+      const result = await ClassRoomService.delete(roomId, user);
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Класс не найден'));
+      }
+      if (result.error === 'forbidden') {
+        return res
+          .status(403)
+          .json(formatResponse(403, 'Нет прав на удаление этого класса'));
+      }
+
+      return res.status(200).json(formatResponse(200, 'Класс удалён'));
+    } catch (error) {
+      console.log('======== ClassController.remove =========');
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка при удалении класса'));
+    }
+  }
+
   static async setPassword(req, res) {
     try {
       const user = res.locals.user;

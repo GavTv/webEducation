@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import "./page.css";
 
 function getApiOrigin() {
@@ -136,12 +137,7 @@ function ChatPageContent() {
 
       <section className="desktop-shell">
         <aside className="classes-sidebar">
-          <div className="brand">
-            <div className="brand-icon">
-              <span>✦</span>
-            </div>
-            <span className="brand-name">EduChat</span>
-          </div>
+          <BrandLogo />
 
           <nav className="sidebar-nav">
             <Link className="nav-link active" href={clientRoutes.chat}>

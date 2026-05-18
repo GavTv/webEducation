@@ -44,10 +44,13 @@
 }
 
 .fieldError {
-  margin: 6px 0 0 4px;
   font-size: 0.78rem;
   line-height: 1.35;
   color: #ff6b8a;
+}
+
+.fieldError[data-visible="true"] {
+  margin: 6px 0 0 4px;
 }
 
 .fieldCheckSpinner {
@@ -224,9 +227,12 @@
 }
 
 .formError {
-  margin: 0;
   font-size: 0.88rem;
   color: #ff6b8a;
+}
+
+.formError[data-visible="true"] {
+  margin: 0;
 }
 
 .primaryBtn {

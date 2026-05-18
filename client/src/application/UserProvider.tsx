@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
+import { UserErrorAutoClear } from "./UserErrorAutoClear";
 
 export default function UserProvider({
   children,
@@ -15,5 +16,10 @@ export default function UserProvider({
     dispatch(refreshTokenThunk());
   }, [dispatch]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <UserErrorAutoClear />
+      {children}
+    </>
+  );
 }

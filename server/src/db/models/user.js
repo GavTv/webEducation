@@ -175,6 +175,10 @@ if (models.Task) {
         allowNull: false,
         defaultValue: 'student',
       },
+      phone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       sequelize,

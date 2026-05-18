@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import styles from "./eduChatForm.module.css";
 
 export type AuthFieldProps = {
@@ -69,10 +70,8 @@ export function AuthField({
         ) : null}
         {end ? <span className={styles.fieldEnd}>{end}</span> : null}
       </div>
-      {errorMessage && !hideInlineError ? (
-        <p className={styles.fieldError} role="alert">
-          {errorMessage}
-        </p>
+      {!hideInlineError ? (
+        <FadeAlert text={errorMessage} className={styles.fieldError} />
       ) : null}
     </div>
   );

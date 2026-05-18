@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { Room, RoomMember } = require('../db/models');
+const { Room, RoomMember, Message } = require('../db/models');
 
 const COLORS = ['purple', 'blue', 'green'];
 
@@ -154,6 +154,18 @@ class ClassRoomService {
 
     const listed = await this.listForUser(user);
     return { room: listed.find((r) => r.id === room.id) };
+  }
+
+  static async delete(roomId, user) {
+    const room = await Room.findByPk(roomId);
+    if (!room) return { error: 'not_found' };
+    if (!this.canUserManageRoom(user, room)) return { error: 'forbidden' };
+
+    await RoomMember.destroy({ where: { roomId } });
+    await Message.destroy({ where: { roomId } });
+    await room.destroy();
+
+    return { ok: true };
   }
 
   static async setPassword(roomId, user, joinPassword) {

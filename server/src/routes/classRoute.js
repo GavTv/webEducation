@@ -25,4 +25,11 @@ router.patch(
   ClassController.setPassword,
 );
 
+router.delete(
+  '/:id',
+  verifyAccessToken,
+  requireTeacherOrAdmin,
+  ClassController.remove,
+);
+
 module.exports = router;
