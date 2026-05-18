@@ -96,14 +96,8 @@ function ChatPageContent() {
   return (
     <main className="educhat-page">
       <header className="chat-mobile-topbar" aria-label="Мобильная шапка">
-        <div className="chat-mobile-brand">
-          <div className="brand-icon brand-icon--sm">
-            <span>✦</span>
-          </div>
-          <span className="brand-name">EduChat</span>
-        </div>
-        <Link className="chat-mobile-toplink" href={clientRoutes.classes}>
-          Классы
+        <Link className="chat-back-link" href={clientRoutes.classes}>
+          ← Классы
         </Link>
       </header>
 
@@ -120,10 +114,6 @@ function ChatPageContent() {
             <Link className="nav-link active" href={clientRoutes.chat}>
               <span className="nav-icon">●</span>
               Чаты
-            </Link>
-            <Link className="nav-link" href={clientRoutes.classes}>
-              <span className="nav-icon">●</span>
-              Классы
             </Link>
             <Link className="nav-link" href={clientRoutes.profile}>
               <span className="nav-icon">♙</span>
@@ -145,9 +135,14 @@ function ChatPageContent() {
         >
           <section className="chat-panel">
             <header className="topbar">
-              <div>
-                <h1 suppressHydrationWarning>{chatGreeting}</h1>
-                <p>Выберите чат, чтобы начать общение</p>
+              <div className="topbar-main">
+                <Link className="chat-back-link" href={clientRoutes.classes}>
+                  ← Классы
+                </Link>
+                <div>
+                  <h1 suppressHydrationWarning>{chatGreeting}</h1>
+                  <p>Выберите чат, чтобы начать общение</p>
+                </div>
               </div>
 
               <div className="profile-mini">
