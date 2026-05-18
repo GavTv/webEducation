@@ -27,7 +27,7 @@ export default function HomeGate() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0d0d12",
+          background: "var(--app-page-bg)",
           color: "#9ca3af",
           fontFamily: "system-ui, sans-serif",
         }}

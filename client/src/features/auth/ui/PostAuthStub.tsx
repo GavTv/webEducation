@@ -18,7 +18,7 @@ export default function PostAuthStub() {
     <div className={styles.page}>
       <div className={styles.card}>
         <img
-          src="/educhat-logo.png"
+          src="/educhat-logo.png?v=2"
           alt="EduChat"
           className={styles.brandLogo}
           width={660}
