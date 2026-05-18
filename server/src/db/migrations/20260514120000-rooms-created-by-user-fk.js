@@ -17,20 +17,31 @@ module.exports = {
       WHERE NOT EXISTS (SELECT 1 FROM "Users" u WHERE u.id = r."createdBy");
     `);
 
-    await queryInterface.addConstraint('Rooms', {
-      fields: ['createdBy'],
-      type: 'foreign key',
-      name: 'Rooms_createdBy_User_fk',
-      references: {
-        table: 'Users',
-        field: 'id',
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    });
+    const [existing] = await queryInterface.sequelize.query(`
+      SELECT 1 FROM pg_constraint WHERE conname = 'Rooms_createdBy_User_fk' LIMIT 1;
+    `);
+
+    if (!existing.length) {
+      await queryInterface.addConstraint('Rooms', {
+        fields: ['createdBy'],
+        type: 'foreign key',
+        name: 'Rooms_createdBy_User_fk',
+        references: {
+          table: 'Users',
+          field: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      });
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeConstraint('Rooms', 'Rooms_createdBy_User_fk');
+    const [existing] = await queryInterface.sequelize.query(`
+      SELECT 1 FROM pg_constraint WHERE conname = 'Rooms_createdBy_User_fk' LIMIT 1;
+    `);
+    if (existing.length) {
+      await queryInterface.removeConstraint('Rooms', 'Rooms_createdBy_User_fk');
+    }
   },
 };

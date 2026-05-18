@@ -4,34 +4,46 @@ const bcrypt = require('bcrypt');
 
 module.exports = {
   async up(queryInterface) {
-    const existingAdmin = await queryInterface.sequelize.query(
-      'SELECT id FROM "Users" WHERE email = :email LIMIT 1;',
+    const email = 'admin@localhost';
+    const username = 'admin';
+
+    const existing = await queryInterface.sequelize.query(
+      `SELECT id, email FROM "Users"
+       WHERE email = :email OR username = :username
+       LIMIT 1;`,
       {
-        replacements: {
-          email: 'admin@localhost',
-        },
+        replacements: { email, username },
         type: queryInterface.sequelize.QueryTypes.SELECT,
       },
     );
 
-    if (existingAdmin.length > 0) {
-      console.log('Admin already exists, skip seed');
+    if (existing.length > 0) {
+      await queryInterface.sequelize.query(
+        `UPDATE "Users" SET role = 'admin', "updatedAt" = NOW()
+         WHERE id = :id AND (role IS NULL OR role <> 'admin');`,
+        { replacements: { id: existing[0].id } },
+      );
+      console.log(
+        `Admin seed skipped: user already exists (${existing[0].email})`,
+      );
       return;
     }
 
     const hashedPassword = await bcrypt.hash('admin', 10);
+    const now = new Date();
 
     await queryInterface.bulkInsert('Users', [
       {
         name: 'Admin',
-        email: 'admin@localhost',
-        username: 'admin',
+        email,
+        username,
         password: hashedPassword,
+        role: 'admin',
         avatarUrl: null,
         google_sub: null,
         github_sub: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       },
     ]);
   },

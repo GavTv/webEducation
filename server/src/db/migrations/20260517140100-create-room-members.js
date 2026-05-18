@@ -3,6 +3,15 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const tables = await queryInterface.showAllTables();
+    const tableNames = tables.map((t) =>
+      typeof t === 'string' ? t : t.tableName || t.name,
+    );
+
+    if (tableNames.includes('RoomMembers')) {
+      return;
+    }
+
     await queryInterface.createTable('RoomMembers', {
       id: {
         allowNull: false,

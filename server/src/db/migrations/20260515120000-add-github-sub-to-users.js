@@ -3,14 +3,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('Users', 'github_sub', {
-      type: Sequelize.STRING,
-      allowNull: true,
-      unique: true,
-    });
+    const table = await queryInterface.describeTable('Users');
+    if (!table.github_sub) {
+      await queryInterface.addColumn('Users', 'github_sub', {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true,
+      });
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('Users', 'github_sub');
+    const table = await queryInterface.describeTable('Users');
+    if (table.github_sub) {
+      await queryInterface.removeColumn('Users', 'github_sub');
+    }
   },
 };
