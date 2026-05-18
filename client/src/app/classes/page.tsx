@@ -55,10 +55,6 @@ export default function ClassesPage() {
           </div>
 
           <nav className="sidebar-nav">
-            <Link className="nav-link" href={clientRoutes.chat}>
-              <span className="nav-icon">●</span>
-              Чаты
-            </Link>
             <Link className="nav-link active" href={clientRoutes.classes}>
               <span className="nav-icon">●</span>
               Классы
