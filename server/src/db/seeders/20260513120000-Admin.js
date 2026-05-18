@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 module.exports = {
   async up(queryInterface) {
     const email = 'admin@localhost';
-    const username = 'admin';
+    const username = 'admin_local';
 
     const existing = await queryInterface.sequelize.query(
       `SELECT id, email FROM "Users"

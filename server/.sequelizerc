@@ -5,7 +5,7 @@ if (fs.existsSync(envPath)) {
   try {
     process.loadEnvFile(envPath);
   } catch {
-    // ignore
+
   }
 }
 

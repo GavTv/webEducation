@@ -10,7 +10,7 @@ function loadEnv() {
   try {
     process.loadEnvFile(envPath);
   } catch {
-    // ignore invalid .env
+
   }
 }
 
