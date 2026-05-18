@@ -5,7 +5,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      if (models.Task) {
+      User.hasMany(models.RoomMember, {
+        foreignKey: 'userId',
+        as: 'roomMembers',
+      });
+if (models.Task) {
         User.hasMany(models.Task, { foreignKey: 'user_id', as: 'tasks' });
       }
       if (models.Room) {

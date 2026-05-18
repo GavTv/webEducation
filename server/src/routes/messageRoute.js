@@ -1,10 +1,18 @@
 const router = require('express').Router();
-const MessageController = require('../controllers/MessageController');
 
-// Групповые чаты
-router.get('/groups', MessageController.listGroups);
-router.post('/groups', MessageController.createGroup);
-router.get('/groups/:groupId/messages', MessageController.listGroupMessages);
-router.post('/groups/:groupId/messages', MessageController.sendGroupMessage);
+const MessageController = require('../controllers/MessageController');
+const verifyAccessToken = require('../middleware/verifyAccessToken');
+
+router.use(verifyAccessToken);
+
+router
+  .route('/groups')
+  .get(MessageController.listGroups)
+  .post(MessageController.createGroup);
+
+router
+  .route('/groups/:groupId/messages')
+  .get(MessageController.listGroupMessages)
+  .post(MessageController.sendGroupMessage);
 
 module.exports = router;

@@ -1,53 +1,145 @@
-const { Room, Message, Student, Teacher } = require('../db/models');
+const { Room, RoomMember, Message, User } = require('../db/models');
 
 class MessageService {
-  // Список групповых чатов, где состоит пользователь
-  static async listGroupsForUser(userId, role) {
-    const where = {};
-    if (role === 'student') {
-      where.studentId = userId;
-    } else if (role === 'teacher') {
-      where.teacherId = userId;
-    }
-    return Room.findAll({ where });
+  static async listGroupsForUser(userId) {
+    const memberships = await RoomMember.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Room,
+          as: 'room',
+          include: [
+            {
+              model: RoomMember,
+              as: 'members',
+              include: [
+                {
+                  model: User,
+                  as: 'user',
+                  attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [['createdAt', 'ASC']],
+    });
+
+    return memberships
+      .map((membership) => membership.room)
+      .filter(Boolean);
   }
 
-  // Создать групповой чат (комнату)
-  static async createGroup({ title, creatorId, memberIds, role }) {
+  static async createGroup({ title, creatorId, memberIds = [], role = 'student' }) {
+    const uniqueMemberIds = Array.from(
+      new Set([creatorId, ...memberIds].filter(Boolean).map(Number)),
+    );
+
     const room = await Room.create({
       title,
       createdBy: creatorId,
       type: 'group',
     });
-    // Здесь позже добавим связь many-to-many с участниками
-    return room;
+
+    await RoomMember.bulkCreate(
+      uniqueMemberIds.map((userId) => ({
+        roomId: room.id,
+        userId,
+        role: userId === Number(creatorId) ? role : 'user',
+      })),
+      {
+        ignoreDuplicates: true,
+      },
+    );
+
+    return Room.findByPk(room.id, {
+      include: [
+        {
+          model: RoomMember,
+          as: 'members',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+            },
+          ],
+        },
+      ],
+    });
   }
 
-  // Лента сообщений в групповом чате
-  static async getGroupMessages(groupId, userId, role) {
-    const room = await Room.findByPk(groupId);
-    if (!room) return null;
+  static async isRoomMember(roomId, userId) {
+    const member = await RoomMember.findOne({
+      where: {
+        roomId,
+        userId,
+      },
+    });
 
-    // Проверка что пользователь участник комнаты (заглушка)
-    const messages = await Message.findAll({
+    return Boolean(member);
+  }
+
+  static async getGroupMessages(groupId, userId) {
+    const room = await Room.findByPk(groupId);
+
+    if (!room) {
+      return null;
+    }
+
+    const isMember = await this.isRoomMember(groupId, userId);
+
+    if (!isMember) {
+      return null;
+    }
+
+    return Message.findAll({
       where: { roomId: groupId },
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+        },
+      ],
       order: [['createdAt', 'ASC']],
     });
-    return messages;
   }
 
-  // Отправить сообщение в группу
-  static async sendGroupMessage({ groupId, senderId, text, role }) {
+  static async sendGroupMessage({ groupId, senderId, text, role = 'student' }) {
     const room = await Room.findByPk(groupId);
-    if (!room) throw new Error('Room not found');
+
+    if (!room) {
+      const error = new Error('Room not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMember = await this.isRoomMember(groupId, senderId);
+
+    if (!isMember) {
+      const error = new Error('You are not a member of this room');
+      error.statusCode = 403;
+      throw error;
+    }
 
     const message = await Message.create({
       roomId: groupId,
       senderId,
-      senderRole: role,
+      senderRole: role || 'student',
       text,
     });
-    return message;
+
+    return Message.findByPk(message.id, {
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+        },
+      ],
+    });
   }
 }
 
