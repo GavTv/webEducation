@@ -23,11 +23,11 @@ export default function ForgotPasswordPage() {
       <div className={styles.inner}>
         <header className={styles.brandRow}>
           <img
-            src="/educhat-logo.png"
+            src="/educhat-logo.png?v=2"
             alt="EduChat"
             className={styles.brandLogoImg}
-            width={920}
-            height={200}
+            width={944}
+            height={283}
             decoding="async"
           />
         </header>
