@@ -33,29 +33,11 @@ class StudentController {
     }
   }
 
-  // Отправить ответ на задание
   static async submitAnswer(req, res) {
     try {
-      // Заглушка — позже добавим модель Answer
-      res.status(201).json({ status: 'success', message: 'Answer submission coming soon' });
-    } catch (error) {
-      res.status(500).json({ status: 'error', message: error.message });
-    }
-  }
-
-  // Прогресс ученика
-  static async getProgress(req, res) {
-    try {
-      // Заглушка — позже добавим модель Progress
-      res.json({
-        status: 'success',
-        data: {
-          completedAssignments: 0,
-          totalAssignments: 0,
-          score: 0,
-        },
-        message: 'Progress tracking coming soon',
-      });
+      res
+        .status(201)
+        .json({ status: 'success', message: 'Answer submission coming soon' });
     } catch (error) {
       res.status(500).json({ status: 'error', message: error.message });
     }

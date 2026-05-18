@@ -9,6 +9,7 @@ export const clientRoutes = {
   classes: "/classes",
   chat: "/chat",
   profile: "/profile",
+  admin: "/admin",
 } as const;
 
 export type ClientRouteKey = keyof typeof clientRoutes;

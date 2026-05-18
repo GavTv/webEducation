@@ -14,6 +14,12 @@ module.exports = (sequelize, DataTypes) => {
           as: 'createdRooms',
         });
       }
+      if (models.RoomMember) {
+        User.hasMany(models.RoomMember, {
+          foreignKey: 'userId',
+          as: 'roomMemberships',
+        });
+      }
     }
 
     static validateEmail(email) {
@@ -159,6 +165,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
         unique: true,
+      },
+      role: {
+        type: DataTypes.ENUM('student', 'teacher', 'admin'),
+        allowNull: false,
+        defaultValue: 'student',
       },
     },
     {

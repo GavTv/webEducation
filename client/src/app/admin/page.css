@@ -1,0 +1,178 @@
+.admin-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(120, 62, 255, 0.18), transparent 34rem),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 28rem),
+    #070a13;
+  color: #f7f7fb;
+  padding: var(--app-page-gutter-y) var(--app-page-gutter-x);
+}
+
+.admin-shell {
+  width: var(--app-shell-max-width);
+  max-width: 100%;
+  min-height: var(--app-shell-min-height);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--app-shell-radius);
+  background: rgba(9, 13, 25, 0.82);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  padding: 34px 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 10, 19, 0.78);
+}
+
+.admin-content {
+  padding: 34px 40px 40px;
+  overflow-x: auto;
+}
+
+.admin-header h1 {
+  margin: 8px 0 0;
+  font-size: 32px;
+  letter-spacing: -0.03em;
+}
+
+.admin-header p {
+  margin: 10px 0 0;
+  color: #9aa1b8;
+}
+
+.admin-table-wrap {
+  margin-top: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(15, 20, 36, 0.72);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-table th {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9aa1b8;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr:hover td {
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(124, 58, 237, 0.18);
+  color: #d8c4ff;
+}
+
+.role-badge--admin {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.role-badge--teacher {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.role-select {
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(7, 10, 19, 0.9);
+  color: #f7f7fb;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-select:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.role-saving {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9aa1b8;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.admin-state {
+  margin-top: 40px;
+  color: #9aa1b8;
+  text-align: center;
+}
+
+.admin-state--error {
+  color: #fca5a5;
+}
+
+.admin-state .spin {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: admin-spin 0.9s linear infinite;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}

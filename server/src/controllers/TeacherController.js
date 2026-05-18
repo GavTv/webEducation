@@ -43,21 +43,19 @@ class TeacherController {
     }
   }
 
-  // Задания к уроку
   static async getAssignments(req, res) {
     try {
-      // Заглушка — позже добавим модель Assignment
       res.json({ status: 'success', data: [], message: 'Assignments coming soon' });
     } catch (error) {
       res.status(500).json({ status: 'error', message: error.message });
     }
   }
 
-  // Создать задание
   static async createAssignment(req, res) {
     try {
-      // Заглушка — позже добавим модель Assignment
-      res.status(201).json({ status: 'success', message: 'Assignment creation coming soon' });
+      res
+        .status(201)
+        .json({ status: 'success', message: 'Assignment creation coming soon' });
     } catch (error) {
       res.status(500).json({ status: 'error', message: error.message });
     }
