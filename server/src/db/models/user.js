@@ -18,6 +18,12 @@ if (models.Task) {
           as: 'createdRooms',
         });
       }
+      if (models.RoomMember) {
+        User.hasMany(models.RoomMember, {
+          foreignKey: 'userId',
+          as: 'roomMemberships',
+        });
+      }
     }
 
     static validateEmail(email) {
@@ -163,6 +169,11 @@ if (models.Task) {
         type: DataTypes.STRING,
         allowNull: true,
         unique: true,
+      },
+      role: {
+        type: DataTypes.ENUM('student', 'teacher', 'admin'),
+        allowNull: false,
+        defaultValue: 'student',
       },
     },
     {

@@ -13,11 +13,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'roomId',
         as: 'messages',
       });
-
-      Room.hasMany(models.RoomMember, {
-        foreignKey: 'roomId',
-        as: 'members',
-      });
+      if (models.RoomMember) {
+        Room.hasMany(models.RoomMember, {
+          foreignKey: 'roomId',
+          as: 'members',
+        });
+      }
     }
   }
 
@@ -34,6 +35,19 @@ module.exports = (sequelize, DataTypes) => {
       createdBy: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      description: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      joinPasswordHash: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      color: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'purple',
       },
     },
     {

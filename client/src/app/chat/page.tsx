@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import "./page.css";
@@ -31,6 +32,7 @@ function getAvatarSrc(avatarUrl?: string | null) {
 const MOBILE_BP = "(max-width: 900px)";
 
 function ChatPageContent() {
+  const router = useRouter();
   const user = useAppSelector((state) => state.user.user);
   const userName = user?.name?.trim() || "Пользователь";
   const firstName = userName.split(/\s+/)[0] || "Пользователь";
@@ -74,6 +76,37 @@ function ChatPageContent() {
       if (mq.matches) setMobileThreadOpen(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const classId = searchParams.get("classId");
+    if (!user || !classId) return;
+    const id = Number(classId);
+    if (!Number.isFinite(id)) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const access = await fetchClassAccess(id);
+        if (cancelled) return;
+        if (access.hasAccess && !access.needsPassword) {
+          if (!access.isMember) {
+            await joinClass(id);
+          }
+          return;
+        }
+        if (!access.hasAccess) {
+          router.replace(clientRoutes.classes);
+        }
+      } catch {
+        if (!cancelled) router.replace(clientRoutes.classes);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, searchParams, router]);
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_BP);

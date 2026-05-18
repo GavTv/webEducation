@@ -151,6 +151,19 @@
   margin: -0.35rem 0 0;
 }
 
+.forgotRememberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: -0.35rem 0 0;
+}
+
+.forgotRememberRow .check {
+  margin-left: auto;
+}
+
 .messagesBelowForgot {
   display: flex;
   flex-direction: column;
@@ -296,13 +309,22 @@
   gap: 10px;
 }
 
+.oauthRowBelowLogin {
+  margin-top: 0.75rem;
+}
+
+.oauthIcon {
+  flex-shrink: 0;
+  display: flex;
+}
+
 .googleBtn {
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   border-radius: 14px;
   border: 1px solid var(--edu-line);
-  background: #fff;
-  color: #1f1f1f;
+  background: var(--edu-input);
+  color: #f0f0f5;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -316,7 +338,7 @@
 }
 
 .googleBtn:hover:not(:disabled) {
-  background: #f6f6f7;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .googleBtn:disabled {
@@ -326,11 +348,11 @@
 
 .githubBtn {
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #24292f;
-  color: #fff;
+  border: 1px solid var(--edu-line);
+  background: var(--edu-input);
+  color: #f0f0f5;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -344,7 +366,7 @@
 }
 
 .githubBtn:hover:not(:disabled) {
-  background: #2f353c;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .githubBtn:disabled {

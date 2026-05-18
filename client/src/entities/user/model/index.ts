@@ -1,8 +1,11 @@
+export type UserRole = "student" | "teacher" | "admin";
+
 export type UserType = {
   id: number;
   name: string;
   email: string;
   username: string;
+  role?: UserRole;
   avatarUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
