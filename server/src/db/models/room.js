@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'roomId',
         as: 'messages',
       });
+
+      Room.hasMany(models.RoomMember, {
+        foreignKey: 'roomId',
+        as: 'members',
+      });
     }
   }
 
