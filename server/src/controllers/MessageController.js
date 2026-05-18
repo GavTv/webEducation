@@ -1,93 +1,152 @@
 const MessageService = require('../services/MessageService');
 const formatResponse = require('../utils/formatResponse');
 
+function getCurrentUser(res) {
+  return res.locals.user;
+}
+
 class MessageController {
-  // GET /api/messenger/groups — мои групповые чаты
   static async listGroups(req, res) {
     try {
-      const userId = req.user?.id ?? req.query.userId;
-      const role = req.user?.role ?? req.query.role;
-      if (!userId || !role) {
-        return res.status(400).json(formatResponse(400, 'userId и role обязательны'));
+      const user = getCurrentUser(res);
+
+      if (!user?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
       }
-      const groups = await MessageService.listGroupsForUser(userId, role);
-      return res.status(200).json(formatResponse(200, 'OK', groups));
+
+      const groups = await MessageService.listGroupsForUser(user.id);
+
+      return res
+        .status(200)
+        .json(formatResponse(200, 'Список чатов получен', { groups }));
     } catch (error) {
-      return res.status(500).json(formatResponse(500, 'Ошибка сервера', null, error.message));
+      console.log('======== MessageController.listGroups =========');
+      console.log(error);
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при получении чатов'));
     }
   }
 
-  // POST /api/messenger/groups — создать группу
   static async createGroup(req, res) {
     try {
-      const creatorId = req.user?.id ?? req.body.creatorId;
-      const role = req.user?.role ?? req.body.role;
-      const { title, memberIds } = req.body;
+      const user = getCurrentUser(res);
+      const { title, memberIds = [] } = req.body;
+
+      if (!user?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
 
       if (!title?.trim()) {
-        return res.status(400).json(formatResponse(400, 'Нужно название группы'));
+        return res
+          .status(400)
+          .json(formatResponse(400, 'Нужно название комнаты'));
       }
-      if (!Array.isArray(memberIds) || memberIds.length === 0) {
-        return res.status(400).json(formatResponse(400, 'Нужен список memberIds'));
+
+      if (!Array.isArray(memberIds)) {
+        return res
+          .status(400)
+          .json(formatResponse(400, 'memberIds должен быть массивом'));
       }
 
       const group = await MessageService.createGroup({
         title: title.trim(),
-        creatorId,
+        creatorId: user.id,
         memberIds,
-        role,
+        role: user.role || 'student',
       });
-      return res.status(201).json(formatResponse(201, 'Группа создана', group));
+
+      return res
+        .status(201)
+        .json(formatResponse(201, 'Комната создана', { group }));
     } catch (error) {
-      return res.status(500).json(formatResponse(500, 'Ошибка сервера', null, error.message));
+      console.log('======== MessageController.createGroup =========');
+      console.log(error);
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при создании комнаты'));
     }
   }
 
-  // GET /api/messenger/groups/:groupId/messages
   static async listGroupMessages(req, res) {
     try {
+      const user = getCurrentUser(res);
       const { groupId } = req.params;
-      const userId = req.user?.id ?? req.query.userId;
-      const role = req.user?.role ?? req.query.role;
 
-      if (!userId || !role) {
-        return res.status(400).json(formatResponse(400, 'userId и role обязательны'));
+      if (!user?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
       }
 
-      const messages = await MessageService.getGroupMessages(groupId, userId, role);
+      const messages = await MessageService.getGroupMessages(groupId, user.id);
+
       if (messages === null) {
-        return res.status(404).json(formatResponse(404, 'Группа не найдена или вы не входите в неё'));
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Комната не найдена или вы не участник'));
       }
-      return res.status(200).json(formatResponse(200, 'OK', messages));
+
+      return res
+        .status(200)
+        .json(formatResponse(200, 'Сообщения получены', { messages }));
     } catch (error) {
-      return res.status(500).json(formatResponse(500, 'Ошибка сервера', null, error.message));
+      console.log('======== MessageController.listGroupMessages =========');
+      console.log(error);
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при получении сообщений'));
     }
   }
 
-  // POST /api/messenger/groups/:groupId/messages
   static async sendGroupMessage(req, res) {
     try {
+      const user = getCurrentUser(res);
       const { groupId } = req.params;
       const { text } = req.body;
-      const senderId = req.user?.id ?? req.body.senderId;
-      const role = req.user?.role ?? req.body.role;
+
+      if (!user?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
 
       if (!text?.trim()) {
-        return res.status(400).json(formatResponse(400, 'Нужен текст сообщения'));
-      }
-      if (!senderId || !role) {
-        return res.status(400).json(formatResponse(400, 'senderId и role обязательны'));
+        return res
+          .status(400)
+          .json(formatResponse(400, 'Нужен текст сообщения'));
       }
 
-      const msg = await MessageService.sendGroupMessage({
+      const message = await MessageService.sendGroupMessage({
         groupId,
-        senderId,
+        senderId: user.id,
+        role: user.role || 'student',
         text: text.trim(),
-        role,
       });
-      return res.status(201).json(formatResponse(201, 'Отправлено', msg));
+
+      return res
+        .status(201)
+        .json(formatResponse(201, 'Сообщение отправлено', { message }));
     } catch (error) {
-      return res.status(500).json(formatResponse(500, 'Ошибка сервера', null, error.message));
+      console.log('======== MessageController.sendGroupMessage =========');
+      console.log(error);
+
+      if (error.statusCode) {
+        return res
+          .status(error.statusCode)
+          .json(formatResponse(error.statusCode, error.message));
+      }
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при отправке сообщения'));
     }
   }
 }

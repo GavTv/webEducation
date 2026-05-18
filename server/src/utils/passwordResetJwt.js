@@ -1,5 +1,5 @@
 const path = require('path');
-process.loadEnvFile(path.join(__dirname, '../../.env'));
+require('./loadEnv')();
 const jwt = require('jsonwebtoken');
 
 const RESET_TYP = 'pwd-reset';
