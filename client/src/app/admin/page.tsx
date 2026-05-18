@@ -14,6 +14,7 @@ import {
 } from "@/shared/lib/adminUsersApi";
 import { ROLE_OPTIONS } from "@/shared/lib/roleLabels";
 import { AppNav } from "@/widgets/appShell/AppNav";
+import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import "../classes/page.css";
 import "./page.css";
 
@@ -106,12 +107,7 @@ export default function AdminPage() {
     <main className="admin-page">
       <section className="admin-shell classes-shell">
         <aside className="admin-sidebar classes-sidebar">
-          <div className="brand">
-            <div className="brand-icon">
-              <span>✦</span>
-            </div>
-            <span className="brand-name">EduChat</span>
-          </div>
+          <BrandLogo />
 
           <AppNav active="admin" showAdminLink />
 

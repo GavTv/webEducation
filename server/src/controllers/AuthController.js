@@ -598,6 +598,30 @@ class AuthController {
         updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
       }
 
+      if (req.body.phone !== undefined) {
+        const rawPhone =
+          typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+
+        if (!rawPhone) {
+          updateData.phone = null;
+        } else {
+          const digits = rawPhone.replace(/\D/g, '');
+
+          if (digits.length < 10 || digits.length > 15) {
+            return res
+              .status(400)
+              .json(
+                formatResponse(
+                  400,
+                  'Телефон должен содержать от 10 до 15 цифр',
+                ),
+              );
+          }
+
+          updateData.phone = rawPhone;
+        }
+      }
+
       if (Object.keys(updateData).length === 0) {
         const user = await AuthService.findPublicUserById(currentUser.id);
 

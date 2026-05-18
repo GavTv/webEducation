@@ -17,6 +17,7 @@ type ClassManageModalProps = {
     title: string;
     description: string;
     joinPassword: string;
+    clearPassword?: boolean;
   }) => void;
 };
 
@@ -33,12 +34,14 @@ export function ClassManageModal({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [joinPassword, setJoinPassword] = useState("");
+  const [clearPassword, setClearPassword] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setTitle(initialTitle);
     setDescription(initialDescription);
     setJoinPassword("");
+    setClearPassword(false);
   }, [open, initialTitle, initialDescription, mode]);
 
   if (!open) return null;
@@ -52,7 +55,7 @@ export function ClassManageModal({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSubmit({ title, description, joinPassword });
+    onSubmit({ title, description, joinPassword, clearPassword });
   };
 
   return (
@@ -94,18 +97,37 @@ export function ClassManageModal({
             </>
           ) : null}
 
-          {mode === "create" || mode === "password" ? (
+          {mode === "create" || mode === "edit" || mode === "password" ? (
             <label className={styles.label}>
               {mode === "password"
                 ? "Новый пароль (оставьте пустым, чтобы убрать)"
-                : "Пароль для входа (необязательно)"}
+                : mode === "edit"
+                  ? "Новый пароль (необязательно)"
+                  : "Пароль для входа (необязательно)"}
               <input
                 className={styles.input}
                 type="password"
                 value={joinPassword}
-                onChange={(e) => setJoinPassword(e.target.value)}
+                onChange={(e) => {
+                  setJoinPassword(e.target.value);
+                  if (e.target.value) setClearPassword(false);
+                }}
                 autoComplete="new-password"
               />
+            </label>
+          ) : null}
+
+          {mode === "edit" ? (
+            <label className={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={clearPassword}
+                onChange={(e) => {
+                  setClearPassword(e.target.checked);
+                  if (e.target.checked) setJoinPassword("");
+                }}
+              />
+              <span>Убрать пароль для входа</span>
             </label>
           ) : null}
 

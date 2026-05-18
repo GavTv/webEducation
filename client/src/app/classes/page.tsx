@@ -2,24 +2,37 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import {
+  BookOpen,
+  ChevronRight,
+  Loader2,
+  Lock,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { AppNav } from "@/widgets/appShell/AppNav";
+import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import {
   createClass,
+  deleteClass,
   fetchClasses,
   joinClass,
   setClassPassword,
   updateClass,
   type ClassRoomItem,
 } from "@/shared/lib/classesApi";
+import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
+import { getNameInitials } from "@/shared/lib/getNameInitials";
 import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
 import { ClassJoinPasswordModal } from "@/features/classes/ui/ClassJoinPasswordModal";
 import {
   ClassManageModal,
   type ClassManageModalMode,
 } from "@/features/classes/ui/ClassManageModal";
+import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import "./page.css";
 
 function canEditClass(
@@ -48,15 +61,22 @@ export default function ClassesPage() {
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  const [deleteTarget, setDeleteTarget] = useState<ClassRoomItem | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [joinTarget, setJoinTarget] = useState<ClassRoomItem | null>(null);
   const [joinSaving, setJoinSaving] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [enteringId, setEnteringId] = useState<number | null>(null);
 
-  const userName = user?.name?.trim() || "Пользователь";
-  const firstName = userName.split(/\s+/)[0] || "Пользователь";
-  const avatarLetter = firstName.charAt(0).toUpperCase();
+  const userName = user?.name?.trim() || "";
+  const nameParts = userName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Пользователь";
+  const lastName = nameParts[1] || "";
+  const avatarInitials = getNameInitials(firstName, lastName, user?.name);
+  const avatarSrc = getAvatarSrc(user?.avatarUrl);
   const manageClasses = canManageClasses(user?.role);
   const showAdminLink = isAdmin(user?.role);
 
@@ -98,11 +118,9 @@ export default function ClassesPage() {
     setModalOpen(true);
   };
 
-  const openPassword = (item: ClassRoomItem) => {
-    setActiveClass(item);
-    setModalMode("password");
-    setModalError(null);
-    setModalOpen(true);
+  const openDelete = (item: ClassRoomItem) => {
+    setDeleteTarget(item);
+    setDeleteError(null);
   };
 
   const goToChat = useCallback(
@@ -171,9 +189,7 @@ export default function ClassesPage() {
       setJoinTarget(null);
       goToChat(joinTarget.id);
     } catch (err) {
-      setJoinError(
-        err instanceof Error ? err.message : "Неверный пароль",
-      );
+      setJoinError(err instanceof Error ? err.message : "Неверный пароль");
     } finally {
       setJoinSaving(false);
     }
@@ -183,6 +199,7 @@ export default function ClassesPage() {
     title: string;
     description: string;
     joinPassword: string;
+    clearPassword?: boolean;
   }) => {
     setModalSaving(true);
     setModalError(null);
@@ -198,6 +215,11 @@ export default function ClassesPage() {
           title: payload.title,
           description: payload.description,
         });
+        if (payload.clearPassword) {
+          await setClassPassword(activeClass.id, "");
+        } else if (payload.joinPassword.trim()) {
+          await setClassPassword(activeClass.id, payload.joinPassword);
+        }
       } else if (modalMode === "password" && activeClass) {
         await setClassPassword(activeClass.id, payload.joinPassword);
       }
@@ -209,6 +231,23 @@ export default function ClassesPage() {
       );
     } finally {
       setModalSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteSaving(true);
+    setDeleteError(null);
+    try {
+      await deleteClass(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadClasses();
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Не удалось удалить класс",
+      );
+    } finally {
+      setDeleteSaving(false);
     }
   };
 
@@ -224,12 +263,7 @@ export default function ClassesPage() {
     <main className="classes-page">
       <section className="classes-shell">
         <aside className="classes-sidebar">
-          <div className="brand">
-            <div className="brand-icon">
-              <span>✦</span>
-            </div>
-            <span className="brand-name">EduChat</span>
-          </div>
+          <BrandLogo />
 
           <AppNav active="classes" showAdminLink={showAdminLink} />
 
@@ -253,13 +287,31 @@ export default function ClassesPage() {
               <p>Выберите класс, чтобы начать общение</p>
             </div>
 
-            <div className="classes-profile-chip">
-              <div className="classes-profile-avatar">{avatarLetter}</div>
-              <div>
-                <strong>{firstName}</strong>
-                <span>Онлайн</span>
+            <button
+              type="button"
+              className="classes-profile-chip"
+              onClick={() => router.push(clientRoutes.profile)}
+              aria-label="Открыть профиль"
+            >
+              <div className="classes-profile-avatar">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    className="classes-profile-avatar-img"
+                  />
+                ) : (
+                  avatarInitials
+                )}
               </div>
-            </div>
+              <div className="classes-profile-text">
+                <strong>{firstName}</strong>
+                <span className="classes-profile-status">
+                  <span className="classes-online-dot" aria-hidden />
+                  Онлайн
+                </span>
+              </div>
+            </button>
           </header>
 
           <div className="classes-top">
@@ -288,7 +340,7 @@ export default function ClassesPage() {
           ) : null}
 
           {!loading && !listError ? (
-            <div className="classes-grid">
+            <div className="classes-list">
               {classes.length === 0 ? (
                 <p className="classes-state">Классов пока нет</p>
               ) : (
@@ -298,7 +350,6 @@ export default function ClassesPage() {
                     user.id,
                     user.role,
                   );
-
                   const isEntering = enteringId === classItem.id;
 
                   return (
@@ -319,26 +370,7 @@ export default function ClassesPage() {
                         }}
                       >
                         <div className={`class-icon ${classItem.color}`}>
-                          <svg
-                            width="30"
-                            height="30"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            aria-hidden="true"
-                          >
-                            <path
-                              d="M4 5.5C4 4.67 4.67 4 5.5 4H9C10.66 4 12 5.34 12 7V20C12 18.34 10.66 17 9 17H5.5C4.67 17 4 16.33 4 15.5V5.5Z"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M20 5.5C20 4.67 19.33 4 18.5 4H15C13.34 4 12 5.34 12 7V20C12 18.34 13.34 17 15 17H18.5C19.33 17 20 16.33 20 15.5V5.5Z"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          <BookOpen size={30} strokeWidth={1.8} aria-hidden />
                         </div>
 
                         <div className="class-info">
@@ -346,19 +378,29 @@ export default function ClassesPage() {
                           <p>
                             {classItem.description || "Учебный чат класса"}
                           </p>
-                          <span>Участников: {classItem.memberCount}</span>
+                          <span className="class-members">
+                            <Users size={15} strokeWidth={2} aria-hidden />
+                            Участников: {classItem.memberCount}
+                          </span>
                         </div>
 
                         <div className="class-meta">
-                          <div className="password-label">
-                            <span>🔒</span>
-                            {classItem.hasPassword
-                              ? "Требуется пароль"
-                              : "Без пароля"}
-                          </div>
-                          <span className="arrow">
-                            {isEntering ? "…" : "›"}
-                          </span>
+                          {classItem.hasPassword ? (
+                            <span className="class-password-hint">
+                              <Lock
+                                size={16}
+                                strokeWidth={2.2}
+                                className="class-lock-icon"
+                                aria-hidden
+                              />
+                              Требуется пароль
+                            </span>
+                          ) : null}
+                          <ChevronRight
+                            size={22}
+                            className="class-chevron"
+                            aria-hidden
+                          />
                         </div>
                       </div>
 
@@ -366,17 +408,25 @@ export default function ClassesPage() {
                         <div className="class-card-actions">
                           <button
                             type="button"
-                            className="class-action-btn"
-                            onClick={() => openEdit(classItem)}
+                            className="class-btn class-btn--edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(classItem);
+                            }}
                           >
+                            <Pencil size={16} strokeWidth={2} aria-hidden />
                             Изменить
                           </button>
                           <button
                             type="button"
-                            className="class-action-btn"
-                            onClick={() => openPassword(classItem)}
+                            className="class-btn class-btn--delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDelete(classItem);
+                            }}
                           >
-                            Пароль
+                            <Trash2 size={16} strokeWidth={2} aria-hidden />
+                            Удалить
                           </button>
                         </div>
                       ) : null}
@@ -399,6 +449,23 @@ export default function ClassesPage() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleModalSubmit}
       />
+
+      {deleteTarget ? (
+        <ConfirmModal
+          title={`Удалить класс «${deleteTarget.title}»?`}
+          lines={[
+            "Чат класса и все участники будут удалены без возможности восстановления.",
+          ]}
+          confirmLabel="Удалить"
+          cancelLabel="Отмена"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => {
+            if (!deleteSaving) setDeleteTarget(null);
+          }}
+          isBusy={deleteSaving}
+          errorMessage={deleteError}
+        />
+      ) : null}
 
       <ClassJoinPasswordModal
         open={joinModalOpen}

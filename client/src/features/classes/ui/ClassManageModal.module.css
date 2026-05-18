@@ -61,6 +61,21 @@
   min-height: 72px;
 }
 
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #c4b5fd;
+  cursor: pointer;
+}
+
+.checkRow input {
+  width: 16px;
+  height: 16px;
+  accent-color: #7c3aed;
+}
+
 .error {
   margin: 0;
   color: #fca5a5;

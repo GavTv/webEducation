@@ -10,8 +10,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { Calendar, Camera, Loader2, LogOut, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
   deleteAccountThunk,
@@ -21,6 +20,15 @@ import {
 } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
 import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
+import { AppNav } from "@/widgets/appShell/AppNav";
+import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { isAdmin } from "@/shared/lib/permissions";
+import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
+import { getRoleLabel } from "@/shared/lib/roleLabels";
+import { formatPlatformSince } from "@/shared/lib/formatPlatformSince";
+import { getNameInitials } from "@/shared/lib/getNameInitials";
+import "../classes/page.css";
 import "./page.css";
 
 function getApiOrigin() {
@@ -57,6 +65,8 @@ export default function ProfilePage() {
 
   const firstNameInputRef = useRef<HTMLInputElement | null>(null);
   const lastNameInputRef = useRef<HTMLInputElement | null>(null);
+  const patronymicInputRef = useRef<HTMLInputElement | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
   const user = useAppSelector((s) => s.user.user);
   const isInitialized = useAppSelector((s) => s.user.isInitialized);
@@ -68,9 +78,12 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [patronymic, setPatronymic] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [isFirstNameEditable, setIsFirstNameEditable] = useState(false);
   const [isLastNameEditable, setIsLastNameEditable] = useState(false);
+  const [isPatronymicEditable, setIsPatronymicEditable] = useState(false);
+  const [isPhoneEditable, setIsPhoneEditable] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -104,9 +117,12 @@ export default function ProfilePage() {
       setFirstName(parsedName.firstName);
       setLastName(parsedName.lastName);
       setPatronymic(parsedName.patronymic);
+      setPhone(user.phone?.trim() ?? "");
 
       setIsFirstNameEditable(false);
       setIsLastNameEditable(false);
+      setIsPatronymicEditable(false);
+      setIsPhoneEditable(false);
 
       setAvatarFile(null);
       setAvatarPreview("");
@@ -128,9 +144,33 @@ export default function ProfilePage() {
       .join(" ");
   }, [firstName, lastName, patronymic]);
 
-  const handleBack = useCallback(() => {
-    router.push(clientRoutes.classes);
-  }, [router]);
+  const avatarInitials = useMemo(
+    () => getNameInitials(firstName, lastName, user?.name),
+    [firstName, lastName, user?.name],
+  );
+
+  const platformSince = useMemo(
+    () => formatPlatformSince(user?.createdAt),
+    [user?.createdAt],
+  );
+
+  const roleLabel = useMemo(() => getRoleLabel(user?.role), [user?.role]);
+
+  const showAdminLink = isAdmin(user?.role);
+
+  useAutoDismiss(Boolean(successMessage), () => {
+    setSuccessMessage("");
+  });
+
+  const focusFieldEnd = useCallback((input: HTMLInputElement | null) => {
+    if (!input) {
+      return;
+    }
+
+    const end = input.value.length;
+    input.focus();
+    input.setSelectionRange(end, end);
+  }, []);
 
   const handleLogout = useCallback(() => {
     dispatch(logoutThunk())
@@ -194,40 +234,6 @@ export default function ProfilePage() {
     [dispatch],
   );
 
-  const handleEnableFirstNameEdit = useCallback(() => {
-    setIsFirstNameEditable(true);
-
-    setTimeout(() => {
-      const input = firstNameInputRef.current;
-
-      if (!input) {
-        return;
-      }
-
-      const end = input.value.length;
-
-      input.focus();
-      input.setSelectionRange(end, end);
-    }, 0);
-  }, []);
-
-  const handleEnableLastNameEdit = useCallback(() => {
-    setIsLastNameEditable(true);
-
-    setTimeout(() => {
-      const input = lastNameInputRef.current;
-
-      if (!input) {
-        return;
-      }
-
-      const end = input.value.length;
-
-      input.focus();
-      input.setSelectionRange(end, end);
-    }, 0);
-  }, []);
-
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -240,32 +246,47 @@ export default function ProfilePage() {
         return;
       }
 
-      dispatch(updateProfileThunk({ name: fullName, avatar: avatarFile }))
+      const phoneTrimmed = phone.trim();
+      if (phoneTrimmed) {
+        const digits = phoneTrimmed.replace(/\D/g, "");
+        if (digits.length < 10 || digits.length > 15) {
+          dispatch(setError("Телефон должен содержать от 10 до 15 цифр"));
+          return;
+        }
+      }
+
+      dispatch(
+        updateProfileThunk({
+          name: fullName,
+          phone: phoneTrimmed,
+          avatar: avatarFile,
+        }),
+      )
         .unwrap()
         .then(() => {
           setAvatarFile(null);
           setAvatarPreview("");
           setIsFirstNameEditable(false);
           setIsLastNameEditable(false);
+          setIsPatronymicEditable(false);
+          setIsPhoneEditable(false);
           setSuccessMessage("Профиль сохранён");
         })
         .catch(() => {});
     },
-    [avatarFile, dispatch, fullName],
+    [avatarFile, dispatch, fullName, phone],
   );
 
   if (!isInitialized || !authChecked || !user) {
     return (
-      <main className="profile-page profile-page--centered">
-        <div className="profile-loading" aria-busy="true">
-          <Loader2 className="profile-loading-spin" size={32} />
-        </div>
+      <main className="classes-page profile-page">
+        <p className="profile-state">Загрузка…</p>
       </main>
     );
   }
 
   return (
-    <main className="profile-page">
+    <main className="classes-page profile-page">
       {deleteModalOpen ? (
         <ConfirmModal
           title="Вы точно хотите удалить свой аккаунт?"
@@ -279,67 +300,86 @@ export default function ProfilePage() {
         />
       ) : null}
 
-      <section className="profile-card">
-        <div className="profile-card-topbar">
-          <button type="button" className="back-btn" onClick={handleBack}>
-            Назад
-          </button>
+      <section className="profile-shell classes-shell">
+        <aside className="profile-sidebar classes-sidebar">
+          <BrandLogo />
 
-          <button
-            type="button"
-            className="logout-btn"
-            onClick={handleLogout}
-            disabled={isLoading}
-          >
-            {isLoading && !deleteModalOpen ? (
-              <Loader2 className="profile-btn-spin" size={18} aria-hidden />
-            ) : null}
-            Выйти
-          </button>
-        </div>
+          <AppNav active="profile" showAdminLink={showAdminLink} />
 
-        <header className="profile-header">
-          <h1>Профиль</h1>
-        </header>
-
-        <form onSubmit={handleSubmit}>
-          <section className="profile-top">
-            <label className="avatar-box">
-              {avatarSrc ? (
-                <img src={avatarSrc} alt="Фото профиля" />
-              ) : (
-                <div className="avatar-placeholder">Фото профиля</div>
-              )}
-
-              <input
-                className="avatar-input"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={handleAvatarChange}
-              />
-
-              <span className="camera-btn" aria-label="Сменить фото">
-                📷
-              </span>
-            </label>
-
-            <div className="profile-identity">
-              <h2>{fullName || user.name}</h2>
-              <p>@{user.username}</p>
+          <div className="sidebar-info">
+            <div className="shield-mini">🛡</div>
+            <div>
+              <h3>Настройки профиля</h3>
+              <p>Измените личные данные и фото.</p>
             </div>
-          </section>
+          </div>
+        </aside>
 
-          <section className="profile-content">
-            <div className="info-section">
+        <section className="profile-main classes-content">
+          <header className="profile-page-header">
+            <h1>Профиль</h1>
+            <button
+              type="button"
+              className="profile-logout-btn"
+              onClick={handleLogout}
+              disabled={isLoading}
+            >
+              {isLoading && !deleteModalOpen ? (
+                <Loader2 className="profile-btn-spin" size={18} aria-hidden />
+              ) : (
+                <LogOut size={18} aria-hidden />
+              )}
+              Выйти
+            </button>
+          </header>
+
+          <form className="profile-form" onSubmit={handleSubmit}>
+            <section className="profile-hero">
+              <label className="profile-avatar">
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="" />
+                ) : (
+                  <span className="profile-avatar-initials" aria-hidden>
+                    {avatarInitials}
+                  </span>
+                )}
+
+                <input
+                  className="profile-avatar-input"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleAvatarChange}
+                />
+
+                <span className="profile-avatar-camera" aria-hidden>
+                  <Camera size={18} strokeWidth={2} />
+                </span>
+              </label>
+
+              <div className="profile-hero-text">
+                <div className="profile-name-row">
+                  <h2>{fullName || user.name}</h2>
+                  <span className="profile-role-badge">{roleLabel}</span>
+                </div>
+                <p className="profile-username">@{user.username}</p>
+                {platformSince ? (
+                  <p className="profile-member-since">
+                    <Calendar size={16} strokeWidth={2} aria-hidden />
+                    {platformSince}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="profile-section">
               <h3>Личная информация</h3>
 
-              <div className="info-grid">
-                <div className="info-card">
-                  <span>Имя</span>
-
+              <div className="profile-fields">
+                <div className="profile-field">
+                  <span className="profile-field-label">Имя</span>
                   <input
                     ref={firstNameInputRef}
-                    className="profile-edit-input"
+                    className="profile-field-input"
                     value={firstName}
                     readOnly={!isFirstNameEditable}
                     onChange={(event) => {
@@ -349,22 +389,27 @@ export default function ProfilePage() {
                     onBlur={() => setIsFirstNameEditable(false)}
                     placeholder="Имя"
                   />
-
                   <button
                     type="button"
+                    className="profile-field-edit"
                     aria-label="Редактировать имя"
-                    onClick={handleEnableFirstNameEdit}
+                    onClick={() => {
+                      setIsFirstNameEditable(true);
+                      setTimeout(
+                        () => focusFieldEnd(firstNameInputRef.current),
+                        0,
+                      );
+                    }}
                   >
                     ✎
                   </button>
                 </div>
 
-                <div className="info-card">
-                  <span>Фамилия</span>
-
+                <div className="profile-field">
+                  <span className="profile-field-label">Фамилия</span>
                   <input
                     ref={lastNameInputRef}
-                    className="profile-edit-input"
+                    className="profile-field-input"
                     value={lastName}
                     readOnly={!isLastNameEditable}
                     onChange={(event) => {
@@ -374,46 +419,125 @@ export default function ProfilePage() {
                     onBlur={() => setIsLastNameEditable(false)}
                     placeholder="Фамилия"
                   />
-
                   <button
                     type="button"
+                    className="profile-field-edit"
                     aria-label="Редактировать фамилию"
-                    onClick={handleEnableLastNameEdit}
+                    onClick={() => {
+                      setIsLastNameEditable(true);
+                      setTimeout(
+                        () => focusFieldEnd(lastNameInputRef.current),
+                        0,
+                      );
+                    }}
                   >
                     ✎
                   </button>
                 </div>
 
-                <div className="info-card wide">
-                  <span>Отчество</span>
-
+                <div className="profile-field profile-field--wide">
+                  <span className="profile-field-label">
+                    Отчество (необязательно)
+                  </span>
                   <input
-                    className="profile-edit-input"
-                    value={patronymic}
-                    readOnly
-                    placeholder="—"
+                    ref={patronymicInputRef}
+                    className="profile-field-input"
+                    value={
+                      !isPatronymicEditable && !patronymic.trim()
+                        ? "Не указано"
+                        : patronymic
+                    }
+                    readOnly={!isPatronymicEditable}
+                    onChange={(event) => {
+                      setPatronymic(event.target.value);
+                      setSuccessMessage("");
+                    }}
+                    onBlur={() => setIsPatronymicEditable(false)}
+                    placeholder="Не указано"
                   />
+                  <button
+                    type="button"
+                    className="profile-field-edit"
+                    aria-label="Редактировать отчество"
+                    onClick={() => {
+                      setIsPatronymicEditable(true);
+                      setTimeout(
+                        () => focusFieldEnd(patronymicInputRef.current),
+                        0,
+                      );
+                    }}
+                  >
+                    ✎
+                  </button>
+                </div>
 
-                  <button type="button" aria-label="Отчество не редактируется">
+                <div className="profile-field">
+                  <span className="profile-field-label">Email</span>
+                  <input
+                    className="profile-field-input profile-field-input--readonly"
+                    value={user.email}
+                    readOnly
+                    tabIndex={-1}
+                  />
+                </div>
+
+                <div className="profile-field">
+                  <span className="profile-field-label">
+                    Телефон (необязательно)
+                  </span>
+                  <input
+                    ref={phoneInputRef}
+                    className="profile-field-input"
+                    type="tel"
+                    value={
+                      !isPhoneEditable && !phone.trim()
+                        ? "Не указано"
+                        : phone
+                    }
+                    readOnly={!isPhoneEditable}
+                    onChange={(event) => {
+                      setPhone(event.target.value);
+                      setSuccessMessage("");
+                    }}
+                    onBlur={() => setIsPhoneEditable(false)}
+                    placeholder="+7 900 000-00-00"
+                    autoComplete="tel"
+                  />
+                  <button
+                    type="button"
+                    className="profile-field-edit"
+                    aria-label="Редактировать телефон"
+                    onClick={() => {
+                      setIsPhoneEditable(true);
+                      setTimeout(() => focusFieldEnd(phoneInputRef.current), 0);
+                    }}
+                  >
                     ✎
                   </button>
                 </div>
               </div>
 
-              <p className="hint">
-                Чтобы изменить имя или фамилию, нажмите на карандашик справа.
-                После изменений нажмите «Сохранить изменения».
-              </p>
+              <div className="profile-privacy-banner" role="note">
+                <span className="profile-privacy-icon" aria-hidden>
+                  i
+                </span>
+                <p>
+                  Эти данные видны только вам и не отображаются другим
+                  пользователям
+                </p>
+              </div>
 
-              {authError ? <p className="profile-error">{authError}</p> : null}
-              {successMessage ? (
-                <p className="profile-success">{successMessage}</p>
-              ) : null}
+              <FadeAlert text={authError} className="profile-error" />
+              <FadeAlert
+                text={successMessage || null}
+                className="profile-success"
+                role="status"
+              />
 
-              <div className="save-zone">
+              <div className="profile-save-row">
                 <button
                   type="submit"
-                  className="save-profile-btn"
+                  className="profile-save-btn"
                   disabled={isLoading}
                 >
                   {isLoading && !deleteModalOpen ? (
@@ -422,20 +546,28 @@ export default function ProfilePage() {
                   Сохранить изменения
                 </button>
               </div>
+            </section>
+          </form>
 
-              <div className="danger-zone">
-                <button
-                  type="button"
-                  className="delete-account-btn"
-                  onClick={handleOpenDelete}
-                  disabled={isLoading}
-                >
-                  Удалить аккаунт
-                </button>
-              </div>
+          <section className="profile-danger" aria-labelledby="profile-danger-title">
+            <div className="profile-danger-copy">
+              <h3 id="profile-danger-title">Опасная зона</h3>
+              <p>
+                Удаление аккаунта приведёт к потере всех ваших данных без
+                возможности восстановления
+              </p>
             </div>
+            <button
+              type="button"
+              className="profile-delete-btn"
+              onClick={handleOpenDelete}
+              disabled={isLoading}
+            >
+              <Trash2 size={18} aria-hidden />
+              Удалить аккаунт
+            </button>
           </section>
-        </form>
+        </section>
       </section>
     </main>
   );

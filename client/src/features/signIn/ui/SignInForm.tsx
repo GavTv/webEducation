@@ -10,6 +10,8 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { loginThunk } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
 import { getRegisterEmailFormatError } from "@/shared/lib/registerFieldValidators";
+import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { AuthField } from "../../auth/shared/AuthField";
 import styles from "../../auth/shared/eduChatForm.module.css";
 
@@ -37,6 +39,14 @@ export default function SignInForm({
     email?: string | null;
     password?: string | null;
   }>({});
+
+  const hasSignInFieldErrors = Boolean(
+    signInFieldErrors.email || signInFieldErrors.password,
+  );
+
+  useAutoDismiss(hasSignInFieldErrors, () => {
+    setSignInFieldErrors({});
+  });
 
   useEffect(() => {
     const saved =
@@ -226,11 +236,9 @@ export default function SignInForm({
           </label>
         </div>
 
-        {error ? (
-          <div className={styles.messagesBelowForgot} role="alert">
-            <p className={styles.formError}>{error}</p>
-          </div>
-        ) : null}
+        <div className={styles.messagesBelowForgot}>
+          <FadeAlert text={error} className={styles.formError} />
+        </div>
 
         <button
           type="submit"

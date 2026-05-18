@@ -1,0 +1,32 @@
+.brand {
+  --brand-icon-size: 52px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--brand-icon-size) * 0.23);
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.icon {
+  width: var(--brand-icon-size);
+  height: var(--brand-icon-size);
+  flex-shrink: 0;
+  display: block;
+  border-radius: calc(var(--brand-icon-size) * 0.31);
+  object-fit: cover;
+}
+
+.name {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 0 0.06em;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: calc(var(--brand-icon-size) * 0.54);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+}
