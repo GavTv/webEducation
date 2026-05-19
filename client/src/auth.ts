@@ -3,15 +3,15 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 
 /** Хвостовой слэш в AUTH_URL ломает redirect_uri (двойной // в URL → mismatch). */
-function trimAuthBaseUrls() {
-  for (const key of ["AUTH_URL", "NEXTAUTH_URL"] as const) {
-    const v = process.env[key];
-    if (typeof v === "string" && v.endsWith("/")) {
-      process.env[key] = v.replace(/\/+$/, "");
-    }
+function syncAuthEnv() {
+  const raw = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL;
+  if (typeof raw === "string" && raw.trim()) {
+    const url = raw.trim().replace(/\/+$/, "");
+    process.env.AUTH_URL = url;
+    process.env.NEXTAUTH_URL = url;
   }
 }
-trimAuthBaseUrls();
+syncAuthEnv();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   basePath: "/api/auth",
