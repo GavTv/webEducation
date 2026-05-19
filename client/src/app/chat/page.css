@@ -22,69 +22,59 @@
   border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
-.chat-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.chat-back-link:hover {
-  border-color: rgba(139, 92, 246, 0.45);
-  color: #fff;
-}
-
 .educhat-page *,
 .educhat-page *::before,
 .educhat-page *::after {
   box-sizing: border-box;
 }
 
-/* Тонкий скролл как в Telegram */
+/* Тонкий скролл в стиле приложения */
 .educhat-page .rooms,
 .educhat-page .messages-wrap,
-.educhat-page .chat-panel {
+.educhat-page .chat-panel,
+.educhat-page .thread-panel,
+.educhat-page .chat-columns {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+  scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
 }
 
 .educhat-page .rooms::-webkit-scrollbar,
 .educhat-page .messages-wrap::-webkit-scrollbar,
-.educhat-page .chat-panel::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
+.educhat-page .chat-panel::-webkit-scrollbar,
+.educhat-page .thread-panel::-webkit-scrollbar,
+.educhat-page .chat-columns::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
 }
 
 .educhat-page .rooms::-webkit-scrollbar-track,
 .educhat-page .messages-wrap::-webkit-scrollbar-track,
-.educhat-page .chat-panel::-webkit-scrollbar-track {
+.educhat-page .chat-panel::-webkit-scrollbar-track,
+.educhat-page .thread-panel::-webkit-scrollbar-track,
+.educhat-page .chat-columns::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .educhat-page .rooms::-webkit-scrollbar-thumb,
 .educhat-page .messages-wrap::-webkit-scrollbar-thumb,
-.educhat-page .chat-panel::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
+.educhat-page .chat-panel::-webkit-scrollbar-thumb,
+.educhat-page .thread-panel::-webkit-scrollbar-thumb,
+.educhat-page .chat-columns::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.28);
   border-radius: 999px;
 }
 
 .educhat-page .rooms:hover::-webkit-scrollbar-thumb,
 .educhat-page .messages-wrap:hover::-webkit-scrollbar-thumb,
 .educhat-page .chat-panel:hover::-webkit-scrollbar-thumb,
+.educhat-page .thread-panel:hover::-webkit-scrollbar-thumb,
+.educhat-page .chat-columns:hover::-webkit-scrollbar-thumb,
 .educhat-page .rooms:focus-within::-webkit-scrollbar-thumb,
 .educhat-page .messages-wrap:focus-within::-webkit-scrollbar-thumb,
-.educhat-page .chat-panel:focus-within::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.38);
+.educhat-page .chat-panel:focus-within::-webkit-scrollbar-thumb,
+.educhat-page .thread-panel:focus-within::-webkit-scrollbar-thumb,
+.educhat-page .chat-columns:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.5);
 }
 
 .educhat-page button,
@@ -448,12 +438,15 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
+  align-self: flex-start;
   max-width: 100%;
+  min-width: 0;
 }
 
 .message-row--mine {
-  flex-direction: row-reverse;
-  align-self: flex-end;
+  flex-direction: row;
+  align-self: stretch;
+  justify-content: flex-end;
 }
 
 .message-avatar {
@@ -480,25 +473,36 @@
 }
 
 .message-bubble {
-  max-width: min(520px, 78%);
-  padding: 12px 16px 10px;
-  border-radius: 18px;
+  position: relative;
+  flex: 0 1 auto;
+  max-width: min(520px, calc(100% - 46px));
+  min-width: 0;
+  padding: 10px 12px 8px;
+  border-radius: 16px;
   background: rgba(15, 23, 42, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.1);
+  overflow: hidden;
 }
 
 .message-bubble--bot {
   background: rgba(15, 23, 42, 0.92);
 }
 
+/* Заострённый угол со стороны отправителя (к аватару) */
+.message-row:not(.message-row--mine) .message-bubble {
+  border-radius: 16px 16px 16px 0;
+}
+
 .message-bubble--mine {
-  background: linear-gradient(145deg, rgba(109, 40, 217, 0.55), rgba(91, 33, 182, 0.45));
+  border-radius: 16px 16px 0 16px;
+  background: linear-gradient(145deg, rgba(109, 40, 217, 0.95), rgba(91, 33, 182, 0.92));
   border-color: rgba(139, 92, 246, 0.35);
 }
 
 .message-author {
   display: block;
-  margin-bottom: 6px;
+  width: 100%;
+  margin-bottom: 4px;
   color: #a78bfa;
   font-size: 13px;
   font-weight: 700;
@@ -508,39 +512,102 @@
   color: #e9d5ff;
 }
 
+.message-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: end;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .message-bubble p {
+  grid-column: 1;
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   color: #e5e7eb;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .message-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .message-footer time {
+  display: block;
   color: #94a3b8;
   font-size: 12px;
+  white-space: nowrap;
 }
 
-.message-read {
-  color: #a78bfa;
-  font-size: 12px;
-  letter-spacing: -2px;
+.message-bubble--mine .message-footer time {
+  color: rgba(233, 213, 255, 0.75);
+}
+
+.message-input-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.emoji-picker-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 30;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+
+.emoji-picker-popover .EmojiPickerReact {
+  --epr-bg-color: #0f172a;
+  --epr-category-label-bg-color: #0f172a;
+  --epr-picker-border-color: transparent;
+  --epr-search-border-color: rgba(148, 163, 184, 0.2);
+  --epr-highlight-color: #8b5cf6;
+  --epr-focus-bg-color: rgba(139, 92, 246, 0.2);
+}
+
+.message-emoji-btn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.message-emoji-btn:hover,
+.message-emoji-btn--active {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.12);
 }
 
 .message-input {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: auto;
-  padding: 6px 6px 6px 18px;
+  gap: 6px;
+  padding: 6px 6px 6px 12px;
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.12);
@@ -583,34 +650,49 @@
   filter: brightness(1.08);
 }
 
+.thread-back-btn {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.thread-back-btn:hover {
+  border-color: rgba(139, 92, 246, 0.45);
+  color: #fff;
+}
+
+.message-attach-btn {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
-  .educhat-page {
-    padding: var(--app-page-gutter-y) var(--app-page-gutter-x) 16px;
-  }
-
   .chat-mobile-topbar {
-    display: flex;
-  }
-
-  .chat-list-header-main .chat-back-link {
-    display: none;
-  }
-
-  .desktop-shell {
-    width: 100%;
-    height: auto;
-    min-height: min(calc(100dvh - 88px), 900px);
-    max-height: none;
-    grid-template-columns: 1fr;
-  }
-
-  .educhat-page .classes-sidebar {
     display: none;
   }
 
   .chat-columns {
     grid-template-columns: 1fr;
-    min-height: min(78dvh, 720px);
+    min-height: 0;
   }
 
   .chat-columns--thread .chat-panel {
@@ -623,24 +705,80 @@
 
   .chat-columns--thread .thread-panel {
     display: flex;
-    min-height: min(72dvh, 640px);
+    min-height: 100dvh;
+    padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: var(--app-page-bg-base);
   }
 
-  .chat-columns--thread .chat-mobile-back {
+  .thread-back-btn {
     display: inline-flex;
+  }
+
+  .thread-header {
+    padding-bottom: 12px;
   }
 
   .chat-panel {
     border-right: 0;
-    padding: 16px 14px;
+    padding: 20px 16px 12px;
+    min-height: auto;
   }
 
-  .thread-panel {
-    padding: 16px 14px 20px;
+  .chat-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 0;
+  }
+
+  .chat-search {
+    height: 48px;
+  }
+
+  .chat-create-btn {
+    width: 100%;
+    height: 48px;
+  }
+
+  .bot-card {
+    display: none;
+  }
+
+  .room-card {
+    padding: 14px 12px;
+  }
+
+  .message-input {
+    padding: 6px 6px 6px 8px;
+    border-radius: 999px;
+  }
+
+  .message-attach-btn,
+  .message-emoji-btn {
+    display: inline-grid;
+  }
+
+  .emoji-picker-popover {
+    right: 0;
+    left: 0;
+    width: min(100%, 340px);
+    margin-inline: auto;
+  }
+
+  .emoji-picker-popover .EmojiPickerReact {
+    width: 100% !important;
+  }
+
+  .message-row {
+    max-width: 100%;
   }
 
   .message-bubble {
-    max-width: 88%;
+    max-width: min(520px, calc(100vw - 88px));
+  }
+
+  .app-page--hide-tabbar .chat-columns--thread .thread-panel {
+    min-height: 100dvh;
   }
 }
 

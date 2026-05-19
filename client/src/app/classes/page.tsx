@@ -16,6 +16,7 @@ import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import {
   createClass,
   deleteClass,
@@ -261,7 +262,7 @@ export default function ClassesPage() {
   }
 
   return (
-    <main className="classes-page app-page">
+    <main className="classes-page app-page app-page--with-tabbar">
       <section className="classes-shell app-shell">
         <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
@@ -284,21 +285,28 @@ export default function ClassesPage() {
         <section className="classes-content app-content">
           <header className="classes-header app-content-header">
             <div>
-              <h1>Добро пожаловать, {firstName}! 👋</h1>
-              <p>Выберите класс, чтобы начать общение</p>
+              <h1>
+                <span className="app-heading-mobile">Классы</span>
+                <span className="app-heading-desktop">
+                  Добро пожаловать, {firstName}! 👋
+                </span>
+              </h1>
+              <p className="app-header-subtitle">
+                Выберите класс, чтобы начать общение
+              </p>
             </div>
 
             <AppProfileChip
               firstName={firstName}
               avatarSrc={avatarSrc}
               avatarInitials={avatarInitials}
-              onClick={() => router.push(clientRoutes.profile)}
-              ariaLabel="Открыть профиль"
+              interactive={false}
+              ariaLabel={`${firstName}, онлайн`}
             />
           </header>
 
           <div className="classes-top">
-            <div>
+            <div className="classes-top__headings">
               <h2>Ваши классы</h2>
               <p>Доступные учебные чаты</p>
             </div>
@@ -462,6 +470,8 @@ export default function ClassesPage() {
         }}
         onSubmit={handleJoinSubmit}
       />
+
+      <MobileBottomNav active="classes" />
     </main>
   );
 }

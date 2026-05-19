@@ -302,15 +302,18 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 22px;
+  padding: 10px 16px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: linear-gradient(135deg, #8b5cf6, #5b31d6);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 12px 32px rgba(124, 58, 237, 0.35);
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
 
 .profile-save-btn:disabled {
@@ -347,6 +350,20 @@
 .profile-delete-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .profile-form {
+    gap: 24px;
+  }
+
+  .profile-section h3 {
+    font-size: 18px;
+  }
+
+  .profile-field {
+    padding: 14px 16px;
+  }
 }
 
 @media (max-width: 720px) {
