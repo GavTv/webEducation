@@ -1,10 +1,13 @@
-import { axiosInstance, setAccessToken } from "@/shared/lib/axiosInstance";
+import { setAccessToken } from "@/shared/lib/axiosInstance";
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import UserApi, {
+  type UserOAuthLoginData,
+  type UserUpdateProfileData,
+} from "./UserApi";
 import type {
   UserLoginData,
   UserRegisterData,
   UserType,
-  UserWithTokenType,
 } from "../model";
 import type { ServerResponseType } from "@/shared/types";
 import { AxiosError } from "axios";
@@ -19,25 +22,13 @@ const USER_THUNK_NAMES = {
   UPDATE_PROFILE: "user/updateProfile",
 } as const;
 
-const USER_API_URLS = {
-  REGISTER: "auth/register",
-  LOGIN: "auth/login",
-  LOGIN_OAUTH: "auth/oauth",
-  REFRESH: "auth/refresh",
-  LOGOUT: "auth/logout",
-  DELETE_ACCOUNT: "auth/me",
-  UPDATE_PROFILE: "auth/me",
-} as const;
-
 export const refreshTokenThunk = createAsyncThunk<
   UserType,
   void,
   { rejectValue: string }
 >(USER_THUNK_NAMES.REFRESH, async (_, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.get<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.REFRESH);
+    const data = await UserApi.refresh();
 
     if (data.statusCode === 200 && data.data?.user) {
       setAccessToken(data.data.accessToken ?? "");
@@ -59,9 +50,7 @@ export const registerThunk = createAsyncThunk<
   { rejectValue: string }
 >(USER_THUNK_NAMES.REGISTER, async (userData, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.post<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.REGISTER, userData);
+    const data = await UserApi.register(userData);
 
     if (data.statusCode === 201 && data.data?.user) {
       setAccessToken(data.data.accessToken ?? "");
@@ -80,9 +69,7 @@ export const loginThunk = createAsyncThunk<
   { rejectValue: string }
 >(USER_THUNK_NAMES.LOGIN, async (userData, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.post<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.LOGIN, userData);
+    const data = await UserApi.login(userData);
 
     if (data.statusCode === 200 && data.data?.user) {
       setAccessToken(data.data.accessToken ?? "");
@@ -99,17 +86,11 @@ export const loginThunk = createAsyncThunk<
 
 export const loginWithOAuthThunk = createAsyncThunk<
   UserType,
-  { provider: "google" | "github"; accessToken: string; rememberMe: boolean },
+  UserOAuthLoginData,
   { rejectValue: string }
 >(USER_THUNK_NAMES.LOGIN_OAUTH, async (payload, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.post<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.LOGIN_OAUTH, {
-      provider: payload.provider,
-      accessToken: payload.accessToken,
-      rememberMe: payload.rememberMe,
-    });
+    const data = await UserApi.loginWithOAuth(payload);
 
     if (data.statusCode === 200 && data.data?.user) {
       setAccessToken(data.data.accessToken ?? "");
@@ -130,9 +111,7 @@ export const logoutThunk = createAsyncThunk<
   { rejectValue: string }
 >(USER_THUNK_NAMES.LOGOUT, async (_, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.post<ServerResponseType<null>>(
-      USER_API_URLS.LOGOUT,
-    );
+    const data = await UserApi.logout();
 
     if (data.statusCode === 200) {
       setAccessToken("");
@@ -147,26 +126,13 @@ export const logoutThunk = createAsyncThunk<
   }
 });
 
-
-
 export const updateProfileThunk = createAsyncThunk<
   UserType,
-  { name: string; phone?: string; avatar?: File | null },
+  UserUpdateProfileData,
   { rejectValue: string }
 >(USER_THUNK_NAMES.UPDATE_PROFILE, async (payload, { rejectWithValue }) => {
   try {
-    const formData = new FormData();
-
-    formData.append("name", payload.name);
-    formData.append("phone", payload.phone?.trim() ?? "");
-
-    if (payload.avatar) {
-      formData.append("avatar", payload.avatar);
-    }
-
-    const { data } = await axiosInstance.patch<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.UPDATE_PROFILE, formData);
+    const data = await UserApi.updateProfile(payload);
 
     if (data.statusCode === 200 && data.data?.user) {
       setAccessToken(data.data.accessToken ?? "");
@@ -189,9 +155,7 @@ export const deleteAccountThunk = createAsyncThunk<
   { rejectValue: string }
 >(USER_THUNK_NAMES.DELETE_ACCOUNT, async (_, { rejectWithValue }) => {
   try {
-    const { data } = await axiosInstance.delete<ServerResponseType<null>>(
-      USER_API_URLS.DELETE_ACCOUNT,
-    );
+    const data = await UserApi.deleteAccount();
 
     if (data.statusCode === 200) {
       setAccessToken("");
