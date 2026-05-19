@@ -2,34 +2,24 @@
 
 import Link from "next/link";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Lock, Search, Send, Star } from "lucide-react";
 import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
+import { getNameInitials } from "@/shared/lib/getNameInitials";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import "./page.css";
-
-function getApiOrigin() {
-  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-  return raw.replace(/\/+$/, "").replace(/\/api$/i, "");
-}
-
-function getAvatarSrc(avatarUrl?: string | null) {
-  if (!avatarUrl) {
-    return "";
-  }
-
-  if (avatarUrl.startsWith("http")) {
-    return avatarUrl;
-  }
-
-  return `${getApiOrigin()}${avatarUrl}`;
-}
-
-
 
 const MOBILE_BP = "(max-width: 900px)";
 const BOT_ROOM_ID = 999001;
@@ -38,11 +28,24 @@ type ChatMessage = {
   id: string;
   author: string;
   text: string;
+  time: string;
   isMine?: boolean;
   isBot?: boolean;
 };
 
-type ChatRoom = (typeof rooms)[number];
+type ChatRoom = {
+  id: number;
+  title: string;
+  icon: string;
+  iconClass: string;
+  locked?: boolean;
+  author: string;
+  message: string;
+  time: string;
+  unread?: number;
+  onlineLabel?: string;
+  starred?: boolean;
+};
 
 const botRoom: ChatRoom = {
   id: BOT_ROOM_ID,
@@ -50,32 +53,50 @@ const botRoom: ChatRoom = {
   icon: "🤖",
   iconClass: "purple",
   author: "@botAi",
-  message: "Ваш AI-помощник. Задавайте вопросы!",
+  message: "Привет! Я @botAi — ваш AI-помощник…",
   time: "сейчас",
   onlineLabel: "AI-помощник онлайн",
+  starred: true,
 };
 
 const defaultMessagesByRoomId: Record<number, ChatMessage[]> = {
   [BOT_ROOM_ID]: [
     {
-      id: "bot-start",
+      id: "bot-1",
       author: "@botAi",
-      text: "Напишите любой вопрос — я отвечу моковым ответом.",
+      text: "Привет! Я @botAi — ваш AI-помощник по обучению. Чем могу помочь?",
+      time: "11:30",
+      isBot: true,
+    },
+    {
+      id: "user-1",
+      author: "Вадим",
+      text: "Привет! Расскажи про React hooks",
+      time: "11:31",
+      isMine: true,
+    },
+    {
+      id: "bot-2",
+      author: "@botAi",
+      text: "React hooks — это функции, которые позволяют использовать состояние и другие возможности React без написания классов. Основные: useState, useEffect, useContext…",
+      time: "11:32",
       isBot: true,
     },
   ],
   1: [
-    { id: "common-1", author: "Мария", text: "Всем привет! 👋" },
+    { id: "common-1", author: "Мария", text: "Всем привет! 👋", time: "14:30" },
     {
       id: "common-2",
       author: "Алексей",
       text: "Кто уже сделал домашнее задание?",
+      time: "14:31",
       isMine: true,
     },
     {
       id: "common-3",
       author: "@botAi",
       text: "Я могу помочь объяснить тему или кратко суммировать чат.",
+      time: "14:32",
       isBot: true,
     },
   ],
@@ -84,41 +105,61 @@ const defaultMessagesByRoomId: Record<number, ChatMessage[]> = {
 function ChatPageContent() {
   const router = useRouter();
   const user = useAppSelector((state) => state.user.user);
-  const userName = user?.name?.trim() || "Пользователь";
-  const firstName = userName.split(/\s+/)[0] || "Пользователь";
+  const userName = user?.name?.trim() || "";
+  const nameParts = userName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Пользователь";
+  const lastName = nameParts[1] || "";
+  const avatarInitials = getNameInitials(firstName, lastName, user?.name);
   const avatarSrc = getAvatarSrc(user?.avatarUrl);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const chatGreeting = isMounted && firstName
-    ? `Привет, ${firstName}! 👋`
-    : "\u00A0";
-
-  const chatAvatarFallbackLetter = isMounted && firstName
-    ? firstName.charAt(0).toUpperCase()
-    : "";
-
-  const safeFirstName = isMounted ? firstName : "Пользователь";
-  const safeAvatarSrc = isMounted ? avatarSrc : "";
 
   const searchParams = useSearchParams();
   const chatRooms = useMemo(() => [botRoom, ...rooms], []);
   const [selectedId, setSelectedId] = useState(chatRooms[0]?.id ?? BOT_ROOM_ID);
   const [draft, setDraft] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [messagesByRoomId, setMessagesByRoomId] =
     useState<Record<number, ChatMessage[]>>(defaultMessagesByRoomId);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastScrolledRoomRef = useRef<number | null>(null);
 
   const selected = useMemo(
     () => chatRooms.find((r) => r.id === selectedId) ?? chatRooms[0],
     [chatRooms, selectedId],
   );
 
+  const filteredRooms = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return chatRooms;
+    return chatRooms.filter(
+      (r) =>
+        r.title.toLowerCase().includes(q) ||
+        r.message.toLowerCase().includes(q) ||
+        r.author.toLowerCase().includes(q),
+    );
+  }, [chatRooms, searchQuery]);
+
   const selectedMessages = messagesByRoomId[selected?.id ?? BOT_ROOM_ID] ?? [];
   const isBotChat = selected?.id === BOT_ROOM_ID;
+
+  const displayAuthorName = useMemo(() => {
+    if (!userName) return firstName;
+    return firstName;
+  }, [firstName, userName]);
+
+  useEffect(() => {
+    const roomChanged = lastScrolledRoomRef.current !== selectedId;
+    lastScrolledRoomRef.current = selectedId;
+
+    const behavior = roomChanged ? "auto" : "smooth";
+
+    const id = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    });
+
+    return () => cancelAnimationFrame(id);
+  }, [selectedMessages, selectedId]);
 
   useEffect(() => {
     const classId = searchParams.get("classId");
@@ -186,6 +227,11 @@ function ChatPageContent() {
     selectRoom(BOT_ROOM_ID);
   }, [selectRoom]);
 
+  const formatTime = () => {
+    const d = new Date();
+    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  };
+
   const sendMessage = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -196,15 +242,17 @@ function ChatPageContent() {
 
       const userMessage: ChatMessage = {
         id: `${selected.id}-user-${Date.now()}`,
-        author: safeFirstName,
+        author: displayAuthorName,
         text,
+        time: formatTime(),
         isMine: true,
       };
 
       const botReply: ChatMessage = {
         id: `${selected.id}-bot-${Date.now()}`,
         author: "@botAi",
-        text: "привет",
+        text: "Спасибо за сообщение! Скоро здесь будет ответ от AI.",
+        time: formatTime(),
         isBot: true,
       };
 
@@ -219,14 +267,15 @@ function ChatPageContent() {
 
       setDraft("");
     },
-    [draft, isBotChat, safeFirstName, selected],
+    [draft, displayAuthorName, isBotChat, selected],
   );
 
   return (
     <main className="educhat-page">
       <header className="chat-mobile-topbar" aria-label="Мобильная шапка">
         <Link className="chat-back-link" href={clientRoutes.classes}>
-          ← Классы
+          <ArrowLeft size={18} strokeWidth={2} aria-hidden />
+          Классы
         </Link>
       </header>
 
@@ -249,7 +298,7 @@ function ChatPageContent() {
             <div className="shield-mini">🛡</div>
             <div>
               <h3>Безопасное обучение</h3>
-              <p>Все классы защищены паролем.</p>
+              <p>Все классы защищены паролем</p>
             </div>
           </div>
         </aside>
@@ -258,45 +307,61 @@ function ChatPageContent() {
           className={`chat-columns${mobileThreadOpen ? " chat-columns--thread" : ""}`}
         >
           <section className="chat-panel">
-            <header className="topbar">
-              <div className="topbar-main">
+            <header className="chat-list-header">
+              <div className="chat-list-header-main">
                 <Link className="chat-back-link" href={clientRoutes.classes}>
-                  ← Классы
+                  <ArrowLeft size={18} strokeWidth={2} aria-hidden />
+                  Классы
                 </Link>
                 <div>
-                  <h1 suppressHydrationWarning>{chatGreeting}</h1>
+                  <h1>Привет, {firstName}! 👋</h1>
                   <p>Выберите чат, чтобы начать общение</p>
                 </div>
               </div>
 
-              <div className="profile-mini">
-                {isMounted && avatarSrc ? (
-                <img
-                  className="chat-current-user-avatar"
-                  src={avatarSrc}
-                  alt={firstName || "Пользователь"}
-                />
-              ) : (
-                <div className="chat-current-user-avatar chat-current-user-avatar--empty">
-                  {chatAvatarFallbackLetter}
+              <Link
+                className="chat-profile-chip"
+                href={clientRoutes.profile}
+                aria-label="Профиль"
+              >
+                <div className="chat-profile-avatar">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt=""
+                      className="chat-profile-avatar-img"
+                    />
+                  ) : (
+                    avatarInitials
+                  )}
                 </div>
-              )}
-                <span />
-              </div>
+                <div className="chat-profile-text">
+                  <strong>{firstName}</strong>
+                  <span className="chat-profile-status">
+                    <span className="chat-online-dot" aria-hidden />
+                    Онлайн
+                  </span>
+                </div>
+              </Link>
             </header>
 
-            <div className="search">
-              <span>⌕</span>
-              <input placeholder="Поиск по чатам" />
-            </div>
-
-            <div className="section-head">
-              <h2>Мои чаты</h2>
-              <button type="button">+ Создать чат</button>
+            <div className="chat-toolbar">
+              <label className="chat-search">
+                <Search size={20} strokeWidth={2} aria-hidden />
+                <input
+                  type="search"
+                  placeholder="Поиск по чатам"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </label>
+              <button type="button" className="chat-create-btn">
+                + Создать чат
+              </button>
             </div>
 
             <div className="rooms">
-              {chatRooms.map((room) => (
+              {filteredRooms.map((room) => (
                 <button
                   key={room.id}
                   type="button"
@@ -308,7 +373,22 @@ function ChatPageContent() {
                   <div className="room-info">
                     <h3>
                       {room.title}
-                      {room.locked ? <span className="lock">🔒</span> : null}
+                      {room.starred ? (
+                        <Star
+                          className="room-star"
+                          size={14}
+                          fill="currentColor"
+                          aria-hidden
+                        />
+                      ) : null}
+                      {room.locked ? (
+                        <Lock
+                          className="room-lock"
+                          size={14}
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      ) : null}
                     </h3>
                     <p>
                       {room.author}: {room.message}
@@ -329,40 +409,81 @@ function ChatPageContent() {
                 <h3>@botAi</h3>
                 <p>Ваш AI-помощник. Задавайте вопросы!</p>
               </div>
-              <button type="button" onClick={openBotChat}>Написать</button>
+              <button type="button" onClick={openBotChat}>
+                Написать
+              </button>
             </div>
           </section>
 
-          <aside className="preview-panel">
+          <aside className="thread-panel">
             <button
               type="button"
               className="chat-mobile-back"
               onClick={closeMobileThread}
               aria-label="К списку чатов"
             >
-              ← Чаты
+              <ArrowLeft size={18} strokeWidth={2} aria-hidden />
+              Чаты
             </button>
 
-            <div className="preview-header">
-              <div>
-                <h2>{selected?.title ?? "Чат"}</h2>
-                <p>{selected?.onlineLabel ?? "Участники онлайн"}</p>
+            <header className="thread-header">
+              <div className={`thread-avatar ${selected?.iconClass ?? "purple"}`}>
+                {selected?.icon ?? "🤖"}
               </div>
-              <span>{selected?.icon ?? "#"}</span>
-            </div>
+              <div className="thread-header-text">
+                <h2>{selected?.title ?? "Чат"}</h2>
+                <p>
+                  <span className="chat-online-dot" aria-hidden />
+                  {selected?.onlineLabel ?? "Участники онлайн"}
+                </p>
+              </div>
+            </header>
 
-            <div className="messages">
+            <div className="messages-wrap">
+              <div className="chat-date-pill">Сегодня</div>
               {selectedMessages.map((message) => (
-                <div
+                <article
                   key={message.id}
-                  className={`message${message.isMine ? " mine" : ""}${
-                    message.isBot ? " bot" : ""
+                  className={`message-row${message.isMine ? " message-row--mine" : ""}${
+                    message.isBot ? " message-row--bot" : ""
                   }`}
                 >
-                  <b>{message.author}</b>
-                  <p>{message.text}</p>
-                </div>
+                  {!message.isMine ? (
+                    <div
+                      className={`message-avatar ${selected?.iconClass ?? "purple"}`}
+                      aria-hidden
+                    >
+                      {message.isBot ? "🤖" : message.author.charAt(0)}
+                    </div>
+                  ) : null}
+                  <div
+                    className={`message-bubble${message.isMine ? " message-bubble--mine" : ""}${
+                      message.isBot ? " message-bubble--bot" : ""
+                    }`}
+                  >
+                    <span className="message-author">{message.author}</span>
+                    <p>{message.text}</p>
+                    <footer className="message-footer">
+                      <time>{message.time}</time>
+                      {message.isMine ? (
+                        <span className="message-read" aria-label="Прочитано">
+                          ✓✓
+                        </span>
+                      ) : null}
+                    </footer>
+                  </div>
+                  {message.isMine ? (
+                    <div className="message-avatar message-avatar--user" aria-hidden>
+                      {avatarSrc ? (
+                        <img src={avatarSrc} alt="" />
+                      ) : (
+                        avatarInitials
+                      )}
+                    </div>
+                  ) : null}
+                </article>
               ))}
+              <div ref={messagesEndRef} className="messages-end" aria-hidden />
             </div>
 
             <form className="message-input" onSubmit={sendMessage}>
@@ -375,8 +496,13 @@ function ChatPageContent() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
               />
-              <button type="submit" aria-label="Отправить" disabled={!draft.trim()}>
-                ➤
+              <button
+                type="submit"
+                className="message-send-btn"
+                aria-label="Отправить"
+                disabled={!draft.trim()}
+              >
+                <Send size={20} strokeWidth={2} aria-hidden />
               </button>
             </form>
           </aside>
@@ -395,11 +521,6 @@ function ChatFallback() {
 }
 
 export default function ChatPage() {
-  const user = useAppSelector((state) => state.user.user);
-  const userName = user?.name?.trim() || "Пользователь";
-  const firstName = userName.split(/\s+/)[0] || "Пользователь";
-  const avatarSrc = getAvatarSrc(user?.avatarUrl);
-
   return (
     <Suspense fallback={<ChatFallback />}>
       <ChatPageContent />

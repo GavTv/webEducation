@@ -8,5 +8,9 @@ export default function AuthSessionProvider({
 }: {
   children: ReactNode;
 }) {
-  return <SessionProvider basePath="/api/auth">{children}</SessionProvider>;
+  return (
+    <SessionProvider basePath="/api/auth" refetchOnWindowFocus={false}>
+      {children}
+    </SessionProvider>
+  );
 }
