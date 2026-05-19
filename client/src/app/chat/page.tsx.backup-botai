@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
@@ -32,54 +31,6 @@ function getAvatarSrc(avatarUrl?: string | null) {
 
 
 const MOBILE_BP = "(max-width: 900px)";
-const BOT_ROOM_ID = 999001;
-
-type ChatMessage = {
-  id: string;
-  author: string;
-  text: string;
-  isMine?: boolean;
-  isBot?: boolean;
-};
-
-type ChatRoom = (typeof rooms)[number];
-
-const botRoom: ChatRoom = {
-  id: BOT_ROOM_ID,
-  title: "@botAi",
-  icon: "🤖",
-  iconClass: "purple",
-  author: "@botAi",
-  message: "Ваш AI-помощник. Задавайте вопросы!",
-  time: "сейчас",
-  onlineLabel: "AI-помощник онлайн",
-};
-
-const defaultMessagesByRoomId: Record<number, ChatMessage[]> = {
-  [BOT_ROOM_ID]: [
-    {
-      id: "bot-start",
-      author: "@botAi",
-      text: "Напишите любой вопрос — я отвечу моковым ответом.",
-      isBot: true,
-    },
-  ],
-  1: [
-    { id: "common-1", author: "Мария", text: "Всем привет! 👋" },
-    {
-      id: "common-2",
-      author: "Алексей",
-      text: "Кто уже сделал домашнее задание?",
-      isMine: true,
-    },
-    {
-      id: "common-3",
-      author: "@botAi",
-      text: "Я могу помочь объяснить тему или кратко суммировать чат.",
-      isBot: true,
-    },
-  ],
-};
 
 function ChatPageContent() {
   const router = useRouter();
@@ -105,20 +56,14 @@ function ChatPageContent() {
   const safeAvatarSrc = isMounted ? avatarSrc : "";
 
   const searchParams = useSearchParams();
-  const chatRooms = useMemo(() => [botRoom, ...rooms], []);
-  const [selectedId, setSelectedId] = useState(chatRooms[0]?.id ?? BOT_ROOM_ID);
+  const [selectedId, setSelectedId] = useState(rooms[0]?.id ?? 1);
   const [draft, setDraft] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
-  const [messagesByRoomId, setMessagesByRoomId] =
-    useState<Record<number, ChatMessage[]>>(defaultMessagesByRoomId);
 
   const selected = useMemo(
-    () => chatRooms.find((r) => r.id === selectedId) ?? chatRooms[0],
-    [chatRooms, selectedId],
+    () => rooms.find((r) => r.id === selectedId) ?? rooms[0],
+    [selectedId],
   );
-
-  const selectedMessages = messagesByRoomId[selected?.id ?? BOT_ROOM_ID] ?? [];
-  const isBotChat = selected?.id === BOT_ROOM_ID;
 
   useEffect(() => {
     const classId = searchParams.get("classId");
@@ -181,46 +126,6 @@ function ChatPageContent() {
   }, []);
 
   const closeMobileThread = useCallback(() => setMobileThreadOpen(false), []);
-
-  const openBotChat = useCallback(() => {
-    selectRoom(BOT_ROOM_ID);
-  }, [selectRoom]);
-
-  const sendMessage = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-
-      const text = draft.trim();
-
-      if (!text || !selected) return;
-
-      const userMessage: ChatMessage = {
-        id: `${selected.id}-user-${Date.now()}`,
-        author: safeFirstName,
-        text,
-        isMine: true,
-      };
-
-      const botReply: ChatMessage = {
-        id: `${selected.id}-bot-${Date.now()}`,
-        author: "@botAi",
-        text: "привет",
-        isBot: true,
-      };
-
-      setMessagesByRoomId((prev) => ({
-        ...prev,
-        [selected.id]: [
-          ...(prev[selected.id] ?? []),
-          userMessage,
-          ...(isBotChat ? [botReply] : []),
-        ],
-      }));
-
-      setDraft("");
-    },
-    [draft, isBotChat, safeFirstName, selected],
-  );
 
   return (
     <main className="educhat-page">
@@ -296,7 +201,7 @@ function ChatPageContent() {
             </div>
 
             <div className="rooms">
-              {chatRooms.map((room) => (
+              {rooms.map((room) => (
                 <button
                   key={room.id}
                   type="button"
@@ -329,7 +234,7 @@ function ChatPageContent() {
                 <h3>@botAi</h3>
                 <p>Ваш AI-помощник. Задавайте вопросы!</p>
               </div>
-              <button type="button" onClick={openBotChat}>Написать</button>
+              <button type="button">Написать</button>
             </div>
           </section>
 
@@ -352,33 +257,30 @@ function ChatPageContent() {
             </div>
 
             <div className="messages">
-              {selectedMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message${message.isMine ? " mine" : ""}${
-                    message.isBot ? " bot" : ""
-                  }`}
-                >
-                  <b>{message.author}</b>
-                  <p>{message.text}</p>
-                </div>
-              ))}
+              <div className="message">
+                <b>Мария</b>
+                <p>Всем привет! 👋</p>
+              </div>
+              <div className="message">
+                <b>Алексей</b>
+                <p>Кто уже сделал домашнее задание?</p>
+              </div>
+              <div className="message bot">
+                <b>@botAi</b>
+                <p>Я могу помочь объяснить тему или кратко суммировать чат.</p>
+              </div>
             </div>
 
-            <form className="message-input" onSubmit={sendMessage}>
+            <div className="message-input">
               <input
-                placeholder={
-                  isBotChat
-                    ? "Напишите сообщение боту..."
-                    : "Напишите сообщение..."
-                }
+                placeholder="Напишите сообщение..."
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
               />
-              <button type="submit" aria-label="Отправить" disabled={!draft.trim()}>
+              <button type="button" aria-label="Отправить">
                 ➤
               </button>
-            </form>
+            </div>
           </aside>
         </div>
       </section>
