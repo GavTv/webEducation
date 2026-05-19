@@ -453,11 +453,6 @@
   cursor: pointer;
 }
 
-.message-input button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .preview-panel {
   display: flex;
   flex-direction: column;
@@ -513,7 +508,7 @@
   border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-.message.mine {
+.message:nth-child(2) {
   margin-left: auto;
   background: rgba(124, 60, 255, 0.18);
 }
