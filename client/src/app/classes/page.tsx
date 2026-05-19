@@ -14,6 +14,7 @@ import {
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { AppNav } from "@/widgets/appShell/AppNav";
+import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import {
   createClass,
@@ -260,9 +261,9 @@ export default function ClassesPage() {
   }
 
   return (
-    <main className="classes-page">
-      <section className="classes-shell">
-        <aside className="classes-sidebar">
+    <main className="classes-page app-page">
+      <section className="classes-shell app-shell">
+        <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
 
           <AppNav active="classes" showAdminLink={showAdminLink} />
@@ -280,38 +281,20 @@ export default function ClassesPage() {
           </div>
         </aside>
 
-        <section className="classes-content">
-          <header className="classes-header">
+        <section className="classes-content app-content">
+          <header className="classes-header app-content-header">
             <div>
               <h1>Добро пожаловать, {firstName}! 👋</h1>
               <p>Выберите класс, чтобы начать общение</p>
             </div>
 
-            <button
-              type="button"
-              className="classes-profile-chip"
+            <AppProfileChip
+              firstName={firstName}
+              avatarSrc={avatarSrc}
+              avatarInitials={avatarInitials}
               onClick={() => router.push(clientRoutes.profile)}
-              aria-label="Открыть профиль"
-            >
-              <div className="classes-profile-avatar">
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt=""
-                    className="classes-profile-avatar-img"
-                  />
-                ) : (
-                  avatarInitials
-                )}
-              </div>
-              <div className="classes-profile-text">
-                <strong>{firstName}</strong>
-                <span className="classes-profile-status">
-                  <span className="classes-online-dot" aria-hidden />
-                  Онлайн
-                </span>
-              </div>
-            </button>
+              ariaLabel="Открыть профиль"
+            />
           </header>
 
           <div className="classes-top">

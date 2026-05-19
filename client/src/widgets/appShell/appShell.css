@@ -1,0 +1,365 @@
+/* Общая оболочка: классы, профиль, чаты, админка */
+
+.app-page,
+.classes-page,
+.educhat-page,
+.admin-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: var(--app-page-gutter-y) var(--app-page-gutter-x);
+  color: #f7f7fb;
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--app-page-bg);
+}
+
+.app-shell,
+.classes-shell,
+.desktop-shell,
+.admin-shell,
+.profile-shell.classes-shell {
+  width: var(--app-shell-max-width);
+  max-width: 100%;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--app-shell-min-height);
+  height: var(--app-shell-min-height);
+  max-height: var(--app-shell-max-height);
+  display: grid;
+  grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--app-shell-radius);
+  background: rgba(9, 13, 25, 0.82);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+}
+
+.app-sidebar,
+.classes-sidebar,
+.admin-sidebar,
+.profile-sidebar.classes-sidebar,
+.educhat-page .classes-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  padding: 34px 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 10, 19, 0.78);
+  min-height: 0;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  color: #9aa1b8;
+  text-decoration: none;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #ffffff;
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.nav-link.active {
+  box-shadow: inset 3px 0 0 #7c3aed;
+}
+
+.nav-icon {
+  color: #7c3aed;
+}
+
+.sidebar-info {
+  margin-top: auto;
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.shield-mini {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.18);
+}
+
+.sidebar-info h3,
+.sidebar-info p {
+  margin: 0;
+}
+
+.sidebar-info h3 {
+  font-size: 15px;
+}
+
+.sidebar-info p {
+  margin-top: 4px;
+  color: #9aa1b8;
+  font-size: 13px;
+}
+
+/* Основная колонка (классы, профиль) */
+.app-content,
+.classes-content,
+.admin-content,
+.profile-main.classes-content {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--app-content-padding);
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-family: inherit;
+}
+
+/* Шапка контента: заголовок слева, действие/профиль справа */
+.app-content-header,
+.classes-header,
+.profile-page-header,
+.chat-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: clamp(20px, 3vw, 28px);
+  flex-shrink: 0;
+}
+
+.app-content-header h1,
+.classes-header h1,
+.profile-page-header h1,
+.chat-list-header h1 {
+  margin: 0;
+  max-width: 740px;
+  font-size: clamp(26px, 4vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.app-content-header p,
+.classes-header p,
+.chat-list-header p {
+  margin: 10px 0 0;
+  color: #94a3b8;
+  font-size: clamp(15px, 2vw, 17px);
+}
+
+/* Чип профиля в шапке (классы, чаты) */
+.app-profile-chip,
+.classes-profile-chip,
+.chat-profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  width: auto;
+  max-width: 220px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.app-profile-chip:hover,
+.classes-profile-chip:hover,
+.chat-profile-chip:hover {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.35);
+}
+
+.app-profile-avatar,
+.classes-profile-avatar,
+.chat-profile-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #222b45, #101525);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.app-profile-avatar-img,
+.classes-profile-avatar-img,
+.chat-profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.app-profile-text,
+.classes-profile-text,
+.chat-profile-text {
+  min-width: 0;
+}
+
+.app-profile-text strong,
+.classes-profile-text strong,
+.chat-profile-text strong {
+  display: block;
+  font-size: clamp(15px, 2vw, 17px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.app-profile-status,
+.classes-profile-status,
+.chat-profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.app-online-dot,
+.classes-online-dot,
+.chat-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+  flex-shrink: 0;
+}
+
+/* Кнопки действий в шапке (профиль: выход) */
+.app-header-action-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: rgba(15, 23, 42, 0.5);
+  color: #fca5a5;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.app-header-action-btn:hover:not(:disabled) {
+  background: rgba(185, 28, 28, 0.15);
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.app-header-action-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .app-shell,
+  .classes-shell,
+  .desktop-shell,
+  .admin-shell,
+  .profile-shell.classes-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: unset;
+    max-height: none;
+  }
+
+  .app-sidebar,
+  .classes-sidebar,
+  .admin-sidebar,
+  .profile-sidebar.classes-sidebar,
+  .educhat-page .classes-sidebar {
+    display: none;
+  }
+
+  .app-content,
+  .classes-content,
+  .admin-content,
+  .profile-main.classes-content {
+    padding: 26px;
+  }
+
+  .app-content-header,
+  .classes-header,
+  .profile-page-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 10px;
+    align-items: start;
+  }
+
+  .classes-header > div:first-child {
+    display: contents;
+  }
+
+  .app-profile-chip,
+  .classes-profile-chip {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    max-width: min(220px, 42vw);
+    min-height: 56px;
+    padding: 8px 12px;
+  }
+
+  .app-profile-avatar,
+  .classes-profile-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .classes-header h1,
+  .app-content-header h1 {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
+    margin: 0;
+    padding-right: 8px;
+  }
+
+  .classes-header > div:first-child > p,
+  .app-content-header > div:first-child > p {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin: 0;
+  }
+}

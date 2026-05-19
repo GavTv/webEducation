@@ -279,14 +279,14 @@ export default function ProfilePage() {
 
   if (!isInitialized || !authChecked || !user) {
     return (
-      <main className="classes-page profile-page">
+      <main className="classes-page app-page profile-page">
         <p className="profile-state">Загрузка…</p>
       </main>
     );
   }
 
   return (
-    <main className="classes-page profile-page">
+    <main className="classes-page app-page profile-page">
       {deleteModalOpen ? (
         <ConfirmModal
           title="Вы точно хотите удалить свой аккаунт?"
@@ -300,8 +300,8 @@ export default function ProfilePage() {
         />
       ) : null}
 
-      <section className="profile-shell classes-shell">
-        <aside className="profile-sidebar classes-sidebar">
+      <section className="profile-shell classes-shell app-shell">
+        <aside className="profile-sidebar classes-sidebar app-sidebar">
           <BrandLogo />
 
           <AppNav active="profile" showAdminLink={showAdminLink} />
@@ -315,12 +315,12 @@ export default function ProfilePage() {
           </div>
         </aside>
 
-        <section className="profile-main classes-content">
-          <header className="profile-page-header">
+        <section className="profile-main classes-content app-content">
+          <header className="profile-page-header app-content-header">
             <h1>Профиль</h1>
             <button
               type="button"
-              className="profile-logout-btn"
+              className="app-header-action-btn profile-logout-btn"
               onClick={handleLogout}
               disabled={isLoading}
             >
@@ -549,14 +549,7 @@ export default function ProfilePage() {
             </section>
           </form>
 
-          <section className="profile-danger" aria-labelledby="profile-danger-title">
-            <div className="profile-danger-copy">
-              <h3 id="profile-danger-title">Опасная зона</h3>
-              <p>
-                Удаление аккаунта приведёт к потере всех ваших данных без
-                возможности восстановления
-              </p>
-            </div>
+          <div className="profile-delete-row">
             <button
               type="button"
               className="profile-delete-btn"
@@ -566,7 +559,7 @@ export default function ProfilePage() {
               <Trash2 size={18} aria-hidden />
               Удалить аккаунт
             </button>
-          </section>
+          </div>
         </section>
       </section>
     </main>

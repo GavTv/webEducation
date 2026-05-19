@@ -18,7 +18,10 @@ import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtur
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
+import { AppNav } from "@/widgets/appShell/AppNav";
+import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { canManageClasses } from "@/shared/lib/permissions";
 import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
@@ -111,6 +114,7 @@ function ChatPageContent() {
   const lastName = nameParts[1] || "";
   const avatarInitials = getNameInitials(firstName, lastName, user?.name);
   const avatarSrc = getAvatarSrc(user?.avatarUrl);
+  const canCreateChat = canManageClasses(user?.role);
 
   const searchParams = useSearchParams();
   const chatRooms = useMemo(() => [botRoom, ...rooms], []);
@@ -271,7 +275,7 @@ function ChatPageContent() {
   );
 
   return (
-    <main className="educhat-page">
+    <main className="educhat-page app-page classes-page">
       <header className="chat-mobile-topbar" aria-label="Мобильная шапка">
         <Link className="chat-back-link" href={clientRoutes.classes}>
           <ArrowLeft size={18} strokeWidth={2} aria-hidden />
@@ -279,20 +283,11 @@ function ChatPageContent() {
         </Link>
       </header>
 
-      <section className="desktop-shell">
-        <aside className="classes-sidebar">
+      <section className="desktop-shell app-shell">
+        <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
 
-          <nav className="sidebar-nav">
-            <Link className="nav-link active" href={clientRoutes.chat}>
-              <span className="nav-icon">●</span>
-              Чаты
-            </Link>
-            <Link className="nav-link" href={clientRoutes.profile}>
-              <span className="nav-icon">♙</span>
-              Профиль
-            </Link>
-          </nav>
+          <AppNav active="chat" variant="chat" />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
@@ -307,42 +302,24 @@ function ChatPageContent() {
           className={`chat-columns${mobileThreadOpen ? " chat-columns--thread" : ""}`}
         >
           <section className="chat-panel">
-            <header className="chat-list-header">
+            <header className="chat-list-header app-content-header">
               <div className="chat-list-header-main">
                 <Link className="chat-back-link" href={clientRoutes.classes}>
                   <ArrowLeft size={18} strokeWidth={2} aria-hidden />
                   Классы
                 </Link>
                 <div>
-                  <h1>Привет, {firstName}! 👋</h1>
+                  <h1>Чаты</h1>
                   <p>Выберите чат, чтобы начать общение</p>
                 </div>
               </div>
 
-              <Link
-                className="chat-profile-chip"
+              <AppProfileChip
+                firstName={firstName}
+                avatarSrc={avatarSrc}
+                avatarInitials={avatarInitials}
                 href={clientRoutes.profile}
-                aria-label="Профиль"
-              >
-                <div className="chat-profile-avatar">
-                  {avatarSrc ? (
-                    <img
-                      src={avatarSrc}
-                      alt=""
-                      className="chat-profile-avatar-img"
-                    />
-                  ) : (
-                    avatarInitials
-                  )}
-                </div>
-                <div className="chat-profile-text">
-                  <strong>{firstName}</strong>
-                  <span className="chat-profile-status">
-                    <span className="chat-online-dot" aria-hidden />
-                    Онлайн
-                  </span>
-                </div>
-              </Link>
+              />
             </header>
 
             <div className="chat-toolbar">
@@ -355,9 +332,11 @@ function ChatPageContent() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </label>
-              <button type="button" className="chat-create-btn">
-                + Создать чат
-              </button>
+              {canCreateChat ? (
+                <button type="button" className="chat-create-btn">
+                  + Создать чат
+                </button>
+              ) : null}
             </div>
 
             <div className="rooms">
