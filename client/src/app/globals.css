@@ -19,6 +19,7 @@
     calc(100dvh - 2 * var(--app-page-gutter-y) - 8px)
   );
   --app-shell-max-height: calc(100dvh - 2 * var(--app-page-gutter-y));
+  --app-mobile-tabbar-height: calc(64px + env(safe-area-inset-bottom, 0px));
 
   --app-page-bg-base: #070a13;
   --app-page-bg: radial-gradient(

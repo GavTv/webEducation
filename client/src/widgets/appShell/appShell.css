@@ -80,7 +80,18 @@
 }
 
 .nav-icon {
-  color: #7c3aed;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #9aa1b8;
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  color: #c4b5fd;
 }
 
 .sidebar-info {
@@ -196,9 +207,20 @@
   border-color: rgba(124, 58, 237, 0.35);
 }
 
+.app-profile-chip--static {
+  cursor: default;
+  pointer-events: none;
+}
+
+.app-profile-chip--static:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .app-profile-avatar,
 .classes-profile-avatar,
 .chat-profile-avatar {
+  position: relative;
   width: 44px;
   height: 44px;
   flex-shrink: 0;
@@ -236,15 +258,34 @@
   line-height: 1.2;
 }
 
-.app-profile-status,
-.classes-profile-status,
-.chat-profile-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  color: #94a3b8;
-  font-size: 13px;
+.app-profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.app-profile-avatar-wrap .app-profile-avatar {
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(139, 92, 246, 0.35);
+  box-sizing: border-box;
+}
+
+.app-online-dot--corner {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--app-page-bg-base);
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: none;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .app-online-dot,
@@ -287,7 +328,71 @@
   cursor: not-allowed;
 }
 
+/* Заголовки: короткий на телефоне, полный на десктопе */
+.app-heading-mobile {
+  display: none;
+}
+
+.app-heading-desktop {
+  display: inline;
+}
+
+.app-only-mobile {
+  display: none;
+}
+
+.app-only-desktop {
+  display: block;
+}
+
+/* Нижняя навигация (мобильная) */
+.app-mobile-tabbar {
+  display: none;
+}
+
 @media (max-width: 900px) {
+  .app-heading-mobile {
+    display: inline;
+  }
+
+  .app-heading-desktop {
+    display: none;
+  }
+
+  .app-only-mobile {
+    display: block;
+  }
+
+  .app-only-desktop {
+    display: none;
+  }
+
+  .app-page--with-tabbar,
+  .classes-page.app-page--with-tabbar,
+  .educhat-page.app-page--with-tabbar,
+  .profile-page.app-page--with-tabbar {
+    padding: 0;
+    min-height: 100dvh;
+  }
+
+  .app-page--with-tabbar .app-shell,
+  .app-page--with-tabbar .classes-shell,
+  .app-page--with-tabbar .desktop-shell,
+  .app-page--with-tabbar .profile-shell.classes-shell {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    min-height: 100dvh;
+    height: auto;
+    max-height: none;
+    grid-template-columns: 1fr;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    background: var(--app-page-bg-base);
+  }
+
   .app-shell,
   .classes-shell,
   .desktop-shell,
@@ -311,55 +416,169 @@
   .classes-content,
   .admin-content,
   .profile-main.classes-content {
-    padding: 26px;
+    padding: 20px 16px var(--app-mobile-tabbar-height);
+    min-height: 100dvh;
+    box-sizing: border-box;
+  }
+
+  .app-page--with-tabbar .app-content,
+  .app-page--with-tabbar .classes-content,
+  .app-page--with-tabbar .profile-main.classes-content {
+    padding-bottom: calc(var(--app-mobile-tabbar-height) + 12px);
   }
 
   .app-content-header,
   .classes-header,
-  .profile-page-header {
+  .profile-page-header,
+  .chat-list-header {
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto;
     column-gap: 12px;
-    row-gap: 10px;
+    row-gap: 8px;
     align-items: start;
+    margin-bottom: 20px;
   }
 
-  .classes-header > div:first-child {
+  .classes-header > div:first-child,
+  .chat-list-header-main {
     display: contents;
   }
 
-  .app-profile-chip,
-  .classes-profile-chip {
+  .app-content-header .app-profile-chip,
+  .classes-header .app-profile-chip,
+  .chat-list-header .app-profile-chip {
     grid-column: 2;
-    grid-row: 1;
-    align-self: start;
+    grid-row: 1 / span 2;
+    align-self: center;
     justify-self: end;
-    max-width: min(220px, 42vw);
-    min-height: 56px;
-    padding: 8px 12px;
+    min-height: auto;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    gap: 0;
   }
 
-  .app-profile-avatar,
-  .classes-profile-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
+  .app-content-header .app-profile-text,
+  .classes-header .app-profile-text,
+  .chat-list-header .app-profile-text {
+    display: none;
+  }
+
+  .app-content-header .app-profile-avatar-wrap,
+  .classes-header .app-profile-avatar-wrap,
+  .chat-list-header .app-profile-avatar-wrap {
+    width: 48px;
+    height: 48px;
+  }
+
+  .app-content-header .app-profile-avatar-wrap .app-profile-avatar,
+  .classes-header .app-profile-avatar-wrap .app-profile-avatar,
+  .chat-list-header .app-profile-avatar-wrap .app-profile-avatar {
+    font-size: 16px;
   }
 
   .classes-header h1,
-  .app-content-header h1 {
+  .app-content-header h1,
+  .chat-list-header h1 {
     grid-column: 1;
     grid-row: 1;
     max-width: none;
     margin: 0;
     padding-right: 8px;
+    font-size: 28px;
   }
 
   .classes-header > div:first-child > p,
-  .app-content-header > div:first-child > p {
-    grid-column: 1 / -1;
+  .chat-list-header-main > div > p,
+  .app-header-subtitle {
+    grid-column: 1;
     grid-row: 2;
-    margin: 0;
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .profile-page-header {
+    align-items: center;
+  }
+
+  .profile-page-header h1 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .profile-page-header .app-header-action-btn {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .classes-top__headings {
+    display: none;
+  }
+
+  .classes-top {
+    margin-bottom: 12px;
+  }
+
+  .classes-top:not(:has(.add-button)) {
+    display: none;
+  }
+
+  .app-mobile-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 4px;
+    min-height: var(--app-mobile-tabbar-height);
+    padding: 8px 12px env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(7, 10, 19, 0.96);
+    backdrop-filter: blur(16px);
+  }
+
+  .app-page--hide-tabbar .app-mobile-tabbar {
+    display: none;
+  }
+
+  .app-mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 52px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    color: #9aa1b8;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .app-mobile-tab svg {
+    flex-shrink: 0;
+  }
+
+  .app-mobile-tab--active {
+    color: #c4b5fd;
+    background: rgba(124, 58, 237, 0.18);
+  }
+
+  .app-mobile-tab--active svg {
+    color: #a78bfa;
   }
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
   Suspense,
@@ -12,7 +11,8 @@ import {
 } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Search, Send, Star } from "lucide-react";
+import { ArrowLeft, Lock, Search, Star } from "lucide-react";
+import { ChatMessageInput } from "./ChatMessageInput";
 import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
 import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
@@ -21,6 +21,7 @@ import { getNameInitials } from "@/shared/lib/getNameInitials";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import { canManageClasses } from "@/shared/lib/permissions";
 import "./page.css";
 
@@ -275,25 +276,22 @@ function ChatPageContent() {
   );
 
   return (
-    <main className="educhat-page app-page classes-page">
-      <header className="chat-mobile-topbar" aria-label="Мобильная шапка">
-        <Link className="chat-back-link" href={clientRoutes.classes}>
-          <ArrowLeft size={18} strokeWidth={2} aria-hidden />
-          Классы
-        </Link>
-      </header>
-
+    <main
+      className={`educhat-page app-page classes-page app-page--with-tabbar${
+        mobileThreadOpen ? " app-page--hide-tabbar" : ""
+      }`}
+    >
       <section className="desktop-shell app-shell">
         <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
 
-          <AppNav active="chat" variant="chat" />
+          <AppNav active="chat" />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
             <div>
               <h3>Безопасное обучение</h3>
-              <p>Все классы защищены паролем</p>
+              <p>Классы могут быть защищены паролем</p>
             </div>
           </div>
         </aside>
@@ -304,13 +302,11 @@ function ChatPageContent() {
           <section className="chat-panel">
             <header className="chat-list-header app-content-header">
               <div className="chat-list-header-main">
-                <Link className="chat-back-link" href={clientRoutes.classes}>
-                  <ArrowLeft size={18} strokeWidth={2} aria-hidden />
-                  Классы
-                </Link>
                 <div>
                   <h1>Чаты</h1>
-                  <p>Выберите чат, чтобы начать общение</p>
+                  <p className="app-header-subtitle app-only-desktop">
+                    Выберите чат, чтобы начать общение
+                  </p>
                 </div>
               </div>
 
@@ -395,17 +391,15 @@ function ChatPageContent() {
           </section>
 
           <aside className="thread-panel">
-            <button
-              type="button"
-              className="chat-mobile-back"
-              onClick={closeMobileThread}
-              aria-label="К списку чатов"
-            >
-              <ArrowLeft size={18} strokeWidth={2} aria-hidden />
-              Чаты
-            </button>
-
             <header className="thread-header">
+              <button
+                type="button"
+                className="thread-back-btn"
+                onClick={closeMobileThread}
+                aria-label="К списку чатов"
+              >
+                <ArrowLeft size={20} strokeWidth={2} aria-hidden />
+              </button>
               <div className={`thread-avatar ${selected?.iconClass ?? "purple"}`}>
                 {selected?.icon ?? "🤖"}
               </div>
@@ -441,15 +435,12 @@ function ChatPageContent() {
                     }`}
                   >
                     <span className="message-author">{message.author}</span>
-                    <p>{message.text}</p>
-                    <footer className="message-footer">
-                      <time>{message.time}</time>
-                      {message.isMine ? (
-                        <span className="message-read" aria-label="Прочитано">
-                          ✓✓
-                        </span>
-                      ) : null}
-                    </footer>
+                    <div className="message-body">
+                      <p>{message.text}</p>
+                      <footer className="message-footer">
+                        <time>{message.time}</time>
+                      </footer>
+                    </div>
                   </div>
                   {message.isMine ? (
                     <div className="message-avatar message-avatar--user" aria-hidden>
@@ -465,28 +456,21 @@ function ChatPageContent() {
               <div ref={messagesEndRef} className="messages-end" aria-hidden />
             </div>
 
-            <form className="message-input" onSubmit={sendMessage}>
-              <input
-                placeholder={
-                  isBotChat
-                    ? "Напишите сообщение боту..."
-                    : "Напишите сообщение..."
-                }
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="message-send-btn"
-                aria-label="Отправить"
-                disabled={!draft.trim()}
-              >
-                <Send size={20} strokeWidth={2} aria-hidden />
-              </button>
-            </form>
+            <ChatMessageInput
+              value={draft}
+              onChange={setDraft}
+              onSubmit={sendMessage}
+              placeholder={
+                isBotChat
+                  ? "Напишите сообщение боту..."
+                  : "Напишите сообщение..."
+              }
+            />
           </aside>
         </div>
       </section>
+
+      <MobileBottomNav active="chat" />
     </main>
   );
 }

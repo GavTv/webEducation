@@ -10,6 +10,8 @@ type AppProfileChipProps = {
   href?: string;
   onClick?: () => void;
   ariaLabel?: string;
+  /** false — только отображение, без перехода */
+  interactive?: boolean;
 };
 
 export function AppProfileChip({
@@ -19,25 +21,37 @@ export function AppProfileChip({
   href,
   onClick,
   ariaLabel = "Профиль",
+  interactive = true,
 }: AppProfileChipProps) {
+  const avatarInner = avatarSrc ? (
+    <img src={avatarSrc} alt="" className="app-profile-avatar-img" />
+  ) : (
+    avatarInitials
+  );
+
   const body: ReactNode = (
     <>
-      <div className="app-profile-avatar">
-        {avatarSrc ? (
-          <img src={avatarSrc} alt="" className="app-profile-avatar-img" />
-        ) : (
-          avatarInitials
-        )}
+      <div className="app-profile-avatar-wrap">
+        <div className="app-profile-avatar">{avatarInner}</div>
+        <span className="app-online-dot app-online-dot--corner" aria-hidden />
       </div>
       <div className="app-profile-text">
         <strong>{firstName}</strong>
-        <span className="app-profile-status">
-          <span className="app-online-dot" aria-hidden />
-          Онлайн
-        </span>
       </div>
     </>
   );
+
+  if (!interactive) {
+    return (
+      <div
+        className="app-profile-chip app-profile-chip--static"
+        role="img"
+        aria-label={ariaLabel}
+      >
+        {body}
+      </div>
+    );
+  }
 
   if (href) {
     return (

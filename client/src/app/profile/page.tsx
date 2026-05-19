@@ -22,6 +22,7 @@ import { setError } from "@/entities/user/slice/userSlice";
 import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import { isAdmin } from "@/shared/lib/permissions";
 import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
 import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
@@ -279,14 +280,14 @@ export default function ProfilePage() {
 
   if (!isInitialized || !authChecked || !user) {
     return (
-      <main className="classes-page app-page profile-page">
+      <main className="classes-page app-page profile-page app-page--with-tabbar">
         <p className="profile-state">Загрузка…</p>
       </main>
     );
   }
 
   return (
-    <main className="classes-page app-page profile-page">
+    <main className="classes-page app-page profile-page app-page--with-tabbar">
       {deleteModalOpen ? (
         <ConfirmModal
           title="Вы точно хотите удалить свой аккаунт?"
@@ -562,6 +563,8 @@ export default function ProfilePage() {
           </div>
         </section>
       </section>
+
+      <MobileBottomNav active="profile" />
     </main>
   );
 }
