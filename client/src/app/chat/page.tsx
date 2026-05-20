@@ -39,6 +39,7 @@ import { canManageClasses } from "@/shared/lib/permissions";
 import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
+const BOT_ROOM_ID = 999001;
 const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
 const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
