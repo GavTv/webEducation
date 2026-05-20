@@ -678,34 +678,3 @@
     min-height: 64px;
   }
 }
-
-
-.message.error {
-  border-color: rgba(248, 113, 113, 0.45);
-  background: rgba(127, 29, 29, 0.22);
-}
-
-.message-input button:disabled,
-.message-input input:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.bot-card--active {
-  border-color: rgba(139, 92, 246, 0.65);
-  background: rgba(139, 92, 246, 0.16);
-}
-
-.bot-clear-button {
-  border: 0;
-  border-radius: 14px;
-  padding: 10px 14px;
-  color: #ffffff;
-  background: rgba(139, 92, 246, 0.18);
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.bot-clear-button:hover {
-  background: rgba(139, 92, 246, 0.28);
-}

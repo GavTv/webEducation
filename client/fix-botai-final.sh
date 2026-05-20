@@ -1,3 +1,31 @@
+set -e
+
+echo "📦 Делаю backup..."
+cp src/app/chat/page.tsx src/app/chat/page.tsx.backup-botai-final
+cp src/app/chat/page.css src/app/chat/page.css.backup-botai-final
+cp src/app/layout.tsx src/app/layout.tsx.backup-botai-final
+
+echo "🧹 Убираю маленький виджет, если он остался..."
+rm -rf src/widgets/aiBot
+
+python3 <<'PY'
+from pathlib import Path
+
+layout = Path("src/app/layout.tsx")
+if layout.exists():
+    text = layout.read_text()
+    text = text.replace('import AiBotWidget from "@/widgets/aiBot/AiBotWidget";\n', "")
+    text = text.replace("\n              <AiBotWidget />", "")
+    text = text.replace("\n            <AiBotWidget />", "")
+    text = text.replace("<AiBotWidget />", "")
+    layout.write_text(text)
+
+print("✅ layout очищен")
+PY
+
+echo "🧩 Полностью обновляю src/app/chat/page.tsx..."
+
+cat > src/app/chat/page.tsx <<'EOF'
 "use client";
 
 import Link from "next/link";
@@ -30,8 +58,6 @@ function getAvatarSrc(avatarUrl?: string | null) {
 }
 
 const MOBILE_BP = "(max-width: 900px)";
-const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
-const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
 type ChatMessage = {
   id: string;
@@ -108,41 +134,6 @@ function ChatPageContent() {
   const [botAiLoading, setBotAiLoading] = useState(false);
   const [botAiMessages, setBotAiMessages] =
     useState<ChatMessage[]>(botAiStartMessages);
-
-  useEffect(() => {
-    try {
-      const savedOpen = window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY);
-      const savedMessages = window.localStorage.getItem(
-        BOT_AI_MESSAGES_STORAGE_KEY,
-      );
-
-      if (savedOpen === "true") {
-        setBotAiOpen(true);
-      }
-
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages) as ChatMessage[];
-
-        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-          setBotAiMessages(parsedMessages);
-        }
-      }
-    } catch {
-      window.localStorage.removeItem(BOT_AI_OPEN_STORAGE_KEY);
-      window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
-  }, [botAiOpen]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(botAiMessages),
-    );
-  }, [botAiMessages]);
 
   const selected = useMemo(
     () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
@@ -251,11 +242,6 @@ function ChatPageContent() {
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
     }
-  }, []);
-
-  const clearBotAiChat = useCallback(() => {
-    setBotAiMessages(botAiStartMessages);
-    window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
   }, []);
 
   const sendMessage = useCallback(
@@ -487,17 +473,7 @@ function ChatPageContent() {
                 </p>
               </div>
 
-              {botAiOpen ? (
-                <button
-                  type="button"
-                  className="bot-clear-button"
-                  onClick={clearBotAiChat}
-                >
-                  Очистить
-                </button>
-              ) : (
-                <span>{selected?.icon ?? "#"}</span>
-              )}
+              <span>{botAiOpen ? "🤖" : selected?.icon ?? "#"}</span>
             </div>
 
             <div className="messages">
@@ -589,3 +565,52 @@ export default function ChatPage() {
     </Suspense>
   );
 }
+EOF
+
+echo "🎨 Добавляю минимальные стили..."
+
+python3 <<'PY'
+from pathlib import Path
+
+path = Path("src/app/chat/page.css")
+css = path.read_text()
+
+css = css.replace(
+""".message:nth-child(2) {
+  margin-left: auto;
+  background: rgba(124, 60, 255, 0.18);
+}""",
+""".message.mine {
+  margin-left: auto;
+  background: rgba(124, 60, 255, 0.18);
+}"""
+)
+
+if ".message.error" not in css:
+    css += """
+
+.message.error {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.message-input button:disabled,
+.message-input input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bot-card--active {
+  border-color: rgba(139, 92, 246, 0.65);
+  background: rgba(139, 92, 246, 0.16);
+}
+"""
+
+path.write_text(css)
+print("✅ CSS обновлён")
+PY
+
+echo "✅ Проверяю сборку..."
+npm run build
+
+echo "✅ Готово"

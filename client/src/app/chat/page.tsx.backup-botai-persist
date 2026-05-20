@@ -30,8 +30,6 @@ function getAvatarSrc(avatarUrl?: string | null) {
 }
 
 const MOBILE_BP = "(max-width: 900px)";
-const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
-const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
 type ChatMessage = {
   id: string;
@@ -108,41 +106,6 @@ function ChatPageContent() {
   const [botAiLoading, setBotAiLoading] = useState(false);
   const [botAiMessages, setBotAiMessages] =
     useState<ChatMessage[]>(botAiStartMessages);
-
-  useEffect(() => {
-    try {
-      const savedOpen = window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY);
-      const savedMessages = window.localStorage.getItem(
-        BOT_AI_MESSAGES_STORAGE_KEY,
-      );
-
-      if (savedOpen === "true") {
-        setBotAiOpen(true);
-      }
-
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages) as ChatMessage[];
-
-        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-          setBotAiMessages(parsedMessages);
-        }
-      }
-    } catch {
-      window.localStorage.removeItem(BOT_AI_OPEN_STORAGE_KEY);
-      window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
-  }, [botAiOpen]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(botAiMessages),
-    );
-  }, [botAiMessages]);
 
   const selected = useMemo(
     () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
@@ -251,11 +214,6 @@ function ChatPageContent() {
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
     }
-  }, []);
-
-  const clearBotAiChat = useCallback(() => {
-    setBotAiMessages(botAiStartMessages);
-    window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
   }, []);
 
   const sendMessage = useCallback(
@@ -487,17 +445,7 @@ function ChatPageContent() {
                 </p>
               </div>
 
-              {botAiOpen ? (
-                <button
-                  type="button"
-                  className="bot-clear-button"
-                  onClick={clearBotAiChat}
-                >
-                  Очистить
-                </button>
-              ) : (
-                <span>{selected?.icon ?? "#"}</span>
-              )}
+              <span>{botAiOpen ? "🤖" : selected?.icon ?? "#"}</span>
             </div>
 
             <div className="messages">
