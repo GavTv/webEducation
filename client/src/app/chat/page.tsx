@@ -43,6 +43,10 @@ const BOT_ROOM_ID = 999001;
 const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
 const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
+type BotAiMessage = UiChatMessage & {
+  isError?: boolean;
+};
+
 type ChatRoom = {
   id: number;
   title: string;
@@ -118,11 +122,12 @@ function applyHistory(
   };
 }
 
-const botAiStartMessages: ChatMessage[] = [
+const botAiStartMessages: BotAiMessage[] = [
   {
     id: "bot-start",
     author: "@botAi",
     text: "Привет! Я AI-помощник по программированию. Задай вопрос по JavaScript, React, Next.js, Node.js, базам данных или ошибкам.",
+    time: "сейчас",
     isBot: true,
   },
 ];
@@ -144,10 +149,10 @@ function ChatPageContent() {
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
   const chatRooms = useMemo(
-    () => [botRoom, ...memberClasses.map(classToChatRoom)],
+    () => memberClasses.map(classToChatRoom),
     [memberClasses],
   );
-  const [selectedId, setSelectedId] = useState(BOT_ROOM_ID);
+  const [selectedId, setSelectedId] = useState(0);
   const [draft, setDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
@@ -163,8 +168,31 @@ function ChatPageContent() {
   const [botAiOpen, setBotAiOpen] = useState(false);
   const [botAiDraft, setBotAiDraft] = useState("");
   const [botAiLoading, setBotAiLoading] = useState(false);
-  const [botAiMessages, setBotAiMessages] =
-    useState<ChatMessage[]>(botAiStartMessages);
+  const [botAiMessages, setBotAiMessages] = useState<BotAiMessage[]>(() => {
+    if (typeof window === "undefined") return botAiStartMessages;
+
+    try {
+      const savedMessages = window.localStorage.getItem(
+        BOT_AI_MESSAGES_STORAGE_KEY,
+      );
+
+      if (!savedMessages) return botAiStartMessages;
+
+      const parsedMessages = JSON.parse(savedMessages) as BotAiMessage[];
+
+      if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+        return parsedMessages;
+      }
+
+      return botAiStartMessages;
+    } catch {
+      window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+
+      return botAiStartMessages;
+    }
+  });
+
+
 
   useEffect(() => {
     try {
@@ -178,7 +206,7 @@ function ChatPageContent() {
       }
 
       if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages) as ChatMessage[];
+        const parsedMessages = JSON.parse(savedMessages) as BotAiMessage[];
 
         if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
           setBotAiMessages(parsedMessages);
@@ -190,21 +218,17 @@ function ChatPageContent() {
     }
   }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
-  }, [botAiOpen]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(botAiMessages),
-    );
-  }, [botAiMessages]);
-
   const selected = useMemo(
     () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
     [chatRooms, selectedId],
   );
+
+  // auto-select first real chat
+  useEffect(() => {
+    if (!botAiOpen && selectedId === 0 && chatRooms[0]) {
+      setSelectedId(chatRooms[0].id);
+    }
+  }, [botAiOpen, chatRooms, selectedId]);
 
   const filteredRooms = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -247,7 +271,11 @@ function ChatPageContent() {
       .finally(() => {
         if (!cancelled) setRoomsLoading(false);
       });
-    return () => {
+
+
+
+
+  return () => {
       cancelled = true;
     };
   }, [user]);
@@ -293,7 +321,9 @@ function ChatPageContent() {
     socket.on("message:new", onMessageNew);
     socket.on("ws:ready", onConnect);
 
-    return () => {
+  
+
+  return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("room:history", onHistory);
@@ -328,7 +358,9 @@ function ChatPageContent() {
       messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
     });
 
-    return () => cancelAnimationFrame(id);
+  
+
+  return () => cancelAnimationFrame(id);
   }, [selectedMessages, selectedId]);
 
   useEffect(() => {
@@ -387,7 +419,9 @@ function ChatPageContent() {
 
     checkClassAccess();
 
-    return () => {
+  
+
+  return () => {
       cancelled = true;
     };
   }, [user, searchParams, router]);
@@ -403,13 +437,20 @@ function ChatPageContent() {
 
     mq.addEventListener("change", sync);
 
-    return () => {
+  
+
+  return () => {
       mq.removeEventListener("change", sync);
     };
   }, []);
 
   const selectRoom = useCallback((id: number) => {
     setBotAiOpen(false);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
+    }
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
     setSelectedId(id);
 
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
@@ -424,6 +465,11 @@ function ChatPageContent() {
   const openBotChat = useCallback(() => {
     setBotAiOpen(true);
 
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
+    }
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
+
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
     }
@@ -431,7 +477,10 @@ function ChatPageContent() {
 
   const clearBotAiChat = useCallback(() => {
     setBotAiMessages(botAiStartMessages);
-    window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(botAiStartMessages),
+    );
   }, []);
 
   const formatTime = () => {
@@ -447,36 +496,98 @@ function ChatPageContent() {
 
       if (!text || !selected) return;
 
-      if (isBotChat) {
-        const userMessage: UiChatMessage = {
-          id: `${selected.id}-user-${Date.now()}`,
-          author: displayAuthorName,
-          text,
-          time: formatTime(),
-          isMine: true,
-        };
-        const botReply: UiChatMessage = {
-          id: `${selected.id}-bot-${Date.now()}`,
-          author: "@botAi",
-          text: "Спасибо за сообщение! Скоро здесь будет ответ от AI.",
-          time: formatTime(),
-          isBot: true,
-        };
-        setMessagesByRoomId((prev) => ({
-          ...prev,
-          [selected.id]: [...(prev[selected.id] ?? []), userMessage, botReply],
-        }));
-        setDraft("");
-        return;
-      }
-
       const socket = socketRef.current;
       if (!socket?.connected) return;
 
       emitSendMessage(socket, selected.id, text);
       setDraft("");
     },
-    [draft, displayAuthorName, isBotChat, selected],
+    [draft, selected],
+  );
+
+
+
+
+
+
+
+
+
+
+  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(messages),
+    );
+  }, []);
+
+  const addBotAiMessage = useCallback(
+    (message: BotAiMessage) => {
+      setBotAiMessages((prev) => {
+        const next = [...prev, message];
+
+        saveBotAiMessages(next);
+
+        return next;
+      });
+    },
+    [saveBotAiMessages],
+  );
+
+  const sendBotAiMessage = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const text = botAiDraft.trim();
+
+      if (!text || botAiLoading) return;
+
+      addBotAiMessage({
+        id: `botai-user-${Date.now()}`,
+        author: "Вы",
+        text,
+        time: formatTime(),
+        isMine: true,
+      });
+
+      setBotAiDraft("");
+      setBotAiLoading(true);
+
+      try {
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: text }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        addBotAiMessage({
+          id: `botai-answer-${Date.now()}`,
+          author: "@botAi",
+          text: data?.answer || "Не получилось получить ответ от AI.",
+          time: formatTime(),
+          isBot: true,
+          isError: !response.ok,
+        });
+      } catch {
+        addBotAiMessage({
+          id: `botai-error-${Date.now()}`,
+          author: "@botAi",
+          text: "Ошибка соединения с AI route.",
+          time: formatTime(),
+          isBot: true,
+          isError: true,
+        });
+      } finally {
+        setBotAiLoading(false);
+      }
+    },
+    [addBotAiMessage, botAiDraft, botAiLoading],
   );
 
   return (
@@ -546,7 +657,7 @@ function ChatPageContent() {
               {roomsLoading ? (
                 <p className="chat-hint">Загрузка чатов…</p>
               ) : null}
-              {!roomsLoading && filteredRooms.length <= 1 ? (
+              {!roomsLoading && filteredRooms.length === 0 ? (
                 <p className="chat-hint">
                   Нет классов для чата. Войдите в класс на странице «Классы».
                 </p>
@@ -621,25 +732,27 @@ function ChatPageContent() {
               >
                 <ArrowLeft size={20} strokeWidth={2} aria-hidden />
               </button>
-              <div className={`thread-avatar ${selected?.iconClass ?? "purple"}`}>
-                {selected?.icon ?? "🤖"}
+              <div className={`thread-avatar ${botAiOpen ? "purple" : selected?.iconClass ?? "purple"}`}>
+                {botAiOpen ? "🤖" : selected?.icon ?? "#"}
               </div>
               <div className="thread-header-text">
-                <h2>{selected?.title ?? "Чат"}</h2>
+                <h2>{botAiOpen ? "@botAi" : selected?.title ?? "Чат"}</h2>
                 <p>
                   <span className="chat-online-dot" aria-hidden />
-                  {isRealChat
-                    ? wsConnected
-                      ? selected?.onlineLabel ?? "Подключено"
-                      : "Подключение…"
-                    : (selected?.onlineLabel ?? "AI-помощник")}
+                  {botAiOpen
+                    ? "AI-помощник по программированию"
+                    : isRealChat
+                      ? wsConnected
+                        ? selected?.onlineLabel ?? "Подключено"
+                        : "Подключение…"
+                      : (selected?.onlineLabel ?? "Чат")}
                 </p>
               </div>
             </header>
 
             <div className="messages-wrap">
               <div className="chat-date-pill">Сегодня</div>
-              {selectedMessages.map((message) => (
+              {(botAiOpen ? botAiMessages : selectedMessages).map((message) => (
                 <article
                   key={message.id}
                   className={`message-row${message.isMine ? " message-row--mine" : ""}${
@@ -651,7 +764,7 @@ function ChatPageContent() {
                       className={`message-avatar ${selected?.iconClass ?? "purple"}`}
                       aria-hidden
                     >
-                      {message.isBot ? "🤖" : message.author.charAt(0)}
+                      {botAiOpen || message.isBot ? "🤖" : message.author.charAt(0)}
                     </div>
                   ) : null}
                   <div
@@ -663,7 +776,7 @@ function ChatPageContent() {
                     <div className="message-body">
                       <p>{message.text}</p>
                       <footer className="message-footer">
-                        <time>{message.time}</time>
+                        <time>{message.time ?? ""}</time>
                       </footer>
                     </div>
                   </div>
@@ -678,17 +791,33 @@ function ChatPageContent() {
                   ) : null}
                 </article>
               ))}
+              {botAiOpen && botAiLoading ? (
+                <article className="message-row message-row--bot">
+                  <div className="message-avatar purple" aria-hidden>
+                    🤖
+                  </div>
+                  <div className="message-bubble message-bubble--bot">
+                    <span className="message-author">@botAi</span>
+                    <div className="message-body">
+                      <p>Печатает...</p>
+                      <footer className="message-footer">
+                        <time />
+                      </footer>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
               <div ref={messagesEndRef} className="messages-end" aria-hidden />
             </div>
 
             <ChatMessageInput
-              value={draft}
-              onChange={setDraft}
-              onSubmit={sendMessage}
-              disabled={isRealChat && !wsConnected}
+              value={botAiOpen ? botAiDraft : draft}
+              onChange={botAiOpen ? setBotAiDraft : setDraft}
+              onSubmit={botAiOpen ? sendBotAiMessage : sendMessage}
+              disabled={botAiOpen ? botAiLoading : isRealChat && !wsConnected}
               placeholder={
-                isBotChat
-                  ? "Напишите сообщение боту..."
+                botAiOpen
+                  ? "Вопрос по программированию..."
                   : isRealChat && !wsConnected
                     ? "Подключение к чату…"
                     : "Напишите сообщение..."
@@ -704,6 +833,8 @@ function ChatPageContent() {
 }
 
 function ChatFallback() {
+
+
   return (
     <main className="educhat-page educhat-page--loading">
       <section className="desktop-shell desktop-shell--loading" />
@@ -712,6 +843,8 @@ function ChatFallback() {
 }
 
 export default function ChatPage() {
+
+
   return (
     <Suspense fallback={<ChatFallback />}>
       <ChatPageContent />
