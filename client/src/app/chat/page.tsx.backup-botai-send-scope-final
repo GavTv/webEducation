@@ -273,7 +273,81 @@ function ChatPageContent() {
       });
 
 
+  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
+    if (typeof window === "undefined") return;
 
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(messages),
+    );
+  }, []);
+
+  const addBotAiMessage = useCallback(
+    (message: BotAiMessage) => {
+      setBotAiMessages((prev) => {
+        const next = [...prev, message];
+
+        saveBotAiMessages(next);
+
+        return next;
+      });
+    },
+    [saveBotAiMessages],
+  );
+
+  const sendBotAiMessage = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const text = botAiDraft.trim();
+
+      if (!text || botAiLoading) return;
+
+      addBotAiMessage({
+        id: `botai-user-${Date.now()}`,
+        author: "Вы",
+        text,
+        time: formatTime(),
+        isMine: true,
+      });
+
+      setBotAiDraft("");
+      setBotAiLoading(true);
+
+      try {
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: text }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        addBotAiMessage({
+          id: `botai-answer-${Date.now()}`,
+          author: "@botAi",
+          text: data?.answer || "Не получилось получить ответ от AI.",
+          time: formatTime(),
+          isBot: true,
+          isError: !response.ok,
+        });
+      } catch {
+        addBotAiMessage({
+          id: `botai-error-${Date.now()}`,
+          author: "@botAi",
+          text: "Ошибка соединения с AI route.",
+          time: formatTime(),
+          isBot: true,
+          isError: true,
+        });
+      } finally {
+        setBotAiLoading(false);
+      }
+    },
+    [addBotAiMessage, botAiDraft, botAiLoading],
+  );
 
   return () => {
       cancelled = true;
@@ -508,87 +582,6 @@ function ChatPageContent() {
 
 
 
-
-
-
-
-
-
-  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
-    if (typeof window === "undefined") return;
-
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(messages),
-    );
-  }, []);
-
-  const addBotAiMessage = useCallback(
-    (message: BotAiMessage) => {
-      setBotAiMessages((prev) => {
-        const next = [...prev, message];
-
-        saveBotAiMessages(next);
-
-        return next;
-      });
-    },
-    [saveBotAiMessages],
-  );
-
-  const sendBotAiMessage = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-
-      const text = botAiDraft.trim();
-
-      if (!text || botAiLoading) return;
-
-      addBotAiMessage({
-        id: `botai-user-${Date.now()}`,
-        author: "Вы",
-        text,
-        time: formatTime(),
-        isMine: true,
-      });
-
-      setBotAiDraft("");
-      setBotAiLoading(true);
-
-      try {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message: text }),
-        });
-
-        const data = await response.json().catch(() => null);
-
-        addBotAiMessage({
-          id: `botai-answer-${Date.now()}`,
-          author: "@botAi",
-          text: data?.answer || "Не получилось получить ответ от AI.",
-          time: formatTime(),
-          isBot: true,
-          isError: !response.ok,
-        });
-      } catch {
-        addBotAiMessage({
-          id: `botai-error-${Date.now()}`,
-          author: "@botAi",
-          text: "Ошибка соединения с AI route.",
-          time: formatTime(),
-          isBot: true,
-          isError: true,
-        });
-      } finally {
-        setBotAiLoading(false);
-      }
-    },
-    [addBotAiMessage, botAiDraft, botAiLoading],
-  );
 
   return (
     <main

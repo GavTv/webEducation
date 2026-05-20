@@ -168,30 +168,51 @@ function ChatPageContent() {
   const [botAiOpen, setBotAiOpen] = useState(false);
   const [botAiDraft, setBotAiDraft] = useState("");
   const [botAiLoading, setBotAiLoading] = useState(false);
-  const [botAiMessages, setBotAiMessages] = useState<BotAiMessage[]>(() => {
-    if (typeof window === "undefined") return botAiStartMessages;
+  const [botAiMessages, setBotAiMessages] =
+    useState<BotAiMessage[]>(botAiStartMessages);
 
+  // restore botAi from localStorage
+  useEffect(() => {
     try {
+      const savedOpen = window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY);
       const savedMessages = window.localStorage.getItem(
         BOT_AI_MESSAGES_STORAGE_KEY,
       );
 
-      if (!savedMessages) return botAiStartMessages;
+      if (savedOpen === "true") {
+        setBotAiOpen(true);
 
-      const parsedMessages = JSON.parse(savedMessages) as BotAiMessage[];
-
-      if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-        return parsedMessages;
+        if (
+          typeof window !== "undefined" &&
+          window.matchMedia(MOBILE_BP).matches
+        ) {
+          setMobileThreadOpen(true);
+        }
       }
 
-      return botAiStartMessages;
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages);
+
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          setBotAiMessages(parsedMessages);
+        }
+      }
     } catch {
+      window.localStorage.removeItem(BOT_AI_OPEN_STORAGE_KEY);
       window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
-
-      return botAiStartMessages;
     }
-  });
+  }, []);
 
+  useEffect(() => {
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
+  }, [botAiOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(botAiMessages),
+    );
+  }, [botAiMessages]);
 
 
   useEffect(() => {
@@ -217,6 +238,17 @@ function ChatPageContent() {
       window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
+  }, [botAiOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(botAiMessages),
+    );
+  }, [botAiMessages]);
 
   const selected = useMemo(
     () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
@@ -271,9 +303,6 @@ function ChatPageContent() {
       .finally(() => {
         if (!cancelled) setRoomsLoading(false);
       });
-
-
-
 
   return () => {
       cancelled = true;
@@ -446,10 +475,6 @@ function ChatPageContent() {
 
   const selectRoom = useCallback((id: number) => {
     setBotAiOpen(false);
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
-    }
     window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
     setSelectedId(id);
 
@@ -464,10 +489,6 @@ function ChatPageContent() {
 
   const openBotChat = useCallback(() => {
     setBotAiOpen(true);
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
-    }
     window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
 
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
@@ -508,34 +529,6 @@ function ChatPageContent() {
 
 
 
-
-
-
-
-
-
-  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
-    if (typeof window === "undefined") return;
-
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(messages),
-    );
-  }, []);
-
-  const addBotAiMessage = useCallback(
-    (message: BotAiMessage) => {
-      setBotAiMessages((prev) => {
-        const next = [...prev, message];
-
-        saveBotAiMessages(next);
-
-        return next;
-      });
-    },
-    [saveBotAiMessages],
-  );
-
   const sendBotAiMessage = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -544,13 +537,16 @@ function ChatPageContent() {
 
       if (!text || botAiLoading) return;
 
-      addBotAiMessage({
-        id: `botai-user-${Date.now()}`,
-        author: "Вы",
-        text,
-        time: formatTime(),
-        isMine: true,
-      });
+      setBotAiMessages((prev) => [
+        ...prev,
+        {
+          id: `botai-user-${Date.now()}`,
+          author: "Вы",
+          text,
+          time: formatTime(),
+          isMine: true,
+        },
+      ]);
 
       setBotAiDraft("");
       setBotAiLoading(true);
@@ -566,28 +562,34 @@ function ChatPageContent() {
 
         const data = await response.json().catch(() => null);
 
-        addBotAiMessage({
-          id: `botai-answer-${Date.now()}`,
-          author: "@botAi",
-          text: data?.answer || "Не получилось получить ответ от AI.",
-          time: formatTime(),
-          isBot: true,
-          isError: !response.ok,
-        });
+        setBotAiMessages((prev) => [
+          ...prev,
+          {
+            id: `botai-answer-${Date.now()}`,
+            author: "@botAi",
+            text: data?.answer || "Не получилось получить ответ от AI.",
+            time: formatTime(),
+            isBot: true,
+            isError: !response.ok,
+          },
+        ]);
       } catch {
-        addBotAiMessage({
-          id: `botai-error-${Date.now()}`,
-          author: "@botAi",
-          text: "Ошибка соединения с AI route.",
-          time: formatTime(),
-          isBot: true,
-          isError: true,
-        });
+        setBotAiMessages((prev) => [
+          ...prev,
+          {
+            id: `botai-error-${Date.now()}`,
+            author: "@botAi",
+            text: "Ошибка соединения с AI route.",
+            time: formatTime(),
+            isBot: true,
+            isError: true,
+          },
+        ]);
       } finally {
         setBotAiLoading(false);
       }
     },
-    [addBotAiMessage, botAiDraft, botAiLoading],
+    [botAiDraft, botAiLoading],
   );
 
   return (

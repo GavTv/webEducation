@@ -273,7 +273,27 @@ function ChatPageContent() {
       });
 
 
+  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
+    if (typeof window === "undefined") return;
 
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(messages),
+    );
+  }, []);
+
+  const addBotAiMessage = useCallback(
+    (message: BotAiMessage) => {
+      setBotAiMessages((prev) => {
+        const next = [...prev, message];
+
+        saveBotAiMessages(next);
+
+        return next;
+      });
+    },
+    [saveBotAiMessages],
+  );
 
   return () => {
       cancelled = true;
@@ -504,10 +524,6 @@ function ChatPageContent() {
     },
     [draft, selected],
   );
-
-
-
-
 
 
 

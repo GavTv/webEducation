@@ -165,7 +165,11 @@ function ChatPageContent() {
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const selectedIdRef = useRef(selectedId);
 
-  const [botAiOpen, setBotAiOpen] = useState(false);
+  const [botAiOpen, setBotAiOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+
+    return window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY) === "true";
+  });
   const [botAiDraft, setBotAiDraft] = useState("");
   const [botAiLoading, setBotAiLoading] = useState(false);
   const [botAiMessages, setBotAiMessages] = useState<BotAiMessage[]>(() => {
@@ -191,6 +195,21 @@ function ChatPageContent() {
       return botAiStartMessages;
     }
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
+  }, [botAiOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(botAiMessages),
+    );
+  }, [botAiMessages]);
 
 
 
@@ -271,9 +290,6 @@ function ChatPageContent() {
       .finally(() => {
         if (!cancelled) setRoomsLoading(false);
       });
-
-
-
 
   return () => {
       cancelled = true;
@@ -508,34 +524,6 @@ function ChatPageContent() {
 
 
 
-
-
-
-
-
-
-  const saveBotAiMessages = useCallback((messages: BotAiMessage[]) => {
-    if (typeof window === "undefined") return;
-
-    window.localStorage.setItem(
-      BOT_AI_MESSAGES_STORAGE_KEY,
-      JSON.stringify(messages),
-    );
-  }, []);
-
-  const addBotAiMessage = useCallback(
-    (message: BotAiMessage) => {
-      setBotAiMessages((prev) => {
-        const next = [...prev, message];
-
-        saveBotAiMessages(next);
-
-        return next;
-      });
-    },
-    [saveBotAiMessages],
-  );
-
   const sendBotAiMessage = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -544,13 +532,16 @@ function ChatPageContent() {
 
       if (!text || botAiLoading) return;
 
-      addBotAiMessage({
-        id: `botai-user-${Date.now()}`,
-        author: "Вы",
-        text,
-        time: formatTime(),
-        isMine: true,
-      });
+      setBotAiMessages((prev) => [
+        ...prev,
+        {
+          id: `botai-user-${Date.now()}`,
+          author: "Вы",
+          text,
+          time: formatTime(),
+          isMine: true,
+        },
+      ]);
 
       setBotAiDraft("");
       setBotAiLoading(true);
@@ -566,28 +557,34 @@ function ChatPageContent() {
 
         const data = await response.json().catch(() => null);
 
-        addBotAiMessage({
-          id: `botai-answer-${Date.now()}`,
-          author: "@botAi",
-          text: data?.answer || "Не получилось получить ответ от AI.",
-          time: formatTime(),
-          isBot: true,
-          isError: !response.ok,
-        });
+        setBotAiMessages((prev) => [
+          ...prev,
+          {
+            id: `botai-answer-${Date.now()}`,
+            author: "@botAi",
+            text: data?.answer || "Не получилось получить ответ от AI.",
+            time: formatTime(),
+            isBot: true,
+            isError: !response.ok,
+          },
+        ]);
       } catch {
-        addBotAiMessage({
-          id: `botai-error-${Date.now()}`,
-          author: "@botAi",
-          text: "Ошибка соединения с AI route.",
-          time: formatTime(),
-          isBot: true,
-          isError: true,
-        });
+        setBotAiMessages((prev) => [
+          ...prev,
+          {
+            id: `botai-error-${Date.now()}`,
+            author: "@botAi",
+            text: "Ошибка соединения с AI route.",
+            time: formatTime(),
+            isBot: true,
+            isError: true,
+          },
+        ]);
       } finally {
         setBotAiLoading(false);
       }
     },
-    [addBotAiMessage, botAiDraft, botAiLoading],
+    [botAiDraft, botAiLoading],
   );
 
   return (
