@@ -1,44 +1,38 @@
-import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-
-if (
-  process.env.NODE_ENV !== "production" &&
-  process.env.GIGACHAT_DISABLE_TLS_VERIFY === "1"
-) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-}
-
-
-type GigaChatTokenResponse = {
-  access_token: string;
-  expires_at: number;
-};
-
-type GigaChatMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
-};
 
 type DailyLimitInfo = {
   date: string;
   count: number;
 };
 
-const DAILY_LIMIT = Number(process.env.GIGACHAT_DAILY_LIMIT ?? 20);
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: string }>;
+    };
+  }>;
+  error?: { message?: string };
+};
 
-const GIGACHAT_SCOPE = process.env.GIGACHAT_SCOPE ?? "GIGACHAT_API_PERS";
-const GIGACHAT_MODEL = process.env.GIGACHAT_MODEL ?? "GigaChat";
-const GIGACHAT_AUTH_URL =
-  process.env.GIGACHAT_AUTH_URL ??
-  "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
-const GIGACHAT_API_URL =
-  process.env.GIGACHAT_API_URL ??
-  "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
+const DAILY_LIMIT = Number(
+  process.env.AI_DAILY_LIMIT ?? process.env.GIGACHAT_DAILY_LIMIT ?? 20,
+);
 
-let cachedAccessToken: string | null = null;
-let cachedAccessTokenExpiresAt = 0;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() ?? "";
+const GEMINI_MODEL =
+  process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+const GEMINI_FALLBACK_MODELS = (
+  process.env.GEMINI_FALLBACK_MODELS ??
+  "gemini-2.5-flash-lite,gemini-2.0-flash-lite"
+)
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+const GEMINI_API_BASE =
+  process.env.GEMINI_API_BASE?.trim() ||
+  "https://generativelanguage.googleapis.com/v1beta";
 
 const dailyLimits = new Map<string, DailyLimitInfo>();
 
@@ -49,7 +43,7 @@ const PROGRAMMING_TOPICS = [
   "Next.js: app router, pages, route handlers, client/server components.",
   "Node.js и Express: routes, controllers, services, middleware, REST API.",
   "PostgreSQL и Sequelize: модели, миграции, сиды, связи таблиц, SQL.",
-  "Авторизация: JWT, access token, refresh token, cookies, localStorage.",
+  "Авторизация: JWT, access token, refresh token, cookies.",
   "Git: branch, checkout, merge, pull, push, conflict, commit.",
   "Отладка: stack trace, npm errors, CORS, build errors, TypeScript errors.",
   "Архитектура: FSD, shared, entities, features, widgets, app.",
@@ -69,7 +63,7 @@ ${PROGRAMMING_TOPICS.map((topic, index) => `${index + 1}. ${topic}`).join("\n")}
 - Если нужен код, давай минимальный рабочий пример.
 - Если вопрос не по программированию, ответь: "Я могу помочь только с вопросами по программированию."
 - Не выдумывай файлы проекта. Если не хватает контекста, попроси показать файл или ошибку.
-`;
+`.trim();
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -102,102 +96,101 @@ function checkDailyLimit(req: NextRequest) {
   return { allowed: true, used: current.count, limit: DAILY_LIMIT };
 }
 
-function getBasicAuthKey() {
-  const preparedAuthKey = process.env.GIGACHAT_AUTH_KEY;
-
-  if (preparedAuthKey) {
-    return preparedAuthKey.startsWith("Basic ")
-      ? preparedAuthKey
-      : `Basic ${preparedAuthKey}`;
-  }
-
-  const clientId = process.env.GIGACHAT_CLIENT_ID;
-  const clientSecret = process.env.GIGACHAT_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    return null;
-  }
-
-  const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-
-  return `Basic ${encoded}`;
+function getModelsToTry(): string[] {
+  const list = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+  return [...new Set(list)];
 }
 
-async function getGigaChatAccessToken() {
-  const now = Date.now();
-
-  if (cachedAccessToken && cachedAccessTokenExpiresAt - 60_000 > now) {
-    return cachedAccessToken;
-  }
-
-  const authKey = getBasicAuthKey();
-
-  if (!authKey) {
-    throw new Error("GIGACHAT_KEYS_NOT_SET");
-  }
-
-  const response = await fetch(GIGACHAT_AUTH_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-      Authorization: authKey,
-      RqUID: randomUUID(),
-    },
-    body: new URLSearchParams({
-      scope: GIGACHAT_SCOPE,
-    }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`GIGACHAT_AUTH_ERROR: ${response.status} ${text}`);
-  }
-
-  const data = (await response.json()) as GigaChatTokenResponse;
-
-  cachedAccessToken = data.access_token;
-  cachedAccessTokenExpiresAt = data.expires_at;
-
-  return data.access_token;
+function shouldRetryWithNextModel(status: number, detail: string) {
+  if (status === 503 || status === 429) return true;
+  if (status === 404) return true;
+  return /high demand|UNAVAILABLE|quota|not found/i.test(detail);
 }
 
-async function askGigaChat(userMessage: string) {
-  const accessToken = await getGigaChatAccessToken();
+async function callGeminiModel(model: string, userMessage: string) {
+  const url = `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent`;
+  const timeoutMs = Number(process.env.GEMINI_FETCH_TIMEOUT_MS ?? 30_000);
 
-  const messages: GigaChatMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: userMessage },
-  ];
-
-  const response = await fetch(GIGACHAT_API_URL, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      "X-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
-      model: GIGACHAT_MODEL,
-      messages,
-      temperature: 0.4,
-      max_tokens: 700,
+      systemInstruction: {
+        parts: [{ text: SYSTEM_PROMPT }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: userMessage }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 700,
+      },
     }),
     cache: "no-store",
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
+  const data = (await response.json().catch(() => ({}))) as GeminiResponse;
+
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`GIGACHAT_CHAT_ERROR: ${response.status} ${text}`);
+    const detail = data.error?.message || JSON.stringify(data).slice(0, 300);
+    return {
+      ok: false as const,
+      status: response.status,
+      detail,
+    };
   }
 
-  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text ?? "")
+    .join("")
+    .trim();
 
-  return (
-    data?.choices?.[0]?.message?.content ||
-    "Не получилось получить ответ от GigaChat."
-  );
+  return {
+    ok: true as const,
+    text: text || "Не получилось получить ответ от Gemini.",
+  };
+}
+
+async function askGemini(userMessage: string) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY_NOT_SET");
+  }
+
+  const models = getModelsToTry();
+  let lastError = "unknown";
+
+  for (const model of models) {
+    const result = await callGeminiModel(model, userMessage);
+    if (result.ok) {
+      return result.text;
+    }
+    lastError = `${model}: ${result.status} ${result.detail}`;
+    if (!shouldRetryWithNextModel(result.status, result.detail)) {
+      break;
+    }
+  }
+
+  throw new Error(`GEMINI_API_ERROR: ${lastError}`);
+}
+
+function formatGeminiError(message: string) {
+  if (/quota|429/i.test(message)) {
+    return "Исчерпана квота Gemini API. Включи биллинг в Google AI Studio или подожди сброс лимита.";
+  }
+  if (/high demand|503|UNAVAILABLE/i.test(message)) {
+    return "Модель Gemini перегружена. Попробуй через минуту — в коде уже стоит запасная модель.";
+  }
+  if (/API key|401|403|PERMISSION/i.test(message)) {
+    return "Неверный GEMINI_API_KEY. Создай новый ключ в Google AI Studio.";
+  }
+  return "Ошибка Gemini API. Подробности в консоли сервера (терминал client).";
 }
 
 export async function POST(req: NextRequest) {
@@ -237,7 +230,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const answer = await askGigaChat(message);
+      const answer = await askGemini(message);
 
       return NextResponse.json({
         answer,
@@ -245,21 +238,30 @@ export async function POST(req: NextRequest) {
         limit: limit.limit,
       });
     } catch (error) {
-      if (error instanceof Error && error.message === "GIGACHAT_KEYS_NOT_SET") {
-        return NextResponse.json({
-          answer: "привет",
-          used: limit.used,
-          limit: limit.limit,
-          mock: true,
-        });
+      console.error(error);
+
+      if (error instanceof Error && error.message === "GEMINI_API_KEY_NOT_SET") {
+        return NextResponse.json(
+          {
+            error: "GEMINI_API_KEY_NOT_SET",
+            answer:
+              "AI не настроен. Добавь GEMINI_API_KEY в client/.env.local и перезапусти dev-сервер.",
+            used: limit.used,
+            limit: limit.limit,
+          },
+          { status: 503 },
+        );
       }
 
-      console.error(error);
+      const answer =
+        error instanceof Error && error.message.startsWith("GEMINI_API_ERROR")
+          ? formatGeminiError(error.message)
+          : "Сейчас AI не ответил. Попробуй позже.";
 
       return NextResponse.json(
         {
-          error: "GIGACHAT_ERROR",
-          answer: "Сейчас AI не ответил. Проверь ключи GigaChat или попробуй позже.",
+          error: "GEMINI_ERROR",
+          answer,
           used: limit.used,
           limit: limit.limit,
         },
