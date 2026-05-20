@@ -39,7 +39,8 @@ import { canManageClasses } from "@/shared/lib/permissions";
 import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
-const BOT_ROOM_ID = 999001;
+const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
+const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
 type ChatRoom = {
   id: number;
@@ -116,6 +117,15 @@ function applyHistory(
   };
 }
 
+const botAiStartMessages: ChatMessage[] = [
+  {
+    id: "bot-start",
+    author: "@botAi",
+    text: "Привет! Я AI-помощник по программированию. Задай вопрос по JavaScript, React, Next.js, Node.js, базам данных или ошибкам.",
+    isBot: true,
+  },
+];
+
 function ChatPageContent() {
   const router = useRouter();
   const user = useAppSelector((state) => state.user.user);
@@ -149,8 +159,49 @@ function ChatPageContent() {
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const selectedIdRef = useRef(selectedId);
 
+  const [botAiOpen, setBotAiOpen] = useState(false);
+  const [botAiDraft, setBotAiDraft] = useState("");
+  const [botAiLoading, setBotAiLoading] = useState(false);
+  const [botAiMessages, setBotAiMessages] =
+    useState<ChatMessage[]>(botAiStartMessages);
+
+  useEffect(() => {
+    try {
+      const savedOpen = window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY);
+      const savedMessages = window.localStorage.getItem(
+        BOT_AI_MESSAGES_STORAGE_KEY,
+      );
+
+      if (savedOpen === "true") {
+        setBotAiOpen(true);
+      }
+
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages) as ChatMessage[];
+
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          setBotAiMessages(parsedMessages);
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(BOT_AI_OPEN_STORAGE_KEY);
+      window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, String(botAiOpen));
+  }, [botAiOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      BOT_AI_MESSAGES_STORAGE_KEY,
+      JSON.stringify(botAiMessages),
+    );
+  }, [botAiMessages]);
+
   const selected = useMemo(
-    () => chatRooms.find((r) => r.id === selectedId) ?? chatRooms[0],
+    () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
     [chatRooms, selectedId],
   );
 
@@ -281,41 +332,59 @@ function ChatPageContent() {
 
   useEffect(() => {
     const classId = searchParams.get("classId");
+
     if (!classId) return;
+
     const id = Number(classId);
+
     if (!Number.isFinite(id)) return;
     if (memberClasses.some((c) => c.id === id)) {
       setSelectedId(id);
+
       const mq = window.matchMedia(MOBILE_BP);
-      if (mq.matches) setMobileThreadOpen(true);
+
+      if (mq.matches) {
+        setMobileThreadOpen(true);
+      }
     }
   }, [searchParams, memberClasses]);
 
   useEffect(() => {
     const classId = searchParams.get("classId");
+
     if (!user || !classId) return;
+
     const id = Number(classId);
+
     if (!Number.isFinite(id)) return;
 
     let cancelled = false;
 
-    (async () => {
+    async function checkClassAccess() {
       try {
         const access = await fetchClassAccess(id);
+
         if (cancelled) return;
+
         if (access.hasAccess && !access.needsPassword) {
           if (!access.isMember) {
             await joinClass(id);
           }
+
           return;
         }
+
         if (!access.hasAccess) {
           router.replace(clientRoutes.classes);
         }
       } catch {
-        if (!cancelled) router.replace(clientRoutes.classes);
+        if (!cancelled) {
+          router.replace(clientRoutes.classes);
+        }
       }
-    })();
+    }
+
+    checkClassAccess();
 
     return () => {
       cancelled = true;
@@ -324,25 +393,45 @@ function ChatPageContent() {
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_BP);
+
     const sync = () => {
-      if (!mq.matches) setMobileThreadOpen(false);
+      if (!mq.matches) {
+        setMobileThreadOpen(false);
+      }
     };
+
     mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+
+    return () => {
+      mq.removeEventListener("change", sync);
+    };
   }, []);
 
   const selectRoom = useCallback((id: number) => {
+    setBotAiOpen(false);
     setSelectedId(id);
+
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
     }
   }, []);
 
-  const closeMobileThread = useCallback(() => setMobileThreadOpen(false), []);
+  const closeMobileThread = useCallback(() => {
+    setMobileThreadOpen(false);
+  }, []);
 
   const openBotChat = useCallback(() => {
-    selectRoom(BOT_ROOM_ID);
-  }, [selectRoom]);
+    setBotAiOpen(true);
+
+    if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
+      setMobileThreadOpen(true);
+    }
+  }, []);
+
+  const clearBotAiChat = useCallback(() => {
+    setBotAiMessages(botAiStartMessages);
+    window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+  }, []);
 
   const formatTime = () => {
     const d = new Date();
@@ -403,6 +492,7 @@ function ChatPageContent() {
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
+
             <div>
               <h3>Безопасное обучение</h3>
               <p>Классы могут быть защищены паролем</p>
@@ -411,7 +501,9 @@ function ChatPageContent() {
         </aside>
 
         <div
-          className={`chat-columns${mobileThreadOpen ? " chat-columns--thread" : ""}`}
+          className={`chat-columns${
+            mobileThreadOpen ? " chat-columns--thread" : ""
+          }`}
         >
           <section className="chat-panel">
             <header className="chat-list-header app-content-header">
@@ -462,10 +554,14 @@ function ChatPageContent() {
                 <button
                   key={room.id}
                   type="button"
-                  className={`room-card${room.id === selected?.id ? " selected" : ""}`}
+                  className={`room-card${
+                    !botAiOpen && room.id === selected?.id ? " selected" : ""
+                  }`}
                   onClick={() => selectRoom(room.id)}
                 >
-                  <div className={`room-icon ${room.iconClass}`}>{room.icon}</div>
+                  <div className={`room-icon ${room.iconClass}`}>
+                    {room.icon}
+                  </div>
 
                   <div className="room-info">
                     <h3>
@@ -487,6 +583,7 @@ function ChatPageContent() {
                         />
                       ) : null}
                     </h3>
+
                     <p>
                       {room.author}: {room.message}
                     </p>
@@ -500,8 +597,9 @@ function ChatPageContent() {
               ))}
             </div>
 
-            <div className="bot-card">
+            <div className={`bot-card${botAiOpen ? " bot-card--active" : ""}`}>
               <div className="bot-avatar">🤖</div>
+
               <div>
                 <h3>@botAi</h3>
                 <p>Ваш AI-помощник. Задавайте вопросы!</p>
