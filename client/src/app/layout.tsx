@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import ApplicationLayout from "@/application/ApplicationLayout";
 import StoreProvider from "./store/storeProvider";
 import UserProvider from "@/application/UserProvider";
-import AuthSessionProvider from "@/application/AuthSessionProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,11 +18,9 @@ export default function RootLayout({
     <html lang="ru">
       <body>
         <StoreProvider>
-          <AuthSessionProvider>
-            <UserProvider>
-              <ApplicationLayout>{children}</ApplicationLayout>
-            </UserProvider>
-          </AuthSessionProvider>
+          <UserProvider>
+            <ApplicationLayout>{children}</ApplicationLayout>
+          </UserProvider>
         </StoreProvider>
       </body>
     </html>

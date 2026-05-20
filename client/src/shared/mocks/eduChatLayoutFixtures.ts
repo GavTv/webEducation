@@ -14,6 +14,7 @@ export type EduChatRoomFixture = {
   time: string;
   unread?: number;
   onlineLabel?: string;
+  starred?: boolean;
 };
 
 export const eduChatRoomFixtures: EduChatRoomFixture[] = [

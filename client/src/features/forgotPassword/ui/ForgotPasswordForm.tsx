@@ -376,7 +376,7 @@ export default function ForgotPasswordForm({
             style={{ marginTop: 12, alignSelf: "center" }}
             onClick={onBackToSignIn}
           >
-            ← Назад ко входу
+            Назад ко входу
           </button>
         </form>
       ) : null}
@@ -432,7 +432,7 @@ export default function ForgotPasswordForm({
               setStep("email");
             }}
           >
-            ← Другой email
+            Другой email
           </button>
         </form>
       ) : null}
@@ -517,7 +517,7 @@ export default function ForgotPasswordForm({
               setStep("code");
             }}
           >
-            ← К коду
+            К коду
           </button>
         </form>
       ) : null}

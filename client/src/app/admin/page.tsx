@@ -104,9 +104,9 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="admin-page">
-      <section className="admin-shell classes-shell">
-        <aside className="admin-sidebar classes-sidebar">
+    <main className="admin-page app-page">
+      <section className="admin-shell classes-shell app-shell">
+        <aside className="admin-sidebar classes-sidebar app-sidebar">
           <BrandLogo />
 
           <AppNav active="admin" showAdminLink />
@@ -120,8 +120,8 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        <section className="admin-content classes-content">
-          <header className="admin-header classes-header">
+        <section className="admin-content classes-content app-content">
+          <header className="admin-header classes-header app-content-header">
             <div>
               <p className="eyebrow">Панель администратора</p>
               <h1>Управление пользователями</h1>

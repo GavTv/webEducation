@@ -426,27 +426,10 @@ class AuthController {
       }
 
       if (user) {
-        if (user.password) {
-          return res.status(409).json(
-            formatResponse(
-              409,
-              'Этот email зарегистрирован с паролем. Войдите через почту.',
-            ),
-          );
-        }
-
         if (provider === 'google') {
           if (user.google_sub && user.google_sub !== sub) {
             return res.status(403).json(
               formatResponse(403, 'Аккаунт привязан к другому Google'),
-            );
-          }
-          if (user.github_sub && !user.google_sub) {
-            return res.status(409).json(
-              formatResponse(
-                409,
-                'Этот email привязан к GitHub. Войдите через GitHub.',
-              ),
             );
           }
           if (!user.google_sub) {
@@ -457,14 +440,6 @@ class AuthController {
           if (user.github_sub && user.github_sub !== sub) {
             return res.status(403).json(
               formatResponse(403, 'Аккаунт привязан к другому GitHub'),
-            );
-          }
-          if (user.google_sub && !user.github_sub) {
-            return res.status(409).json(
-              formatResponse(
-                409,
-                'Этот email привязан к Google. Войдите через Google.',
-              ),
             );
           }
           if (!user.github_sub) {

@@ -1,3 +1,5 @@
+@import "../widgets/appShell/appShell.css";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -7,11 +9,17 @@
 
   /* Единая геометрия «тёмных» экранов на десктопе (чат, профиль, классы) */
   --app-shell-max-width: min(1760px, calc(100vw - 32px));
+  --app-sidebar-width: 280px;
+  --app-content-padding: 42px;
   --app-page-gutter-x: clamp(12px, 2.5vw, 32px);
   --app-page-gutter-y: clamp(12px, 2.5vw, 40px);
   --app-shell-radius: clamp(20px, 2.5vw, 36px);
-  --app-shell-min-height: min(900px, calc(100dvh - 100px));
-  --app-shell-max-height: calc(100dvh - 48px);
+  --app-shell-min-height: min(
+    900px,
+    calc(100dvh - 2 * var(--app-page-gutter-y) - 8px)
+  );
+  --app-shell-max-height: calc(100dvh - 2 * var(--app-page-gutter-y));
+  --app-mobile-tabbar-height: calc(64px + env(safe-area-inset-bottom, 0px));
 
   --app-page-bg-base: #070a13;
   --app-page-bg: radial-gradient(

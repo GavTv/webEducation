@@ -2,12 +2,12 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 
 const { Message, RoomMember, User } = require('../db/models');
+const { getCorsOrigins } = require('../config/corsOrigins');
 
 try {
   process.loadEnvFile();
 } catch (_) {}
 
-const CLIENT_ORIGIN = 'http://localhost:5173';
 const MAX_MESSAGE_LENGTH = 1000;
 
 function getTokenFromSocket(socket) {
@@ -67,10 +67,24 @@ async function getMessageWithSender(messageId) {
   });
 }
 
+async function getRoomMessageHistory(roomId) {
+  return Message.findAll({
+    where: { roomId },
+    include: [
+      {
+        model: User,
+        as: 'sender',
+        attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+      },
+    ],
+    order: [['createdAt', 'ASC']],
+  });
+}
+
 function initChatSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: CLIENT_ORIGIN,
+      origin: getCorsOrigins(),
       credentials: true,
     },
   });
@@ -149,8 +163,18 @@ function initChatSocket(server) {
           return;
         }
 
+        const prev = socket.data.currentRoomId;
+        if (prev && prev !== roomId) {
+          socket.leave(getSocketRoomName(prev));
+        }
+
         socket.join(getSocketRoomName(roomId));
         socket.data.currentRoomId = roomId;
+
+        const messages = await getRoomMessageHistory(roomId);
+
+        socket.emit('room:history', { roomId, messages });
+        socket.emit('channel:history', { channelId: roomId, messages });
 
         const response = {
           status: 'ok',
