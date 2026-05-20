@@ -13,8 +13,21 @@ import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Lock, Search, Star } from "lucide-react";
 import { ChatMessageInput } from "./ChatMessageInput";
-import { fetchClassAccess, joinClass } from "@/shared/lib/classesApi";
-import { eduChatRoomFixtures as rooms } from "@/shared/mocks/eduChatLayoutFixtures";
+import {
+  fetchClassAccess,
+  fetchClasses,
+  joinClass,
+  type ClassRoomItem,
+} from "@/shared/lib/classesApi";
+import {
+  createChatSocket,
+  emitJoinRoom,
+  emitSendMessage,
+  type ChannelHistoryPayload,
+  type MessageNewPayload,
+  type RoomHistoryPayload,
+} from "@/shared/lib/chatSocket";
+import { serverMessageToUi, type UiChatMessage } from "@/shared/lib/mapChatMessage";
 import { clientRoutes } from "@/shared/consts/clientRoutes";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
@@ -27,15 +40,6 @@ import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
 const BOT_ROOM_ID = 999001;
-
-type ChatMessage = {
-  id: string;
-  author: string;
-  text: string;
-  time: string;
-  isMine?: boolean;
-  isBot?: boolean;
-};
 
 type ChatRoom = {
   id: number;
@@ -63,8 +67,22 @@ const botRoom: ChatRoom = {
   starred: true,
 };
 
-const defaultMessagesByRoomId: Record<number, ChatMessage[]> = {
-  [BOT_ROOM_ID]: [
+function classToChatRoom(item: ClassRoomItem): ChatRoom {
+  const letter = item.title.trim().charAt(0).toUpperCase() || "#";
+  return {
+    id: item.id,
+    title: item.title,
+    icon: letter,
+    iconClass: item.color || "purple",
+    locked: item.hasPassword,
+    author: "Класс",
+    message: item.description?.trim() || "Учебный чат",
+    time: "",
+    onlineLabel: `${item.memberCount} участников`,
+  };
+}
+
+const defaultBotMessages: UiChatMessage[] = [
     {
       id: "bot-1",
       author: "@botAi",
@@ -86,29 +104,22 @@ const defaultMessagesByRoomId: Record<number, ChatMessage[]> = {
       time: "11:32",
       isBot: true,
     },
-  ],
-  1: [
-    { id: "common-1", author: "Мария", text: "Всем привет! 👋", time: "14:30" },
-    {
-      id: "common-2",
-      author: "Алексей",
-      text: "Кто уже сделал домашнее задание?",
-      time: "14:31",
-      isMine: true,
-    },
-    {
-      id: "common-3",
-      author: "@botAi",
-      text: "Я могу помочь объяснить тему или кратко суммировать чат.",
-      time: "14:32",
-      isBot: true,
-    },
-  ],
-};
+];
+
+function applyHistory(
+  roomId: number,
+  messages: RoomHistoryPayload["messages"],
+  myUserId: number | undefined,
+): Record<number, UiChatMessage[]> {
+  return {
+    [roomId]: messages.map((m) => serverMessageToUi(m, myUserId)),
+  };
+}
 
 function ChatPageContent() {
   const router = useRouter();
   const user = useAppSelector((state) => state.user.user);
+  const isInitialized = useAppSelector((state) => state.user.isInitialized);
   const userName = user?.name?.trim() || "";
   const nameParts = userName.split(/\s+/).filter(Boolean);
   const firstName = nameParts[0] || "Пользователь";
@@ -118,16 +129,25 @@ function ChatPageContent() {
   const canCreateChat = canManageClasses(user?.role);
 
   const searchParams = useSearchParams();
-  const chatRooms = useMemo(() => [botRoom, ...rooms], []);
-  const [selectedId, setSelectedId] = useState(chatRooms[0]?.id ?? BOT_ROOM_ID);
+  const [memberClasses, setMemberClasses] = useState<ClassRoomItem[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [wsConnected, setWsConnected] = useState(false);
+  const chatRooms = useMemo(
+    () => [botRoom, ...memberClasses.map(classToChatRoom)],
+    [memberClasses],
+  );
+  const [selectedId, setSelectedId] = useState(BOT_ROOM_ID);
   const [draft, setDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
-  const [messagesByRoomId, setMessagesByRoomId] =
-    useState<Record<number, ChatMessage[]>>(defaultMessagesByRoomId);
+  const [messagesByRoomId, setMessagesByRoomId] = useState<
+    Record<number, UiChatMessage[]>
+  >({ [BOT_ROOM_ID]: defaultBotMessages });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastScrolledRoomRef = useRef<number | null>(null);
+  const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
+  const selectedIdRef = useRef(selectedId);
 
   const selected = useMemo(
     () => chatRooms.find((r) => r.id === selectedId) ?? chatRooms[0],
@@ -147,6 +167,99 @@ function ChatPageContent() {
 
   const selectedMessages = messagesByRoomId[selected?.id ?? BOT_ROOM_ID] ?? [];
   const isBotChat = selected?.id === BOT_ROOM_ID;
+  const isRealChat = !isBotChat && selectedId > 0;
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (!user) {
+      router.replace(clientRoutes.home);
+    }
+  }, [isInitialized, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setRoomsLoading(true);
+    void fetchClasses()
+      .then((list) => {
+        if (cancelled) return;
+        setMemberClasses(list.filter((c) => c.isMember));
+      })
+      .catch(() => {
+        if (!cancelled) setMemberClasses([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRoomsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = createChatSocket();
+    socketRef.current = socket;
+
+    const onConnect = () => setWsConnected(true);
+    const onDisconnect = () => setWsConnected(false);
+
+    const onHistory = (payload: RoomHistoryPayload | ChannelHistoryPayload) => {
+      const roomId =
+        "roomId" in payload && payload.roomId
+          ? payload.roomId
+          : "channelId" in payload
+            ? payload.channelId
+            : 0;
+      if (!roomId) return;
+      setMessagesByRoomId((prev) => ({
+        ...prev,
+        ...applyHistory(roomId, payload.messages, user.id),
+      }));
+    };
+
+    const onMessageNew = (payload: MessageNewPayload) => {
+      const msg = payload.message;
+      if (!msg?.roomId) return;
+      const ui = serverMessageToUi(msg, user.id);
+      setMessagesByRoomId((prev) => {
+        const list = prev[msg.roomId] ?? [];
+        if (list.some((m) => m.id === ui.id)) return prev;
+        return { ...prev, [msg.roomId]: [...list, ui] };
+      });
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("room:history", onHistory);
+    socket.on("channel:history", onHistory);
+    socket.on("message:new", onMessageNew);
+    socket.on("ws:ready", onConnect);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("room:history", onHistory);
+      socket.off("channel:history", onHistory);
+      socket.off("message:new", onMessageNew);
+      socket.off("ws:ready", onConnect);
+      socket.disconnect();
+      socketRef.current = null;
+      setWsConnected(false);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!wsConnected || !user || isBotChat) return;
+    const socket = socketRef.current;
+    if (!socket) return;
+    emitJoinRoom(socket, selectedId);
+  }, [selectedId, wsConnected, user, isBotChat]);
 
   const displayAuthorName = useMemo(() => {
     if (!userName) return firstName;
@@ -171,13 +284,12 @@ function ChatPageContent() {
     if (!classId) return;
     const id = Number(classId);
     if (!Number.isFinite(id)) return;
-    const room = rooms.find((r) => r.id === id);
-    if (room) {
+    if (memberClasses.some((c) => c.id === id)) {
       setSelectedId(id);
       const mq = window.matchMedia(MOBILE_BP);
       if (mq.matches) setMobileThreadOpen(true);
     }
-  }, [searchParams]);
+  }, [searchParams, memberClasses]);
 
   useEffect(() => {
     const classId = searchParams.get("classId");
@@ -245,31 +357,33 @@ function ChatPageContent() {
 
       if (!text || !selected) return;
 
-      const userMessage: ChatMessage = {
-        id: `${selected.id}-user-${Date.now()}`,
-        author: displayAuthorName,
-        text,
-        time: formatTime(),
-        isMine: true,
-      };
+      if (isBotChat) {
+        const userMessage: UiChatMessage = {
+          id: `${selected.id}-user-${Date.now()}`,
+          author: displayAuthorName,
+          text,
+          time: formatTime(),
+          isMine: true,
+        };
+        const botReply: UiChatMessage = {
+          id: `${selected.id}-bot-${Date.now()}`,
+          author: "@botAi",
+          text: "Спасибо за сообщение! Скоро здесь будет ответ от AI.",
+          time: formatTime(),
+          isBot: true,
+        };
+        setMessagesByRoomId((prev) => ({
+          ...prev,
+          [selected.id]: [...(prev[selected.id] ?? []), userMessage, botReply],
+        }));
+        setDraft("");
+        return;
+      }
 
-      const botReply: ChatMessage = {
-        id: `${selected.id}-bot-${Date.now()}`,
-        author: "@botAi",
-        text: "Спасибо за сообщение! Скоро здесь будет ответ от AI.",
-        time: formatTime(),
-        isBot: true,
-      };
+      const socket = socketRef.current;
+      if (!socket?.connected) return;
 
-      setMessagesByRoomId((prev) => ({
-        ...prev,
-        [selected.id]: [
-          ...(prev[selected.id] ?? []),
-          userMessage,
-          ...(isBotChat ? [botReply] : []),
-        ],
-      }));
-
+      emitSendMessage(socket, selected.id, text);
       setDraft("");
     },
     [draft, displayAuthorName, isBotChat, selected],
@@ -336,6 +450,14 @@ function ChatPageContent() {
             </div>
 
             <div className="rooms">
+              {roomsLoading ? (
+                <p className="chat-hint">Загрузка чатов…</p>
+              ) : null}
+              {!roomsLoading && filteredRooms.length <= 1 ? (
+                <p className="chat-hint">
+                  Нет классов для чата. Войдите в класс на странице «Классы».
+                </p>
+              ) : null}
               {filteredRooms.map((room) => (
                 <button
                   key={room.id}
@@ -407,7 +529,11 @@ function ChatPageContent() {
                 <h2>{selected?.title ?? "Чат"}</h2>
                 <p>
                   <span className="chat-online-dot" aria-hidden />
-                  {selected?.onlineLabel ?? "Участники онлайн"}
+                  {isRealChat
+                    ? wsConnected
+                      ? selected?.onlineLabel ?? "Подключено"
+                      : "Подключение…"
+                    : (selected?.onlineLabel ?? "AI-помощник")}
                 </p>
               </div>
             </header>
@@ -460,10 +586,13 @@ function ChatPageContent() {
               value={draft}
               onChange={setDraft}
               onSubmit={sendMessage}
+              disabled={isRealChat && !wsConnected}
               placeholder={
                 isBotChat
                   ? "Напишите сообщение боту..."
-                  : "Напишите сообщение..."
+                  : isRealChat && !wsConnected
+                    ? "Подключение к чату…"
+                    : "Напишите сообщение..."
               }
             />
           </aside>
