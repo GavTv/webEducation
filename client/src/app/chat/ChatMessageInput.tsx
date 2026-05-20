@@ -22,6 +22,7 @@ type ChatMessageInputProps = {
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   placeholder: string;
+  disabled?: boolean;
 };
 
 export function ChatMessageInput({
@@ -29,6 +30,7 @@ export function ChatMessageInput({
   onChange,
   onSubmit,
   placeholder,
+  disabled = false,
 }: ChatMessageInputProps) {
   const [emojiOpen, setEmojiOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -148,13 +150,14 @@ export function ChatMessageInput({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
         />
 
         <button
           type="submit"
           className="message-send-btn"
           aria-label="Отправить"
-          disabled={!value.trim()}
+          disabled={disabled || !value.trim()}
         >
           <Send size={20} strokeWidth={2} aria-hidden />
         </button>

@@ -4,17 +4,7 @@ const path = require('path');
 const removeXPoweredHeader = require('../middleware/removeHeader');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-
-function getCorsOrigins() {
-  const fromEnv = process.env.CORS_ORIGINS;
-  if (fromEnv && typeof fromEnv === 'string') {
-    return fromEnv
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean);
-  }
-  return ['http://localhost:5173', 'http://127.0.0.1:5173'];
-}
+const { getCorsOrigins } = require('./corsOrigins');
 
 const corsOptions = {
   origin: getCorsOrigins(),

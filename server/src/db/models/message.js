@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         as: 'room',
         onDelete: 'CASCADE',
       });
+      Message.belongsTo(models.User, {
+        foreignKey: 'senderId',
+        as: 'sender',
+      });
     }
   }
 
