@@ -33,3 +33,13 @@ export async function updateAdminUserRole(
 
   return data.data.user;
 }
+
+export async function deleteAdminUser(userId: number): Promise<void> {
+  const { data } = await axiosInstance.delete<ServerResponseType<null>>(
+    `admin/users/${userId}`,
+  );
+
+  if (data.statusCode !== 200) {
+    throw new Error(data.message ?? "Не удалось удалить пользователя");
+  }
+}

@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import ForgotPasswordForm from "@/features/forgotPassword/ui/ForgotPasswordForm";
 import styles from "@/features/auth/ui/EduChatAuthScreen.module.css";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import {
+  authPath,
+  clientRoutes,
+} from "@/shared/consts/clientRoutes";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -22,7 +25,13 @@ export default function ForgotPasswordPage() {
           />
         </header>
 
-        <ForgotPasswordForm onBackToSignIn={() => router.push(clientRoutes.home)} />
+        <ForgotPasswordForm
+          onBackToSignIn={() => router.push(authPath("login"))}
+          onCodeVerified={(resetToken) => {
+            const q = new URLSearchParams({ token: resetToken });
+            router.push(`${clientRoutes.resetPassword}?${q.toString()}`);
+          }}
+        />
       </div>
     </div>
   );

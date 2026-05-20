@@ -6,7 +6,10 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { loginWithOAuthThunk } from "@/entities/user/api/UserApiThunk";
 import { useAppDispatch } from "@/shared/hooks/useReduxHooks";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import {
+  authPath,
+  clientRoutes,
+} from "@/shared/consts/clientRoutes";
 
 export default function OAuthBridgeClient() {
   const { data: session, status } = useSession();
@@ -21,7 +24,7 @@ export default function OAuthBridgeClient() {
   useEffect(() => {
     if (status === "loading") return;
     if (status === "unauthenticated") {
-      router.replace(clientRoutes.home);
+      router.replace(authPath("login"));
       return;
     }
     const access = session?.oauthAccessToken;
@@ -30,7 +33,7 @@ export default function OAuthBridgeClient() {
       !access ||
       (provider !== "google" && provider !== "github")
     ) {
-      router.replace(clientRoutes.home);
+      router.replace(authPath("login"));
       return;
     }
     if (ran.current) return;
@@ -90,7 +93,7 @@ export default function OAuthBridgeClient() {
           <div>
             <p style={{ margin: "0 0 16px", maxWidth: 360 }}>{error}</p>
             <Link
-              href={clientRoutes.home}
+              href={authPath("login")}
               style={{ color: "#a78bfa", fontWeight: 600 }}
             >
               На главную

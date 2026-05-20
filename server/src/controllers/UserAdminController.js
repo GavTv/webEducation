@@ -70,6 +70,56 @@ class UserAdminController {
         .json(formatResponse(500, 'Ошибка при смене роли'));
     }
   }
+
+  static async deleteUser(req, res) {
+    try {
+      const actor = res.locals.user;
+      const targetId = Number(req.params.id);
+
+      if (!Number.isFinite(targetId)) {
+        return res
+          .status(400)
+          .json(formatResponse(400, 'Некорректный id пользователя'));
+      }
+
+      if (actor?.id === targetId) {
+        return res.status(400).json(
+          formatResponse(400, 'Нельзя удалить свой аккаунт из панели администратора'),
+        );
+      }
+
+      const target = await User.findByPk(targetId);
+      if (!target) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      if (target.role === 'admin') {
+        const adminCount = await User.count({ where: { role: 'admin' } });
+        if (adminCount <= 1) {
+          return res.status(400).json(
+            formatResponse(400, 'Нельзя удалить последнего администратора'),
+          );
+        }
+      }
+
+      const deleted = await AuthService.deleteUserById(targetId);
+      if (!deleted) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      return res.status(200).json(formatResponse(200, 'Пользователь удалён'));
+    } catch (error) {
+      console.log('======== UserAdminController.deleteUser =========');
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка при удалении пользователя'));
+    }
+  }
 }
 
 module.exports = UserAdminController;

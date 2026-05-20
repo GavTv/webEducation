@@ -11,7 +11,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
@@ -100,7 +100,7 @@ export default function ClassesPage() {
   useEffect(() => {
     if (!isInitialized) return;
     if (!user) {
-      router.replace(clientRoutes.home);
+      router.replace(authPath("login"));
       return;
     }
     void loadClasses();

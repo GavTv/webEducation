@@ -21,21 +21,25 @@ import {
 } from "@/shared/lib/classesApi";
 import {
   createChatSocket,
+  emitClearRoom,
   emitJoinRoom,
   emitSendMessage,
   type ChannelHistoryPayload,
   type MessageNewPayload,
+  type RoomClearedPayload,
   type RoomHistoryPayload,
+  type SocketErrorPayload,
 } from "@/shared/lib/chatSocket";
+import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import { serverMessageToUi, type UiChatMessage } from "@/shared/lib/mapChatMessage";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
-import { canManageClasses } from "@/shared/lib/permissions";
+import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
 import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
@@ -142,7 +146,8 @@ function ChatPageContent() {
   const lastName = nameParts[1] || "";
   const avatarInitials = getNameInitials(firstName, lastName, user?.name);
   const avatarSrc = getAvatarSrc(user?.avatarUrl);
-  const canCreateChat = canManageClasses(user?.role);
+  const canManageChat = canManageClasses(user?.role);
+  const showAdminLink = isAdmin(user?.role);
 
   const searchParams = useSearchParams();
   const [memberClasses, setMemberClasses] = useState<ClassRoomItem[]>([]);
@@ -168,6 +173,9 @@ function ChatPageContent() {
   const [botAiOpen, setBotAiOpen] = useState(false);
   const [botAiDraft, setBotAiDraft] = useState("");
   const [botAiLoading, setBotAiLoading] = useState(false);
+  const [clearChatOpen, setClearChatOpen] = useState(false);
+  const [clearingChat, setClearingChat] = useState(false);
+  const [clearChatError, setClearChatError] = useState<string | null>(null);
   const [botAiMessages, setBotAiMessages] = useState<BotAiMessage[]>(() => {
     if (typeof window === "undefined") return botAiStartMessages;
 
@@ -244,6 +252,9 @@ function ChatPageContent() {
   const selectedMessages = messagesByRoomId[selected?.id ?? BOT_ROOM_ID] ?? [];
   const isBotChat = selected?.id === BOT_ROOM_ID;
   const isRealChat = !isBotChat && selectedId > 0;
+  const canClearActiveChat = botAiOpen
+    ? canManageChat
+    : isRealChat && canManageChat;
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -252,7 +263,7 @@ function ChatPageContent() {
   useEffect(() => {
     if (!isInitialized) return;
     if (!user) {
-      router.replace(clientRoutes.home);
+      router.replace(authPath("login"));
     }
   }, [isInitialized, user, router]);
 
@@ -318,17 +329,23 @@ function ChatPageContent() {
     socket.on("disconnect", onDisconnect);
     socket.on("room:history", onHistory);
     socket.on("channel:history", onHistory);
+    const onRoomCleared = (payload: RoomClearedPayload) => {
+      const roomId = payload?.roomId;
+      if (!roomId) return;
+      setMessagesByRoomId((prev) => ({ ...prev, [roomId]: [] }));
+    };
+
     socket.on("message:new", onMessageNew);
+    socket.on("room:cleared", onRoomCleared);
     socket.on("ws:ready", onConnect);
 
-  
-
-  return () => {
+    return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("room:history", onHistory);
       socket.off("channel:history", onHistory);
       socket.off("message:new", onMessageNew);
+      socket.off("room:cleared", onRoomCleared);
       socket.off("ws:ready", onConnect);
       socket.disconnect();
       socketRef.current = null;
@@ -523,6 +540,52 @@ function ChatPageContent() {
     );
   }, []);
 
+  const handleOpenClearChat = useCallback(() => {
+    setClearChatError(null);
+    setClearChatOpen(true);
+  }, []);
+
+  const handleCloseClearChat = useCallback(() => {
+    if (clearingChat) return;
+    setClearChatError(null);
+    setClearChatOpen(false);
+  }, [clearingChat]);
+
+  const handleConfirmClearChat = useCallback(() => {
+    if (botAiOpen) {
+      setBotAiMessages(botAiStartMessages);
+      saveBotAiMessages(botAiStartMessages);
+      setClearChatOpen(false);
+      return;
+    }
+
+    if (!isRealChat || !selectedId) return;
+    const socket = socketRef.current;
+    if (!socket || !wsConnected) {
+      setClearChatError("Нет подключения к чату");
+      return;
+    }
+
+    setClearingChat(true);
+    setClearChatError(null);
+    emitClearRoom(socket, selectedId, (res) => {
+      setClearingChat(false);
+      if (res?.status === "ok") {
+        setMessagesByRoomId((prev) => ({ ...prev, [selectedId]: [] }));
+        setClearChatOpen(false);
+        return;
+      }
+      const err = res as SocketErrorPayload;
+      setClearChatError(err?.message ?? "Не удалось очистить чат");
+    });
+  }, [
+    botAiOpen,
+    isRealChat,
+    selectedId,
+    saveBotAiMessages,
+    wsConnected,
+  ]);
+
   const addBotAiMessage = useCallback(
     (message: BotAiMessage) => {
       setBotAiMessages((prev) => {
@@ -590,17 +653,36 @@ function ChatPageContent() {
     [addBotAiMessage, botAiDraft, botAiLoading],
   );
 
+  const clearChatTitle = botAiOpen
+    ? "Очистить чат с @botAi?"
+    : `Очистить чат «${selected?.title ?? "класс"}»?`;
+
   return (
     <main
       className={`educhat-page app-page classes-page app-page--with-tabbar${
         mobileThreadOpen ? " app-page--hide-tabbar" : ""
       }`}
     >
+      {clearChatOpen ? (
+        <ConfirmModal
+          title={clearChatTitle}
+          lines={[
+            "Все сообщения в этом чате будут удалены безвозвратно. Участники увидят пустую переписку.",
+          ]}
+          confirmLabel="Очистить"
+          cancelLabel="Отмена"
+          onConfirm={handleConfirmClearChat}
+          onCancel={handleCloseClearChat}
+          isBusy={clearingChat}
+          errorMessage={clearChatError}
+        />
+      ) : null}
+
       <section className="desktop-shell app-shell">
         <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
 
-          <AppNav active="chat" />
+          <AppNav active="chat" showAdminLink={showAdminLink} />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
@@ -646,7 +728,7 @@ function ChatPageContent() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </label>
-              {canCreateChat ? (
+              {canManageChat ? (
                 <button type="button" className="chat-create-btn">
                   + Создать чат
                 </button>
@@ -748,6 +830,16 @@ function ChatPageContent() {
                       : (selected?.onlineLabel ?? "Чат")}
                 </p>
               </div>
+              {canClearActiveChat ? (
+                <button
+                  type="button"
+                  className="thread-clear-btn"
+                  disabled={clearingChat || (isRealChat && !wsConnected)}
+                  onClick={handleOpenClearChat}
+                >
+                  Очистить чат
+                </button>
+              ) : null}
             </header>
 
             <div className="messages-wrap">

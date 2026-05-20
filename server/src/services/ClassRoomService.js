@@ -168,6 +168,25 @@ class ClassRoomService {
     return { ok: true };
   }
 
+  static async clearRoomMessages(roomId, user) {
+    const room = await Room.findByPk(roomId);
+    if (!room) return { error: 'not_found' };
+
+    if (user?.role === 'admin') {
+      await Message.destroy({ where: { roomId } });
+      return { ok: true, roomId };
+    }
+
+    if (user?.role === 'teacher') {
+      const isMember = await this.isMember(roomId, user.id);
+      if (!isMember) return { error: 'forbidden' };
+      await Message.destroy({ where: { roomId } });
+      return { ok: true, roomId };
+    }
+
+    return { error: 'forbidden' };
+  }
+
   static async setPassword(roomId, user, joinPassword) {
     const room = await Room.findByPk(roomId);
     if (!room) return { error: 'not_found' };

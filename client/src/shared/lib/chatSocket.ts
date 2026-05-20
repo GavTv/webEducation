@@ -60,6 +60,10 @@ export type RoomJoinedPayload = {
   roomId: number;
 };
 
+export type RoomClearedPayload = {
+  roomId: number;
+};
+
 export type SocketErrorPayload = {
   status: string;
   message: string;
@@ -94,4 +98,13 @@ export function emitSendMessage(
 ) {
   const payload = { roomId, groupId: roomId, channelId: roomId, text };
   socket.emit("message:send", payload, callback);
+}
+
+export function emitClearRoom(
+  socket: Socket,
+  roomId: number,
+  callback?: (res: { status: string; event?: string; roomId?: number; message?: string }) => void,
+) {
+  const payload = { roomId, groupId: roomId, channelId: roomId };
+  socket.emit("room:clear", payload, callback);
 }

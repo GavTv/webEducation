@@ -17,4 +17,11 @@ router.patch(
   UserAdminController.updateUserRole,
 );
 
+router.delete(
+  '/users/:id',
+  verifyAccessToken,
+  requireAdmin,
+  UserAdminController.deleteUser,
+);
+
 module.exports = router;
