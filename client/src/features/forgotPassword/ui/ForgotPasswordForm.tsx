@@ -8,24 +8,19 @@ import {
   useRef,
   useState,
 } from "react";
-import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { AuthField } from "@/features/auth/shared/AuthField";
 import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
 import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import styles from "@/features/auth/shared/eduChatForm.module.css";
 import otpStyles from "./ForgotPasswordForm.module.css";
-import {
-  getRegisterConfirmError,
-  getRegisterEmailFormatError,
-  getRegisterPasswordError,
-} from "@/shared/lib/registerFieldValidators";
+import { getRegisterEmailFormatError } from "@/shared/lib/registerFieldValidators";
 import {
   postForgotPassword,
-  postResetPasswordWithToken,
   postVerifyResetCode,
 } from "@/shared/lib/passwordResetApi";
 
-type Step = "email" | "code" | "password";
+type Step = "email" | "code";
 
 const OTP_LEN = 6;
 const RESEND_COOLDOWN_SEC = 60;
@@ -156,27 +151,23 @@ function OtpSix({ value, onChange, disabled, invalid }: OtpSixProps) {
 
 export type ForgotPasswordFormProps = {
   onBackToSignIn: () => void;
+  /** После проверки кода — переход на `/reset-password?token=…` */
+  onCodeVerified: (resetToken: string) => void;
 };
 
 export default function ForgotPasswordForm({
   onBackToSignIn,
+  onCodeVerified,
 }: ForgotPasswordFormProps) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [resetToken, setResetToken] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [showPw2, setShowPw2] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [cooldownSec, setCooldownSec] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string | null;
     code?: string | null;
-    password?: string | null;
-    confirm?: string | null;
   }>({});
 
   const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
@@ -263,10 +254,7 @@ export default function ForgotPasswordForm({
       setIsSubmitting(true);
       try {
         const token = await postVerifyResetCode(email.trim(), digits);
-        setResetToken(token);
-        setStep("password");
-        setNewPassword("");
-        setConfirmPassword("");
+        onCodeVerified(token);
       } catch (err) {
         setFormError(
           err instanceof Error ? err.message : "Неверный или просроченный код",
@@ -275,34 +263,7 @@ export default function ForgotPasswordForm({
         setIsSubmitting(false);
       }
     },
-    [code, email],
-  );
-
-  const submitNewPassword = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setFormError(null);
-      const pe = getRegisterPasswordError(newPassword);
-      const ce = getRegisterConfirmError(newPassword, confirmPassword);
-      setFieldErrors({ password: pe, confirm: ce });
-      if (pe || ce) return;
-      if (!resetToken) {
-        setFormError("Сессия сброса утеряна. Начните снова.");
-        return;
-      }
-      setIsSubmitting(true);
-      try {
-        await postResetPasswordWithToken(resetToken, newPassword);
-        onBackToSignIn();
-      } catch (err) {
-        setFormError(
-          err instanceof Error ? err.message : "Не удалось сменить пароль",
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [confirmPassword, newPassword, onBackToSignIn, resetToken],
+    [code, email, onCodeVerified],
   );
 
   const emailSubmitDisabled = useMemo(() => {
@@ -317,14 +278,6 @@ export default function ForgotPasswordForm({
     return code.replace(/\D/g, "").length !== OTP_LEN;
   }, [code, isSubmitting]);
 
-  const passwordSubmitDisabled = useMemo(() => {
-    if (isSubmitting) return true;
-    if (!newPassword || !confirmPassword) return true;
-    if (getRegisterPasswordError(newPassword)) return true;
-    if (getRegisterConfirmError(newPassword, confirmPassword)) return true;
-    return false;
-  }, [confirmPassword, isSubmitting, newPassword]);
-
   const codeInvalid = Boolean(fieldErrors.code);
 
   return (
@@ -333,9 +286,7 @@ export default function ForgotPasswordForm({
       <p className={styles.subtitle}>
         {step === "email"
           ? "Укажите email, который использовался при регистрации, и мы вышлем на него письмо для смены пароля."
-          : step === "code"
-            ? "Введите 6 цифр из письма."
-            : "Придумайте новый пароль."}
+          : "Введите 6 цифр из письма."}
       </p>
 
       {step === "email" ? (
@@ -433,91 +384,6 @@ export default function ForgotPasswordForm({
             }}
           >
             Другой email
-          </button>
-        </form>
-      ) : null}
-
-      {step === "password" ? (
-        <form className={styles.form} onSubmit={submitNewPassword}>
-          <AuthField
-            label="Новый пароль"
-            icon={purpleIcon(<Lock size={20} strokeWidth={2} />)}
-            type={showPw ? "text" : "password"}
-            value={newPassword}
-            onChange={(v) => {
-              setNewPassword(v);
-              setFieldErrors((p) => ({ ...p, password: null }));
-            }}
-            onBlurField={() => {
-              setFieldErrors((p) => ({
-                ...p,
-                password: getRegisterPasswordError(newPassword),
-              }));
-            }}
-            autoComplete="new-password"
-            errorMessage={fieldErrors.password}
-            end={
-              <button
-                type="button"
-                className={styles.iconBtn}
-                onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? "Скрыть пароль" : "Показать пароль"}
-              >
-                {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            }
-          />
-          <AuthField
-            label="Повторите пароль"
-            icon={purpleIcon(<Lock size={20} strokeWidth={2} />)}
-            type={showPw2 ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(v) => {
-              setConfirmPassword(v);
-              setFieldErrors((p) => ({ ...p, confirm: null }));
-            }}
-            onBlurField={() => {
-              setFieldErrors((p) => ({
-                ...p,
-                confirm: getRegisterConfirmError(newPassword, confirmPassword),
-              }));
-            }}
-            autoComplete="new-password"
-            errorMessage={fieldErrors.confirm}
-            end={
-              <button
-                type="button"
-                className={styles.iconBtn}
-                onClick={() => setShowPw2((v) => !v)}
-                aria-label={showPw2 ? "Скрыть пароль" : "Показать пароль"}
-              >
-                {showPw2 ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            }
-          />
-          {formError ? <p className={styles.formError}>{formError}</p> : null}
-          <button
-            type="submit"
-            className={styles.primaryBtn}
-            disabled={passwordSubmitDisabled}
-          >
-            {isSubmitting ? (
-              <Loader2 className={styles.spin} size={22} />
-            ) : (
-              "Сохранить пароль"
-            )}
-          </button>
-          <button
-            type="button"
-            className={styles.linkBtn}
-            style={{ marginTop: 12, alignSelf: "center" }}
-            onClick={() => {
-              setFormError(null);
-              setResetToken(null);
-              setStep("code");
-            }}
-          >
-            К коду
           </button>
         </form>
       ) : null}

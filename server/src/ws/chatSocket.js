@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 
 const { Message, RoomMember, User } = require('../db/models');
+const ClassRoomService = require('../services/ClassRoomService');
 const { getCorsOrigins } = require('../config/corsOrigins');
 
 try {
@@ -207,6 +208,95 @@ function initChatSocket(server) {
     socket.on('room:join', joinRoom);
     socket.on('group:join', joinRoom);
     socket.on('channel:join', joinRoom);
+
+    async function clearRoom(payload, callback) {
+      try {
+        const roomId = getRoomIdFromPayload(payload);
+
+        if (!roomId) {
+          const response = {
+            status: 'error',
+            message: 'roomId is required',
+          };
+
+          socket.emit('room:error', response);
+
+          if (typeof callback === 'function') {
+            callback(response);
+          }
+
+          return;
+        }
+
+        const result = await ClassRoomService.clearRoomMessages(roomId, user);
+
+        if (result.error === 'not_found') {
+          const response = {
+            status: 'error',
+            message: 'Room not found',
+          };
+
+          socket.emit('room:error', response);
+
+          if (typeof callback === 'function') {
+            callback(response);
+          }
+
+          return;
+        }
+
+        if (result.error === 'forbidden') {
+          const response = {
+            status: 'error',
+            message: 'Недостаточно прав для очистки чата',
+          };
+
+          socket.emit('room:error', response);
+
+          if (typeof callback === 'function') {
+            callback(response);
+          }
+
+          return;
+        }
+
+        const emptyHistory = { roomId, messages: [] };
+
+        io.to(getSocketRoomName(roomId)).emit('room:history', emptyHistory);
+        io.to(getSocketRoomName(roomId)).emit('channel:history', {
+          channelId: roomId,
+          messages: [],
+        });
+        io.to(getSocketRoomName(roomId)).emit('room:cleared', { roomId });
+
+        const response = {
+          status: 'ok',
+          event: 'room:cleared',
+          roomId,
+        };
+
+        if (typeof callback === 'function') {
+          callback(response);
+        }
+      } catch (error) {
+        console.log('======== socket room clear error =========');
+        console.log(error);
+
+        const response = {
+          status: 'error',
+          message: 'Room clear error',
+        };
+
+        socket.emit('room:error', response);
+
+        if (typeof callback === 'function') {
+          callback(response);
+        }
+      }
+    }
+
+    socket.on('room:clear', clearRoom);
+    socket.on('channel:clear', clearRoom);
 
     socket.on('message:send', async (payload, callback) => {
       try {

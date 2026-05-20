@@ -3,16 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { Loader2, X } from "lucide-react";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import type { UserRole } from "@/entities/user/model";
 import {
+  deleteAdminUser,
   fetchAdminUsers,
   updateAdminUserRole,
   type AdminUserListItem,
 } from "@/shared/lib/adminUsersApi";
 import { ROLE_OPTIONS } from "@/shared/lib/roleLabels";
+import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import "../classes/page.css";
@@ -43,6 +45,11 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<AdminUserListItem | null>(
+    null,
+  );
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -62,7 +69,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isInitialized) return;
     if (!user) {
-      router.replace(clientRoutes.home);
+      router.replace(authPath("login"));
       return;
     }
     if (user.role !== "admin") {
@@ -91,6 +98,34 @@ export default function AdminPage() {
     }
   };
 
+  const handleOpenDelete = (row: AdminUserListItem) => {
+    setDeleteError(null);
+    setUserToDelete(row);
+  };
+
+  const handleCloseDelete = () => {
+    if (deletingUserId !== null) return;
+    setDeleteError(null);
+    setUserToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    setDeletingUserId(userToDelete.id);
+    setDeleteError(null);
+    try {
+      await deleteAdminUser(userToDelete.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setUserToDelete(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Не удалось удалить пользователя",
+      );
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   if (!isInitialized || !user) {
     return (
       <main className="admin-page">
@@ -105,6 +140,21 @@ export default function AdminPage() {
 
   return (
     <main className="admin-page app-page">
+      {userToDelete ? (
+        <ConfirmModal
+          title="Удалить пользователя?"
+          lines={[
+            `Аккаунт ${userToDelete.name} (${userToDelete.email}) будет удалён безвозвратно.`,
+          ]}
+          confirmLabel="Удалить"
+          cancelLabel="Отмена"
+          onConfirm={() => void handleConfirmDelete()}
+          onCancel={handleCloseDelete}
+          isBusy={deletingUserId !== null}
+          errorMessage={deleteError}
+        />
+      ) : null}
+
       <section className="admin-shell classes-shell app-shell">
         <aside className="admin-sidebar classes-sidebar app-sidebar">
           <BrandLogo />
@@ -160,12 +210,13 @@ export default function AdminPage() {
                     <th>Username</th>
                     <th>Текущая роль</th>
                     <th>Дата регистрации</th>
+                    <th className="admin-table__actions-col" aria-label="Действия" />
                   </tr>
                 </thead>
                 <tbody>
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={5}>Пользователей пока нет</td>
+                      <td colSpan={6}>Пользователей пока нет</td>
                     </tr>
                   ) : (
                     users.map((row) => (
@@ -200,6 +251,25 @@ export default function AdminPage() {
                           ) : null}
                         </td>
                         <td>{formatRegisteredAt(row.createdAt)}</td>
+                        <td className="admin-table__actions-cell">
+                          <button
+                            type="button"
+                            className="admin-user-delete"
+                            aria-label={`Удалить ${row.name}`}
+                            disabled={
+                              row.id === user.id ||
+                              savingUserId === row.id ||
+                              deletingUserId === row.id
+                            }
+                            onClick={() => handleOpenDelete(row)}
+                          >
+                            {deletingUserId === row.id ? (
+                              <Loader2 className="spin" size={18} />
+                            ) : (
+                              <X size={18} strokeWidth={2} />
+                            )}
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}

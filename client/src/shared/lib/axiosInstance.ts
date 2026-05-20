@@ -59,9 +59,9 @@ axiosInstance.interceptors.response.use(
         setAccessToken("");
         if (
           typeof window !== "undefined" &&
-          window.location.pathname !== "/"
+          !window.location.pathname.startsWith("/auth")
         ) {
-          window.location.href = "/";
+          window.location.href = "/auth?mode=login";
         }
         return Promise.reject(error);
       }

@@ -27,7 +27,7 @@ export default function SignInForm({
   onRememberMeChange,
 }: SignInFormProps) {
   const dispatch = useAppDispatch();
-  const { isLoading, error } = useAppSelector((s) => s.user);
+  const { isLoading, error, isInitialized } = useAppSelector((s) => s.user);
 
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
@@ -115,7 +115,7 @@ export default function SignInForm({
   }, [isLoading, signInEmail, signInPassword]);
 
   const oauthBusy = oauthLoading !== null;
-  const oauthBtnDisabled = isLoading || oauthBusy;
+  const oauthBtnDisabled = !isInitialized || isLoading || oauthBusy;
 
   const googleIcon = (
     <svg

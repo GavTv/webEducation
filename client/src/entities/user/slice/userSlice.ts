@@ -25,18 +25,16 @@ const userSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    /** Проверка сессии при старте — не трогаем isLoading (иначе ломается гидратация форм входа). */
     builder.addCase(refreshTokenThunk.pending, (state) => {
       state.error = null;
-      state.isLoading = true;
     });
     builder.addCase(refreshTokenThunk.fulfilled, (state, action) => {
-      state.isLoading = false;
       state.isInitialized = true;
       state.user = action.payload;
       state.error = null;
     });
     builder.addCase(refreshTokenThunk.rejected, (state) => {
-      state.isLoading = false;
       state.isInitialized = true;
     });
 

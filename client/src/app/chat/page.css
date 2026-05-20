@@ -407,6 +407,40 @@
   font-size: 14px;
 }
 
+.thread-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.thread-clear-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 8px 14px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.thread-clear-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+}
+
+.thread-clear-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .messages-wrap {
   flex: 1;
   min-height: 0;

@@ -127,6 +127,48 @@
   animation: admin-spin 0.9s linear infinite;
 }
 
+.admin-table__actions-col {
+  width: 52px;
+  padding-left: 8px !important;
+  padding-right: 12px !important;
+}
+
+.admin-table__actions-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-user-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-user-delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+}
+
+.admin-user-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-user-delete .spin {
+  animation: admin-spin 0.9s linear infinite;
+}
+
 @keyframes admin-spin {
   to {
     transform: rotate(360deg);

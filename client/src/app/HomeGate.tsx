@@ -3,39 +3,32 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
-import EduChatAuthScreen from "../features/auth/ui/EduChatAuthScreen";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 
 /**
- * Корень «/»: вход / регистрация. После успешной авторизации — редирект в раздел классов.
+ * Корень «/»: редирект в приложение или на страницу входа.
  */
 export default function HomeGate() {
   const router = useRouter();
   const user = useAppSelector((s) => s.user.user);
 
   useEffect(() => {
-    if (user) {
-      router.replace(clientRoutes.classes);
-    }
+    router.replace(user ? clientRoutes.classes : authPath("login"));
   }, [user, router]);
 
-  if (user) {
-    return (
-      <div
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--app-page-bg)",
-          color: "#9ca3af",
-          fontFamily: "system-ui, sans-serif",
-        }}
-      >
-        Перенаправление…
-      </div>
-    );
-  }
-
-  return <EduChatAuthScreen hideBack />;
+  return (
+    <div
+      style={{
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "var(--app-page-bg)",
+        color: "#9ca3af",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      Перенаправление…
+    </div>
+  );
 }

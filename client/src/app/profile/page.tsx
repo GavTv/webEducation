@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { authPath } from "@/shared/consts/clientRoutes";
 import { Calendar, Camera, Loader2, LogOut, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
@@ -107,7 +108,7 @@ export default function ProfilePage() {
         setAuthChecked(true);
       })
       .catch(() => {
-        router.replace("/");
+        router.replace(authPath("login"));
       });
   }, [dispatch, isInitialized, router, user]);
 
@@ -177,7 +178,7 @@ export default function ProfilePage() {
     dispatch(logoutThunk())
       .unwrap()
       .then(() => {
-        router.push("/");
+        router.push(authPath("login"));
       })
       .catch(() => {});
   }, [dispatch, router]);
@@ -199,7 +200,7 @@ export default function ProfilePage() {
       .unwrap()
       .then(() => {
         setDeleteModalOpen(false);
-        router.push("/");
+        router.push(authPath("login"));
       })
       .catch(() => {});
   }, [dispatch, router]);
