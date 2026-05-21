@@ -693,52 +693,6 @@ function ChatPageContent() {
 
 
 
-
-  const handleCreateChatSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-
-      const title = createChatTitle.trim();
-
-      if (!title) {
-        setCreateChatError("Введите название чата");
-        return;
-      }
-
-      setCreateChatLoading(true);
-      setCreateChatError(null);
-
-      try {
-        const created = await createClass({
-          title,
-          description: createChatDescription.trim(),
-          joinPassword: createChatPassword.trim(),
-        });
-
-        setMemberClasses((prev) => [
-          created,
-          ...prev.filter((item) => item.id !== created.id),
-        ]);
-
-        setSelectedId(created.id);
-        setBotAiOpen(false);
-        setMobileThreadOpen(true);
-        setCreateChatOpen(false);
-      } catch (error) {
-        setCreateChatError(
-          error instanceof Error ? error.message : "Не удалось создать чат",
-        );
-      } finally {
-        setCreateChatLoading(false);
-      }
-    },
-    [
-      createChatDescription,
-      createChatPassword,
-      createChatTitle,
-    ],
-  );
-
   const handleConfirmDeleteChat = useCallback(async () => {
     if (!isRealChat || !selected) return;
 

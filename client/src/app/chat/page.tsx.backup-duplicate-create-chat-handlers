@@ -692,7 +692,20 @@ function ChatPageContent() {
   }, [deletingChat]);
 
 
+  const handleOpenCreateChat = useCallback(() => {
+    setCreateChatError(null);
+    setCreateChatTitle("");
+    setCreateChatDescription("");
+    setCreateChatPassword("");
+    setCreateChatOpen(true);
+  }, []);
 
+  const handleCloseCreateChat = useCallback(() => {
+    if (createChatLoading) return;
+
+    setCreateChatError(null);
+    setCreateChatOpen(false);
+  }, [createChatLoading]);
 
   const handleCreateChatSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -734,6 +747,7 @@ function ChatPageContent() {
     },
     [
       createChatDescription,
+      createChatLoading,
       createChatPassword,
       createChatTitle,
     ],
