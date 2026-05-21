@@ -38,4 +38,3 @@ await sharp(data, {
   .toFile(outPath);
 
 const trimmed = await sharp(outPath).metadata();
-console.log(`Wrote ${outPath} (${trimmed.width}x${trimmed.height})`);

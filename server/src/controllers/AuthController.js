@@ -54,7 +54,6 @@ class AuthController {
         }),
       );
     } catch (error) {
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при проверке email'));
@@ -103,8 +102,6 @@ class AuthController {
         }),
       );
     } catch (error) {
-      console.log('======== AuthController.checkUsernameAvailability =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при проверке имени'));
@@ -190,8 +187,6 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.register =========');
-      console.log(error);
       return res
         .status(500)
         .json(
@@ -275,8 +270,6 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.login =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при входе в приложение'));
@@ -291,8 +284,6 @@ class AuthController {
         .clearCookie('refreshToken', clearRefreshCookie)
         .json(formatResponse(200, 'Успешный выход '));
     } catch (error) {
-      console.log('======== AuthController.logout =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при выходе из приложения'));
@@ -386,8 +377,6 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.updateProfile =========');
-      console.log(error);
 
       return res
         .status(500)
@@ -416,8 +405,6 @@ class AuthController {
         .clearCookie('refreshToken', clearRefreshCookie)
         .json(formatResponse(200, 'Аккаунт удалён'));
     } catch (error) {
-      console.log('======== AuthController.deleteAccount =========');
-      console.log(error);
       return res
         .status(500)
         .json(
@@ -460,8 +447,6 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.refreshTokens =========');
-      console.log(error);
 
       return res
         .status(500)

@@ -78,9 +78,6 @@ async function sendPasswordResetCode({ to, code }) {
 
   if (!isSmtpConfigured()) {
     if (process.env.NODE_ENV !== 'production') {
-      console.log(
-        `[MailService] SMTP не настроен (.env: SMTP_HOST, SMTP_USER, SMTP_PASS) — письмо не отправлялось. Код для ${to}: ${code}`,
-      );
       return;
     }
     throw new Error('SMTP_NOT_CONFIGURED');
@@ -95,9 +92,6 @@ async function sendPasswordResetCode({ to, code }) {
       text: `Ваш код: ${code}. Действует 10 минут.`,
       html: `<p>Здравствуйте!</p><p>Ваш код для сброса пароля: <strong>${code}</strong></p><p>Код действует <strong>10 минут</strong>.</p><p>Если вы не запрашивали сброс, проигнорируйте письмо.</p>`,
     });
-    console.log(
-      `[MailService] Отправлено на ${to}, messageId=${info.messageId ?? 'n/a'}`,
-    );
   } catch (err) {
     const msg = err?.message || String(err);
     const resp = err?.response;

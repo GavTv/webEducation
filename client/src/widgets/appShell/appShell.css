@@ -581,4 +581,14 @@
   .app-mobile-tab--active svg {
     color: #a78bfa;
   }
+
+  .app-mobile-tabbar--with-admin .app-mobile-tab {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  .app-mobile-tabbar--with-admin .app-mobile-tab svg {
+    width: 20px;
+    height: 20px;
+  }
 }

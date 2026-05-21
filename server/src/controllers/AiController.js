@@ -51,8 +51,6 @@ class AiController {
         .status(200)
         .json(formatResponse(200, 'Ответ получен', result, null));
     } catch (error) {
-      console.log('==== AiController.getAiResponse ==== ');
-      console.log(error);
       res
         .status(500)
         .json(formatResponse(500, 'Внутренняя ошибка сервера', null, error));

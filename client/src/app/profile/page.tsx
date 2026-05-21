@@ -565,7 +565,7 @@ export default function ProfilePage() {
         </section>
       </section>
 
-      <MobileBottomNav active="profile" />
+      <MobileBottomNav active="profile" showAdminLink={showAdminLink} />
     </main>
   );
 }

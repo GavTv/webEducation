@@ -47,8 +47,6 @@ class PasswordResetController {
           );
       }
       if (msg.startsWith('MAIL_SEND_FAILED') || msg.includes('MAIL_SEND_FAILED')) {
-        console.log('======== PasswordResetController.forgotPassword (SMTP) =========');
-        console.log(msg);
         return res.status(502).json(
           formatResponse(
             502,
@@ -61,8 +59,6 @@ class PasswordResetController {
         (msg.includes('does not exist') && msg.includes('PasswordResetCodes')) ||
         (msg.includes('relation') && msg.includes('PasswordResetCodes'));
       if (pgMissing) {
-        console.log('======== PasswordResetController.forgotPassword (DB) =========');
-        console.log(msg);
         return res.status(503).json(
           formatResponse(
             503,
@@ -71,9 +67,6 @@ class PasswordResetController {
         );
       }
 
-      console.log('======== PasswordResetController.forgotPassword =========');
-      console.log(msg);
-      if (error?.stack) console.log(error.stack);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при отправке кода'));
@@ -117,8 +110,6 @@ class PasswordResetController {
             ),
           );
       }
-      console.log('======== PasswordResetController.verifyResetCode =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при проверке кода'));
@@ -177,8 +168,6 @@ class PasswordResetController {
         .status(200)
         .json(formatResponse(200, 'Пароль успешно изменён'));
     } catch (error) {
-      console.log('======== PasswordResetController.resetPasswordWithToken =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при смене пароля'));

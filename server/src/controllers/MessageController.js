@@ -22,8 +22,6 @@ class MessageController {
         .status(200)
         .json(formatResponse(200, 'Список чатов получен', { groups }));
     } catch (error) {
-      console.log('======== MessageController.listGroups =========');
-      console.log(error);
 
       return res
         .status(500)
@@ -65,8 +63,6 @@ class MessageController {
         .status(201)
         .json(formatResponse(201, 'Комната создана', { group }));
     } catch (error) {
-      console.log('======== MessageController.createGroup =========');
-      console.log(error);
 
       return res
         .status(500)
@@ -97,8 +93,6 @@ class MessageController {
         .status(200)
         .json(formatResponse(200, 'Сообщения получены', { messages }));
     } catch (error) {
-      console.log('======== MessageController.listGroupMessages =========');
-      console.log(error);
 
       return res
         .status(500)
@@ -135,8 +129,6 @@ class MessageController {
         .status(201)
         .json(formatResponse(201, 'Сообщение отправлено', { message }));
     } catch (error) {
-      console.log('======== MessageController.sendGroupMessage =========');
-      console.log(error);
 
       if (error.statusCode) {
         return res

@@ -9,8 +9,6 @@ class ClassController {
         formatResponse(200, 'Список классов', { classes }),
       );
     } catch (error) {
-      console.log('======== ClassController.list =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при загрузке классов'));
@@ -39,8 +37,6 @@ class ClassController {
         formatResponse(201, 'Класс создан', { class: room }),
       );
     } catch (error) {
-      console.log('======== ClassController.create =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при создании класса'));
@@ -71,8 +67,6 @@ class ClassController {
         formatResponse(200, 'Класс обновлён', { class: result.room }),
       );
     } catch (error) {
-      console.log('======== ClassController.update =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при обновлении класса'));
@@ -93,8 +87,6 @@ class ClassController {
         formatResponse(200, 'Доступ к классу', { access }),
       );
     } catch (error) {
-      console.log('======== ClassController.getAccess =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при проверке доступа'));
@@ -127,8 +119,6 @@ class ClassController {
         formatResponse(200, 'Доступ к классу получен', { joined: true }),
       );
     } catch (error) {
-      console.log('======== ClassController.join =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при входе в класс'));
@@ -153,8 +143,6 @@ class ClassController {
 
       return res.status(200).json(formatResponse(200, 'Класс удалён'));
     } catch (error) {
-      console.log('======== ClassController.remove =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при удалении класса'));
@@ -186,8 +174,6 @@ class ClassController {
         formatResponse(200, 'Пароль класса обновлён', { class: result.room }),
       );
     } catch (error) {
-      console.log('======== ClassController.setPassword =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при установке пароля'));

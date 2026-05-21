@@ -23,9 +23,6 @@ module.exports = {
          WHERE id = :id AND (role IS NULL OR role <> 'admin');`,
         { replacements: { id: existing[0].id } },
       );
-      console.log(
-        `Admin seed skipped: user already exists (${existing[0].email})`,
-      );
       return;
     }
 

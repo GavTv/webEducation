@@ -7,7 +7,7 @@ const { getCorsOrigins } = require('../config/corsOrigins');
 
 try {
   process.loadEnvFile();
-} catch (_) {}
+} catch (_) { }
 
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -108,8 +108,6 @@ function initChatSocket(server) {
 
       return next();
     } catch (error) {
-      console.log('======== socket auth error =========');
-      console.log(error.message);
 
       return next(new Error('Unauthorized'));
     }
@@ -189,8 +187,6 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket room join error =========');
-        console.log(error);
 
         const response = {
           status: 'error',
@@ -279,8 +275,6 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket room clear error =========');
-        console.log(error);
 
         const response = {
           status: 'error',
@@ -391,8 +385,6 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket message send error =========');
-        console.log(error);
 
         const response = {
           status: 'error',
@@ -416,7 +408,6 @@ function initChatSocket(server) {
     });
   });
 
-  console.log('WS на порту 3000, события как в контракте');
 
   return io;
 }

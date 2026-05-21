@@ -26,5 +26,4 @@ const server = http.createServer(app);
 initChatSocket(server);
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });

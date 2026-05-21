@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Search, Star } from "lucide-react";
+import { ArrowLeft, Lock, MoreVertical, Search, Star } from "lucide-react";
 import { ChatMessageInput } from "./ChatMessageInput";
 import {
   createClass,
@@ -163,6 +163,8 @@ function ChatPageContent() {
   const [draft, setDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+  const [threadMenuOpen, setThreadMenuOpen] = useState(false);
+  const threadMenuRef = useRef<HTMLDivElement>(null);
   const [messagesByRoomId, setMessagesByRoomId] = useState<
     Record<number, UiChatMessage[]>
   >({ [BOT_ROOM_ID]: defaultBotMessages });
@@ -266,10 +268,29 @@ function ChatPageContent() {
   const canClearActiveChat = botAiOpen
     ? canManageChat
     : isRealChat && canManageChat;
+  const showThreadActionsMenu =
+    canClearActiveChat || (isRealChat && canManageChat);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
+
+  useEffect(() => {
+    setThreadMenuOpen(false);
+  }, [selectedId, botAiOpen, mobileThreadOpen]);
+
+  useEffect(() => {
+    if (!threadMenuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (threadMenuRef.current?.contains(target)) return;
+      setThreadMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [threadMenuOpen]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -1036,26 +1057,53 @@ function ChatPageContent() {
                       : (selected?.onlineLabel ?? "Чат")}
                 </p>
               </div>
-              {canClearActiveChat ? (
-                <button
-                  type="button"
-                  className="thread-clear-btn"
-                  disabled={clearingChat || (isRealChat && !wsConnected)}
-                  onClick={handleOpenClearChat}
-                >
-                  Очистить чат
-                </button>
-              ) : null}
-
-              {isRealChat && canManageChat ? (
-                <button
-                  type="button"
-                  className="thread-delete-btn"
-                  onClick={handleOpenDeleteChat}
-                  disabled={deletingChat}
-                >
-                  Удалить чат
-                </button>
+              {showThreadActionsMenu ? (
+                <div className="thread-menu-wrap" ref={threadMenuRef}>
+                  <button
+                    type="button"
+                    className="thread-menu-btn"
+                    aria-label="Действия с чатом"
+                    aria-expanded={threadMenuOpen}
+                    aria-haspopup="menu"
+                    onClick={() => setThreadMenuOpen((open) => !open)}
+                  >
+                    <MoreVertical size={20} strokeWidth={2} aria-hidden />
+                  </button>
+                  {threadMenuOpen ? (
+                    <div className="thread-menu-dropdown" role="menu">
+                      {canClearActiveChat ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="thread-menu-item thread-menu-item--danger"
+                          disabled={
+                            clearingChat || (isRealChat && !wsConnected)
+                          }
+                          onClick={() => {
+                            setThreadMenuOpen(false);
+                            handleOpenClearChat();
+                          }}
+                        >
+                          Очистить чат
+                        </button>
+                      ) : null}
+                      {isRealChat && canManageChat ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="thread-menu-item thread-menu-item--danger"
+                          disabled={deletingChat}
+                          onClick={() => {
+                            setThreadMenuOpen(false);
+                            handleOpenDeleteChat();
+                          }}
+                        >
+                          Удалить чат
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
             </header>
 
@@ -1142,7 +1190,7 @@ function ChatPageContent() {
         </div>
       </section>
 
-      <MobileBottomNav active="chat" />
+      <MobileBottomNav active="chat" showAdminLink={showAdminLink} />
     </main>
   );
 }

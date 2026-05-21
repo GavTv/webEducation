@@ -471,7 +471,7 @@ export default function ClassesPage() {
         onSubmit={handleJoinSubmit}
       />
 
-      <MobileBottomNav active="classes" />
+      <MobileBottomNav active="classes" showAdminLink={showAdminLink} />
     </main>
   );
 }

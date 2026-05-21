@@ -38,9 +38,6 @@ module.exports = {
         `UPDATE "Users" SET role = 'admin', "updatedAt" = NOW() WHERE id = :id`,
         { replacements: { id: existing[0].id } },
       );
-      console.log(
-        `Admin user seed skipped: already exists (${existing[0].email})`,
-      );
       return;
     }
 

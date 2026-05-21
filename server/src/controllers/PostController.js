@@ -14,8 +14,6 @@ class PostController {
         .status(200)
         .json(formatResponse(200, 'Посты получены', posts));
     } catch (error) {
-      console.log('======== PostController.getAll =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при получении постов'));
@@ -38,8 +36,6 @@ class PostController {
 
       return res.status(200).json(formatResponse(200, 'Пост получен', post));
     } catch (error) {
-      console.log('======== PostController.getOne =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при получении поста'));
@@ -73,8 +69,6 @@ class PostController {
         .status(201)
         .json(formatResponse(201, 'Пост создан', newPost));
     } catch (error) {
-      console.log('======== PostController.create =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при создании нового поста'));
@@ -110,8 +104,6 @@ class PostController {
         .status(200)
         .json(formatResponse(200, 'Пост изменен', updatedPost));
     } catch (error) {
-      console.log('======== PostController.update =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при обновлении поста'));
@@ -137,8 +129,6 @@ class PostController {
 
       return res.status(200).json(formatResponse(200, 'Пост удален'));
     } catch (error) {
-      console.log('======== PostController.delete =========');
-      console.log(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при удалении поста'));

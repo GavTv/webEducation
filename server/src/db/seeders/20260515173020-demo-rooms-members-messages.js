@@ -31,7 +31,6 @@ module.exports = {
     );
 
     if (!users.length) {
-      console.log('Seeder skipped: no users in Users table');
       return;
     }
 

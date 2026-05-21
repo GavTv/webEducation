@@ -17,6 +17,7 @@ import { ROLE_OPTIONS } from "@/shared/lib/roleLabels";
 import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import "../classes/page.css";
 import "./page.css";
 
@@ -139,7 +140,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="admin-page app-page">
+    <main className="admin-page app-page app-page--with-tabbar">
       {userToDelete ? (
         <ConfirmModal
           title="Удалить пользователя?"
@@ -175,7 +176,6 @@ export default function AdminPage() {
             <div>
               <p className="eyebrow">Панель администратора</p>
               <h1>Управление пользователями</h1>
-              <p>Все зарегистрированные аккаунты EduChat</p>
             </div>
             <Link className="nav-link" href={clientRoutes.classes}>
               ← К классам
@@ -279,6 +279,8 @@ export default function AdminPage() {
           ) : null}
         </section>
       </section>
+
+      <MobileBottomNav active="admin" showAdminLink />
     </main>
   );
 }

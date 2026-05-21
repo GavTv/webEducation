@@ -28,8 +28,6 @@ function verifyAccessToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.log('======== verifyAccessToken =========');
-    console.log(error);
     return res.status(403).json(formatResponse(403, 'Невалидный accessToken'));
   }
 }
