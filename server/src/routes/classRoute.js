@@ -5,6 +5,26 @@ const requireTeacherOrAdmin = require('../middleware/requireTeacherOrAdmin');
 
 router.get('/', verifyAccessToken, ClassController.list);
 
+router.get(
+  '/:groupId/channels',
+  verifyAccessToken,
+  ClassController.listChannels,
+);
+
+router.post(
+  '/:groupId/channels',
+  verifyAccessToken,
+  requireTeacherOrAdmin,
+  ClassController.createChannel,
+);
+
+router.delete(
+  '/:groupId/channels/:channelId',
+  verifyAccessToken,
+  requireTeacherOrAdmin,
+  ClassController.removeChannel,
+);
+
 router.get('/:id/access', verifyAccessToken, ClassController.getAccess);
 
 router.post('/:id/join', verifyAccessToken, ClassController.join);

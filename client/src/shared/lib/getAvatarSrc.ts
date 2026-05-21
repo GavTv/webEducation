@@ -4,14 +4,24 @@ export function getApiOrigin() {
   return raw.replace(/\/+$/, "").replace(/\/api$/i, "");
 }
 
-export function getAvatarSrc(avatarUrl?: string | null) {
+export function getAvatarSrc(
+  avatarUrl?: string | null,
+  cacheBust?: string | number | null,
+) {
   if (!avatarUrl) {
     return "";
   }
 
-  if (avatarUrl.startsWith("http")) {
-    return avatarUrl;
+  let url = avatarUrl;
+
+  if (!url.startsWith("http")) {
+    url = `${getApiOrigin()}${url}`;
   }
 
-  return `${getApiOrigin()}${avatarUrl}`;
+  if (cacheBust == null || cacheBust === "") {
+    return url;
+  }
+
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(String(cacheBust))}`;
 }

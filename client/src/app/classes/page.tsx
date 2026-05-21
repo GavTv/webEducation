@@ -90,7 +90,7 @@ export default function ClassesPage() {
       setClasses(list);
     } catch (err) {
       setListError(
-        err instanceof Error ? err.message : "Не удалось загрузить классы",
+        err instanceof Error ? err.message : "Не удалось загрузить группы",
       );
     } finally {
       setLoading(false);
@@ -151,7 +151,7 @@ export default function ClassesPage() {
         goToChat(classItem.id);
       } catch (err) {
         setListError(
-          err instanceof Error ? err.message : "Не удалось войти в класс",
+          err instanceof Error ? err.message : "Не удалось войти в группу",
         );
       } finally {
         setEnteringId(null);
@@ -167,7 +167,7 @@ export default function ClassesPage() {
         goToChat(classItem.id);
       } catch (err) {
         setListError(
-          err instanceof Error ? err.message : "Не удалось войти в класс",
+          err instanceof Error ? err.message : "Не удалось войти в группу",
         );
       } finally {
         setEnteringId(null);
@@ -246,7 +246,7 @@ export default function ClassesPage() {
       await loadClasses();
     } catch (err) {
       setDeleteError(
-        err instanceof Error ? err.message : "Не удалось удалить класс",
+        err instanceof Error ? err.message : "Не удалось удалить группу",
       );
     } finally {
       setDeleteSaving(false);
@@ -275,8 +275,8 @@ export default function ClassesPage() {
               <h3>Безопасное обучение</h3>
               <p>
                 {manageClasses
-                  ? "Вы можете создавать классы и задавать пароль для входа."
-                  : "Выберите класс для общения."}
+                  ? "Вы можете создавать группы и задавать пароль для входа."
+                  : "Выберите группу для общения."}
               </p>
             </div>
           </div>
@@ -286,13 +286,13 @@ export default function ClassesPage() {
           <header className="classes-header app-content-header">
             <div>
               <h1>
-                <span className="app-heading-mobile">Классы</span>
+                <span className="app-heading-mobile">Группы</span>
                 <span className="app-heading-desktop">
                   Добро пожаловать, {firstName}! 👋
                 </span>
               </h1>
               <p className="app-header-subtitle">
-                Выберите класс, чтобы начать общение
+                Выберите группу, чтобы начать общение
               </p>
             </div>
 
@@ -307,20 +307,20 @@ export default function ClassesPage() {
 
           <div className="classes-top">
             <div className="classes-top__headings">
-              <h2>Ваши классы</h2>
-              <p>Доступные учебные чаты</p>
+              <h2>Ваши группы</h2>
+              <p>Учебные группы с чатами внутри</p>
             </div>
 
             {manageClasses ? (
               <button type="button" className="add-button" onClick={openCreate}>
-                + Добавить класс
+                + Добавить группу
               </button>
             ) : null}
           </div>
 
           {loading ? (
             <p className="classes-state">
-              <Loader2 size={20} className="classes-spin" /> Загрузка классов…
+              <Loader2 size={20} className="classes-spin" /> Загрузка групп…
             </p>
           ) : null}
 
@@ -333,7 +333,7 @@ export default function ClassesPage() {
           {!loading && !listError ? (
             <div className="classes-list">
               {classes.length === 0 ? (
-                <p className="classes-state">Классов пока нет</p>
+                <p className="classes-state">Групп пока нет</p>
               ) : (
                 classes.map((classItem) => {
                   const editable = canEditClass(
@@ -367,7 +367,7 @@ export default function ClassesPage() {
                         <div className="class-info">
                           <h3>{classItem.title}</h3>
                           <p>
-                            {classItem.description || "Учебный чат класса"}
+                            {classItem.description || "Учебная группа"}
                           </p>
                           <span className="class-members">
                             <Users size={15} strokeWidth={2} aria-hidden />
@@ -443,9 +443,9 @@ export default function ClassesPage() {
 
       {deleteTarget ? (
         <ConfirmModal
-          title={`Удалить класс «${deleteTarget.title}»?`}
+          title={`Удалить группу «${deleteTarget.title}»?`}
           lines={[
-            "Чат класса и все участники будут удалены без возможности восстановления.",
+            "Группа, все чаты внутри неё и участники будут удалены без возможности восстановления.",
           ]}
           confirmLabel="Удалить"
           cancelLabel="Отмена"

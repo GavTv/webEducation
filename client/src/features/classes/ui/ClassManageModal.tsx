@@ -48,10 +48,10 @@ export function ClassManageModal({
 
   const heading =
     mode === "create"
-      ? "Новый класс"
+      ? "Новая группа"
       : mode === "edit"
-        ? "Редактировать класс"
-        : "Пароль для входа в класс";
+        ? "Редактировать группу"
+        : "Пароль для входа в группу";
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 const AuthService = require('../services/AuthService');
+const { deleteAvatarFile } = require('../utils/avatarFiles');
 const formatResponse = require('../utils/formatResponse');
 const { User } = require('../db/models');
 const bcrypt = require('bcrypt');
@@ -325,6 +326,12 @@ class AuthController {
       }
 
       if (req.file) {
+        const current = await AuthService.findPublicUserById(currentUser.id);
+
+        if (current?.avatarUrl) {
+          deleteAvatarFile(current.avatarUrl);
+        }
+
         updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
       }
 

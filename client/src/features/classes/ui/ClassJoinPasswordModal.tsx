@@ -43,7 +43,7 @@ export function ClassJoinPasswordModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="join-class-title" className={styles.title}>
-          Вход в класс
+          Вход в группу
         </h2>
         <p className={styles.hint}>
           Для входа в «{classTitle}» введите пароль, который выдал учитель.
@@ -51,7 +51,7 @@ export function ClassJoinPasswordModal({
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.label}>
-            Пароль класса
+            Пароль группы
             <input
               className={styles.input}
               type="password"
@@ -79,7 +79,7 @@ export function ClassJoinPasswordModal({
               Отмена
             </button>
             <button type="submit" className={styles.btnPrimary} disabled={saving}>
-              {saving ? "Проверка…" : "Войти в класс"}
+              {saving ? "Проверка…" : "Войти в группу"}
             </button>
           </div>
         </form>
