@@ -14,11 +14,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Lock, Search, Star } from "lucide-react";
 import { ChatMessageInput } from "./ChatMessageInput";
 import {
-  createClass,
-  deleteClass,
+  createGroupChannel,
+  deleteGroupChannel,
   fetchClassAccess,
   fetchClasses,
+  fetchGroupChannels,
   joinClass,
+  type ChatChannelItem,
   type ClassRoomItem,
 } from "@/shared/lib/classesApi";
 import {
@@ -36,6 +38,7 @@ import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import { serverMessageToUi, type UiChatMessage } from "@/shared/lib/mapChatMessage";
 import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
+import { UserAvatar } from "@/shared/ui/UserAvatar/UserAvatar";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
@@ -45,7 +48,6 @@ import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
 import "./page.css";
 
 const MOBILE_BP = "(max-width: 900px)";
-const BOT_ROOM_ID = 999001;
 const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
 const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
@@ -67,18 +69,6 @@ type ChatRoom = {
   starred?: boolean;
 };
 
-const botRoom: ChatRoom = {
-  id: BOT_ROOM_ID,
-  title: "@botAi",
-  icon: "🤖",
-  iconClass: "purple",
-  author: "@botAi",
-  message: "Привет! Я @botAi — ваш AI-помощник…",
-  time: "сейчас",
-  onlineLabel: "AI-помощник онлайн",
-  starred: true,
-};
-
 function classToChatRoom(item: ClassRoomItem): ChatRoom {
   const letter = item.title.trim().charAt(0).toUpperCase() || "#";
   return {
@@ -87,36 +77,31 @@ function classToChatRoom(item: ClassRoomItem): ChatRoom {
     icon: letter,
     iconClass: item.color || "purple",
     locked: item.hasPassword,
-    author: "Класс",
-    message: item.description?.trim() || "Учебный чат",
+    author: "Группа",
+    message: item.description?.trim() || "Учебная группа",
     time: "",
     onlineLabel: `${item.memberCount} участников`,
   };
 }
 
-const defaultBotMessages: UiChatMessage[] = [
-    {
-      id: "bot-1",
-      author: "@botAi",
-      text: "Привет! Я @botAi — ваш AI-помощник по обучению. Чем могу помочь?",
-      time: "11:30",
-      isBot: true,
-    },
-    {
-      id: "user-1",
-      author: "Вадим",
-      text: "Привет! Расскажи про React hooks",
-      time: "11:31",
-      isMine: true,
-    },
-    {
-      id: "bot-2",
-      author: "@botAi",
-      text: "React hooks — это функции, которые позволяют использовать состояние и другие возможности React без написания классов. Основные: useState, useEffect, useContext…",
-      time: "11:32",
-      isBot: true,
-    },
-];
+function channelToChatRoom(
+  channel: ChatChannelItem,
+  group?: ClassRoomItem | null,
+): ChatRoom {
+  const letter = channel.title.trim().charAt(0).toUpperCase() || "#";
+  return {
+    id: channel.id,
+    title: channel.title,
+    icon: letter,
+    iconClass: channel.color || group?.color || "purple",
+    author: group?.title ?? "Группа",
+    message: "Чат внутри группы",
+    time: "",
+    onlineLabel: group ? `${group.memberCount} участников` : "Чат",
+  };
+}
+
+const CHAT_UI_STORAGE_VERSION = "2";
 
 function applyHistory(
   roomId: number,
@@ -132,7 +117,7 @@ const botAiStartMessages: BotAiMessage[] = [
   {
     id: "bot-start",
     author: "@botAi",
-    text: "Привет! Я AI-помощник по программированию. Задай вопрос по JavaScript, React, Next.js, Node.js, базам данных или ошибкам.",
+    text: "Привет! Я @botAi — помогаю с программированием и учёбой, но могу и немного поболтать. Спроси про код, ошибки или просто поздоровайся.",
     time: "сейчас",
     isBot: true,
   },
@@ -147,7 +132,7 @@ function ChatPageContent() {
   const firstName = nameParts[0] || "Пользователь";
   const lastName = nameParts[1] || "";
   const avatarInitials = getNameInitials(firstName, lastName, user?.name);
-  const avatarSrc = getAvatarSrc(user?.avatarUrl);
+  const avatarSrc = getAvatarSrc(user?.avatarUrl, user?.avatarUrl);
   const canManageChat = canManageClasses(user?.role);
   const showAdminLink = isAdmin(user?.role);
 
@@ -155,22 +140,27 @@ function ChatPageContent() {
   const [memberClasses, setMemberClasses] = useState<ClassRoomItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
-  const chatRooms = useMemo(
+  const groupRooms = useMemo(
     () => memberClasses.map(classToChatRoom),
     [memberClasses],
   );
-  const [selectedId, setSelectedId] = useState(0);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [groupChannels, setGroupChannels] = useState<ChatChannelItem[]>([]);
+  const [channelsLoading, setChannelsLoading] = useState(false);
+  const [selectedChannelId, setSelectedChannelId] = useState<number | null>(
+    null,
+  );
   const [draft, setDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [messagesByRoomId, setMessagesByRoomId] = useState<
     Record<number, UiChatMessage[]>
-  >({ [BOT_ROOM_ID]: defaultBotMessages });
+  >({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastScrolledRoomRef = useRef<number | null>(null);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
-  const selectedIdRef = useRef(selectedId);
+  const selectedChannelIdRef = useRef(selectedChannelId);
 
   const [botAiOpen, setBotAiOpen] = useState(false);
   const [botAiDraft, setBotAiDraft] = useState("");
@@ -183,8 +173,6 @@ function ChatPageContent() {
   const [deleteChatError, setDeleteChatError] = useState<string | null>(null);
   const [createChatOpen, setCreateChatOpen] = useState(false);
   const [createChatTitle, setCreateChatTitle] = useState("");
-  const [createChatDescription, setCreateChatDescription] = useState("");
-  const [createChatPassword, setCreateChatPassword] = useState("");
   const [createChatLoading, setCreateChatLoading] = useState(false);
   const [createChatError, setCreateChatError] = useState<string | null>(null);
   const [botAiMessages, setBotAiMessages] = useState<BotAiMessage[]>(() => {
@@ -200,7 +188,19 @@ function ChatPageContent() {
       const parsedMessages = JSON.parse(savedMessages) as BotAiMessage[];
 
       if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-        return parsedMessages;
+        const legacyDemo = parsedMessages.some(
+          (m) =>
+            m.id === "bot-1" ||
+            m.id === "user-1" ||
+            m.id === "bot-2" ||
+            m.author === "Вадим",
+        );
+
+        if (!legacyDemo) {
+          return parsedMessages;
+        }
+
+        window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
       }
 
       return botAiStartMessages;
@@ -215,6 +215,16 @@ function ChatPageContent() {
 
   useEffect(() => {
     try {
+      const versionKey = "webEducation:chatUiVersion";
+      const savedVersion = window.localStorage.getItem(versionKey);
+
+      if (savedVersion !== CHAT_UI_STORAGE_VERSION) {
+        window.localStorage.removeItem(BOT_AI_OPEN_STORAGE_KEY);
+        window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+        window.localStorage.setItem(versionKey, CHAT_UI_STORAGE_VERSION);
+        return;
+      }
+
       const savedOpen = window.localStorage.getItem(BOT_AI_OPEN_STORAGE_KEY);
       const savedMessages = window.localStorage.getItem(
         BOT_AI_MESSAGES_STORAGE_KEY,
@@ -226,6 +236,19 @@ function ChatPageContent() {
 
       if (savedMessages) {
         const parsedMessages = JSON.parse(savedMessages) as BotAiMessage[];
+        const legacyDemo = parsedMessages.some(
+          (m) =>
+            m.id === "bot-1" ||
+            m.id === "user-1" ||
+            m.id === "bot-2" ||
+            m.author === "Вадим",
+        );
+
+        if (legacyDemo) {
+          window.localStorage.removeItem(BOT_AI_MESSAGES_STORAGE_KEY);
+          setBotAiMessages(botAiStartMessages);
+          return;
+        }
 
         if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
           setBotAiMessages(parsedMessages);
@@ -237,39 +260,103 @@ function ChatPageContent() {
     }
   }, []);
 
-  const selected = useMemo(
-    () => chatRooms.find((room) => room.id === selectedId) ?? chatRooms[0],
-    [chatRooms, selectedId],
+  const selectedGroup = useMemo(
+    () => memberClasses.find((item) => item.id === selectedGroupId) ?? null,
+    [memberClasses, selectedGroupId],
   );
 
-  // auto-select first real chat
-  useEffect(() => {
-    if (!botAiOpen && selectedId === 0 && chatRooms[0]) {
-      setSelectedId(chatRooms[0].id);
-    }
-  }, [botAiOpen, chatRooms, selectedId]);
+  const selectedGroupRoom = useMemo(
+    () => groupRooms.find((room) => room.id === selectedGroupId) ?? null,
+    [groupRooms, selectedGroupId],
+  );
 
-  const filteredRooms = useMemo(() => {
+  const channelRooms = useMemo(
+    () => groupChannels.map((ch) => channelToChatRoom(ch, selectedGroup)),
+    [groupChannels, selectedGroup],
+  );
+
+  const selectedChannel = useMemo(
+    () => channelRooms.find((room) => room.id === selectedChannelId) ?? null,
+    [channelRooms, selectedChannelId],
+  );
+
+  const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return chatRooms;
-    return chatRooms.filter(
+    if (!q) return groupRooms;
+    return groupRooms.filter(
       (r) =>
         r.title.toLowerCase().includes(q) ||
         r.message.toLowerCase().includes(q) ||
         r.author.toLowerCase().includes(q),
     );
-  }, [chatRooms, searchQuery]);
+  }, [groupRooms, searchQuery]);
 
-  const selectedMessages = messagesByRoomId[selected?.id ?? BOT_ROOM_ID] ?? [];
-  const isBotChat = selected?.id === BOT_ROOM_ID;
-  const isRealChat = !isBotChat && selectedId > 0;
-  const canClearActiveChat = botAiOpen
-    ? canManageChat
-    : isRealChat && canManageChat;
+  const filteredChannels = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return channelRooms;
+    return channelRooms.filter((r) => r.title.toLowerCase().includes(q));
+  }, [channelRooms, searchQuery]);
+
+  const threadMessages = useMemo(() => {
+    if (botAiOpen) return botAiMessages;
+    if (selectedChannelId) return messagesByRoomId[selectedChannelId] ?? [];
+    return [];
+  }, [botAiOpen, botAiMessages, selectedChannelId, messagesByRoomId]);
+
+  const isRealChat = selectedChannelId != null && selectedChannelId > 0;
+  const hasActiveThread = botAiOpen || isRealChat;
+
+  const threadEmptyHint = botAiOpen
+    ? null
+    : !selectedGroupId
+      ? "Выберите группу слева, затем чат внутри неё"
+      : !selectedChannelId
+        ? "Выберите чат в списке по центру"
+        : null;
+  const canClearActiveChat = !botAiOpen && isRealChat && canManageChat;
 
   useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
+    selectedChannelIdRef.current = selectedChannelId;
+  }, [selectedChannelId]);
+
+  const loadGroupChannels = useCallback(async (groupId: number) => {
+    setChannelsLoading(true);
+    try {
+      const { channels } = await fetchGroupChannels(groupId);
+      setGroupChannels(channels);
+      return channels;
+    } catch {
+      setGroupChannels([]);
+      return [];
+    } finally {
+      setChannelsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGroupId) {
+      setGroupChannels([]);
+      setSelectedChannelId(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    void loadGroupChannels(selectedGroupId).then((channels) => {
+      if (cancelled) return;
+
+      const channelIdParam = searchParams.get("channelId");
+      const preferredId = channelIdParam ? Number(channelIdParam) : NaN;
+      const preferred = channels.find((ch) => ch.id === preferredId);
+      const nextId = preferred?.id ?? channels[0]?.id ?? null;
+
+      setSelectedChannelId(nextId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGroupId, loadGroupChannels, searchParams]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -365,11 +452,11 @@ function ChatPageContent() {
   }, [user]);
 
   useEffect(() => {
-    if (!wsConnected || !user || isBotChat) return;
+    if (!wsConnected || !user || botAiOpen || !selectedChannelId) return;
     const socket = socketRef.current;
     if (!socket) return;
-    emitJoinRoom(socket, selectedId);
-  }, [selectedId, wsConnected, user, isBotChat]);
+    emitJoinRoom(socket, selectedChannelId);
+  }, [selectedChannelId, wsConnected, user, botAiOpen]);
 
   const displayAuthorName = useMemo(() => {
     if (!userName) return firstName;
@@ -377,8 +464,8 @@ function ChatPageContent() {
   }, [firstName, userName]);
 
   useEffect(() => {
-    const roomChanged = lastScrolledRoomRef.current !== selectedId;
-    lastScrolledRoomRef.current = selectedId;
+    const roomChanged = lastScrolledRoomRef.current !== selectedChannelId;
+    lastScrolledRoomRef.current = selectedChannelId;
 
     const behavior = roomChanged ? "auto" : "smooth";
 
@@ -387,7 +474,7 @@ function ChatPageContent() {
     });
 
     return () => cancelAnimationFrame(id);
-  }, [botAiOpen, botAiMessages, botAiLoading, selectedMessages, selectedId]);
+  }, [botAiOpen, botAiMessages, botAiLoading, threadMessages, selectedChannelId]);
 
   useEffect(() => {
     const classId = searchParams.get("classId");
@@ -398,13 +485,11 @@ function ChatPageContent() {
 
     if (!Number.isFinite(id)) return;
     if (memberClasses.some((c) => c.id === id)) {
-      setSelectedId(id);
+      setSelectedGroupId(id);
+      setBotAiOpen(false);
 
       const mq = window.matchMedia(MOBILE_BP);
 
-      if (mq.matches) {
-        setMobileThreadOpen(true);
-      }
     }
   }, [searchParams, memberClasses]);
 
@@ -470,14 +555,25 @@ function ChatPageContent() {
     };
   }, []);
 
-  const selectRoom = useCallback((id: number) => {
+  const selectGroup = useCallback((id: number) => {
     setBotAiOpen(false);
+    setSelectedGroupId(id);
+    setSelectedChannelId(null);
+    setMobileThreadOpen(false);
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
     }
-    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
-    setSelectedId(id);
+
+  }, []);
+
+  const selectChannel = useCallback((id: number) => {
+    setBotAiOpen(false);
+    setSelectedChannelId(id);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
+    }
 
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
@@ -486,15 +582,29 @@ function ChatPageContent() {
 
   const closeMobileThread = useCallback(() => {
     setMobileThreadOpen(false);
+
+    if (botAiOpen) {
+      setBotAiOpen(false);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
+      }
+    }
+  }, [botAiOpen]);
+
+  const closeMobileChannels = useCallback(() => {
+    setSelectedGroupId(null);
+    setSelectedChannelId(null);
+    setMobileThreadOpen(false);
   }, []);
 
   const openBotChat = useCallback(() => {
     setBotAiOpen(true);
+    setSelectedChannelId(null);
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
     }
-    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
 
     if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
       setMobileThreadOpen(true);
@@ -520,15 +630,15 @@ function ChatPageContent() {
 
       const text = draft.trim();
 
-      if (!text || !selected) return;
+      if (!text || !selectedChannelId) return;
 
       const socket = socketRef.current;
       if (!socket?.connected) return;
 
-      emitSendMessage(socket, selected.id, text);
+      emitSendMessage(socket, selectedChannelId, text);
       setDraft("");
     },
-    [draft, selected],
+    [draft, selectedChannelId],
   );
 
 
@@ -568,7 +678,7 @@ function ChatPageContent() {
       return;
     }
 
-    if (!isRealChat || !selectedId) return;
+    if (!isRealChat || !selectedChannelId) return;
     const socket = socketRef.current;
     if (!socket || !wsConnected) {
       setClearChatError("Нет подключения к чату");
@@ -577,10 +687,10 @@ function ChatPageContent() {
 
     setClearingChat(true);
     setClearChatError(null);
-    emitClearRoom(socket, selectedId, (res) => {
+    emitClearRoom(socket, selectedChannelId, (res) => {
       setClearingChat(false);
       if (res?.status === "ok") {
-        setMessagesByRoomId((prev) => ({ ...prev, [selectedId]: [] }));
+        setMessagesByRoomId((prev) => ({ ...prev, [selectedChannelId]: [] }));
         setClearChatOpen(false);
         return;
       }
@@ -590,7 +700,7 @@ function ChatPageContent() {
   }, [
     botAiOpen,
     isRealChat,
-    selectedId,
+    selectedChannelId,
     saveBotAiMessages,
     wsConnected,
   ]);
@@ -664,12 +774,16 @@ function ChatPageContent() {
 
 
   const handleOpenCreateChat = useCallback(() => {
+    if (!selectedGroupId) {
+      setCreateChatError("Сначала выберите группу слева");
+      setCreateChatOpen(true);
+      return;
+    }
+
     setCreateChatError(null);
     setCreateChatTitle("");
-    setCreateChatDescription("");
-    setCreateChatPassword("");
     setCreateChatOpen(true);
-  }, []);
+  }, [selectedGroupId]);
 
   const handleCloseCreateChat = useCallback(() => {
     if (createChatLoading) return;
@@ -708,19 +822,17 @@ function ChatPageContent() {
       setCreateChatLoading(true);
       setCreateChatError(null);
 
+      if (!selectedGroupId) {
+        setCreateChatError("Сначала выберите группу");
+        setCreateChatLoading(false);
+        return;
+      }
+
       try {
-        const created = await createClass({
-          title,
-          description: createChatDescription.trim(),
-          joinPassword: createChatPassword.trim(),
-        });
+        const created = await createGroupChannel(selectedGroupId, { title });
 
-        setMemberClasses((prev) => [
-          created,
-          ...prev.filter((item) => item.id !== created.id),
-        ]);
-
-        setSelectedId(created.id);
+        setGroupChannels((prev) => [...prev, created]);
+        setSelectedChannelId(created.id);
         setBotAiOpen(false);
         setMobileThreadOpen(true);
         setCreateChatOpen(false);
@@ -732,40 +844,34 @@ function ChatPageContent() {
         setCreateChatLoading(false);
       }
     },
-    [
-      createChatDescription,
-      createChatPassword,
-      createChatTitle,
-    ],
+    [createChatTitle, selectedGroupId],
   );
 
   const handleConfirmDeleteChat = useCallback(async () => {
-    if (!isRealChat || !selected) return;
+    if (!isRealChat || !selectedGroupId || !selectedChannelId) return;
 
     setDeletingChat(true);
     setDeleteChatError(null);
 
     try {
-      await deleteClass(selected.id);
+      await deleteGroupChannel(selectedGroupId, selectedChannelId);
 
-      setMemberClasses((prev) => {
-        const next = prev.filter((item) => item.id !== selected.id);
-        const nextSelectedId = next[0]?.id ?? 0;
+      const remaining = groupChannels.filter(
+        (ch) => ch.id !== selectedChannelId,
+      );
 
-        setSelectedId(nextSelectedId);
-
-        return next;
-      });
+      setGroupChannels(remaining);
+      setSelectedChannelId(remaining[0]?.id ?? null);
 
       setMessagesByRoomId((prev) => {
         const next = { ...prev };
-        delete next[selected.id];
-
+        delete next[selectedChannelId];
         return next;
       });
 
       setDeleteChatOpen(false);
       setMobileThreadOpen(false);
+
     } catch (error) {
       setDeleteChatError(
         error instanceof Error ? error.message : "Не удалось удалить чат",
@@ -773,18 +879,18 @@ function ChatPageContent() {
     } finally {
       setDeletingChat(false);
     }
-  }, [isRealChat, selected]);
+  }, [groupChannels, isRealChat, selectedChannelId, selectedGroupId]);
 
   const clearChatTitle = botAiOpen
     ? "Очистить чат с @botAi?"
-    : `Очистить чат «${selected?.title ?? "класс"}»?`;
+    : `Очистить чат «${selectedChannel?.title ?? "чат"}»?`;
 
-  const deleteChatTitle = `Удалить чат «${selected?.title ?? "класс"}»?`;
+  const deleteChatTitle = `Удалить чат «${selectedChannel?.title ?? "чат"}»?`;
 
   return (
     <main
       className={`educhat-page app-page classes-page app-page--with-tabbar${
-        mobileThreadOpen ? " app-page--hide-tabbar" : ""
+        mobileThreadOpen || selectedGroupId ? " app-page--hide-tabbar" : ""
       }`}
     >
       {clearChatOpen ? (
@@ -806,8 +912,8 @@ function ChatPageContent() {
         <ConfirmModal
           title={deleteChatTitle}
           lines={[
-            "Чат будет удалён безвозвратно.",
-            "Все сообщения и доступ участников к этому чату будут потеряны.",
+            "Удалится только этот чат внутри группы.",
+            "Сама группа и другие чаты останутся.",
           ]}
           confirmLabel="Удалить"
           cancelLabel="Отмена"
@@ -828,31 +934,16 @@ function ChatPageContent() {
               <input
                 value={createChatTitle}
                 onChange={(event) => setCreateChatTitle(event.target.value)}
-                placeholder="Например: Frontend группа"
+                placeholder="Например: Домашка, Вопросы"
                 autoFocus
               />
             </label>
 
-            <label>
-              <span>Описание</span>
-              <textarea
-                value={createChatDescription}
-                onChange={(event) =>
-                  setCreateChatDescription(event.target.value)
-                }
-                placeholder="Краткое описание чата"
-                rows={3}
-              />
-            </label>
-
-            <label>
-              <span>Пароль для входа, необязательно</span>
-              <input
-                value={createChatPassword}
-                onChange={(event) => setCreateChatPassword(event.target.value)}
-                placeholder="Можно оставить пустым"
-              />
-            </label>
+            {selectedGroup ? (
+              <p className="create-chat-group-hint">
+                Группа: <strong>{selectedGroup.title}</strong>
+              </p>
+            ) : null}
 
             {createChatError ? (
               <p className="create-chat-error">{createChatError}</p>
@@ -891,23 +982,23 @@ function ChatPageContent() {
 
             <div>
               <h3>Безопасное обучение</h3>
-              <p>Классы могут быть защищены паролем</p>
+              <p>Группы могут быть защищены паролем</p>
             </div>
           </div>
         </aside>
 
         <div
           className={`chat-columns${
-            mobileThreadOpen ? " chat-columns--thread" : ""
-          }`}
+            selectedGroupId ? " chat-columns--in-group" : ""
+          }${mobileThreadOpen ? " chat-columns--thread" : ""}`}
         >
           <section className="chat-panel">
             <header className="chat-list-header app-content-header">
               <div className="chat-list-header-main">
                 <div>
-                  <h1>Чаты</h1>
+                  <h1>Группы</h1>
                   <p className="app-header-subtitle app-only-desktop">
-                    Выберите чат, чтобы начать общение
+                    Выберите группу, затем чат внутри неё
                   </p>
                 </div>
               </div>
@@ -925,39 +1016,30 @@ function ChatPageContent() {
                 <Search size={20} strokeWidth={2} aria-hidden />
                 <input
                   type="search"
-                  placeholder="Поиск по чатам"
+                  placeholder="Поиск по группам"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </label>
-              {canManageChat ? (
-                <button
-                  type="button"
-                  className="chat-create-btn"
-                  onClick={handleOpenCreateChat}
-                >
-                  + Создать чат
-                </button>
-              ) : null}
             </div>
 
             <div className="rooms">
               {roomsLoading ? (
-                <p className="chat-hint">Загрузка чатов…</p>
+                <p className="chat-hint">Загрузка групп…</p>
               ) : null}
-              {!roomsLoading && filteredRooms.length === 0 ? (
+              {!roomsLoading && filteredGroups.length === 0 ? (
                 <p className="chat-hint">
-                  Нет классов для чата. Войдите в класс на странице «Классы».
+                  Нет групп для чата. Войдите в группу на странице «Группы».
                 </p>
               ) : null}
-              {filteredRooms.map((room) => (
+              {filteredGroups.map((room) => (
                 <button
                   key={room.id}
                   type="button"
                   className={`room-card${
-                    !botAiOpen && room.id === selected?.id ? " selected" : ""
+                    !botAiOpen && room.id === selectedGroupId ? " selected" : ""
                   }`}
-                  onClick={() => selectRoom(room.id)}
+                  onClick={() => selectGroup(room.id)}
                 >
                   <div className={`room-icon ${room.iconClass}`}>
                     {room.icon}
@@ -997,17 +1079,109 @@ function ChatPageContent() {
               ))}
             </div>
 
-            <div className={`bot-card${botAiOpen ? " bot-card--active" : ""}`}>
+            <button
+              type="button"
+              className={`bot-card${botAiOpen ? " bot-card--active" : ""}`}
+              onClick={openBotChat}
+              aria-label="Открыть чат с @botAi"
+            >
               <div className="bot-avatar">🤖</div>
 
               <div>
                 <h3>@botAi</h3>
                 <p>Ваш AI-помощник. Задавайте вопросы!</p>
               </div>
-              <button type="button" onClick={openBotChat}>
-                Написать
+              <span className="bot-card-action">Написать</span>
+            </button>
+          </section>
+
+          <section className="channels-panel">
+            <header className="channels-panel-header">
+              <button
+                type="button"
+                className="thread-back-btn channels-panel-back"
+                onClick={closeMobileChannels}
+                aria-label="К списку групп"
+              >
+                <ArrowLeft size={20} strokeWidth={2} aria-hidden />
               </button>
+              <div>
+                <h2>{selectedGroupRoom?.title ?? "Чаты группы"}</h2>
+              </div>
+              {canManageChat && selectedGroupId ? (
+                <button
+                  type="button"
+                  className="chat-create-btn channels-panel-create channels-panel-create--desktop"
+                  onClick={handleOpenCreateChat}
+                >
+                  + Чат
+                </button>
+              ) : null}
+            </header>
+
+            <div className="rooms channels-list">
+              <button
+                type="button"
+                className={`room-card bot-ai-room-card${
+                  botAiOpen ? " bot-ai-room-card--active selected" : ""
+                }`}
+                onClick={openBotChat}
+              >
+                <div className="room-icon purple">🤖</div>
+                <div className="room-info">
+                  <h3>
+                    @botAi
+                    <Star
+                      className="room-star"
+                      size={14}
+                      fill="currentColor"
+                      aria-hidden
+                    />
+                  </h3>
+                  <p>AI-помощник — всегда доступен</p>
+                </div>
+              </button>
+
+              {!selectedGroupId ? (
+                <p className="chat-hint">Сначала выберите группу слева</p>
+              ) : null}
+              {selectedGroupId && channelsLoading ? (
+                <p className="chat-hint">Загрузка чатов…</p>
+              ) : null}
+              {selectedGroupId &&
+              !channelsLoading &&
+              filteredChannels.length === 0 ? (
+                <p className="chat-hint">В группе пока нет чатов</p>
+              ) : null}
+              {filteredChannels.map((room) => (
+                <button
+                  key={room.id}
+                  type="button"
+                  className={`room-card${
+                    !botAiOpen && room.id === selectedChannelId ? " selected" : ""
+                  }`}
+                  onClick={() => selectChannel(room.id)}
+                >
+                  <div className={`room-icon ${room.iconClass}`}>{room.icon}</div>
+                  <div className="room-info">
+                    <h3>{room.title}</h3>
+                    <p>{room.message}</p>
+                  </div>
+                </button>
+              ))}
             </div>
+
+            {canManageChat && selectedGroupId ? (
+              <div className="channels-panel-footer">
+                <button
+                  type="button"
+                  className="chat-create-btn channels-panel-create channels-panel-create--mobile"
+                  onClick={handleOpenCreateChat}
+                >
+                  + Чат
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <aside className="thread-panel">
@@ -1020,48 +1194,60 @@ function ChatPageContent() {
               >
                 <ArrowLeft size={20} strokeWidth={2} aria-hidden />
               </button>
-              <div className={`thread-avatar ${botAiOpen ? "purple" : selected?.iconClass ?? "purple"}`}>
-                {botAiOpen ? "🤖" : selected?.icon ?? "#"}
+              <div
+                className={`thread-avatar ${botAiOpen ? "purple" : selectedChannel?.iconClass ?? "purple"}`}
+              >
+                {botAiOpen ? "🤖" : selectedChannel?.icon ?? "#"}
               </div>
               <div className="thread-header-text">
-                <h2>{botAiOpen ? "@botAi" : selected?.title ?? "Чат"}</h2>
+                <h2>{botAiOpen ? "@botAi" : selectedChannel?.title ?? "Чат"}</h2>
                 <p>
                   <span className="chat-online-dot" aria-hidden />
                   {botAiOpen
-                    ? "AI-помощник по программированию"
+                    ? "AI-помощник: код, учёба и немного общения"
                     : isRealChat
                       ? wsConnected
-                        ? selected?.onlineLabel ?? "Подключено"
+                        ? selectedGroupRoom?.onlineLabel ?? "Подключено"
                         : "Подключение…"
-                      : (selected?.onlineLabel ?? "Чат")}
+                      : selectedGroupRoom
+                        ? `Группа: ${selectedGroupRoom.title}`
+                        : "Выберите чат в группе"}
                 </p>
               </div>
-              {canClearActiveChat ? (
-                <button
-                  type="button"
-                  className="thread-clear-btn"
-                  disabled={clearingChat || (isRealChat && !wsConnected)}
-                  onClick={handleOpenClearChat}
-                >
-                  Очистить чат
-                </button>
-              ) : null}
+              {canClearActiveChat || (isRealChat && canManageChat) ? (
+                <div className="thread-header-actions">
+                  {canClearActiveChat ? (
+                    <button
+                      type="button"
+                      className="thread-clear-btn"
+                      disabled={clearingChat || (isRealChat && !wsConnected)}
+                      onClick={handleOpenClearChat}
+                    >
+                      Очистить
+                    </button>
+                  ) : null}
 
-              {isRealChat && canManageChat ? (
-                <button
-                  type="button"
-                  className="thread-delete-btn"
-                  onClick={handleOpenDeleteChat}
-                  disabled={deletingChat}
-                >
-                  Удалить чат
-                </button>
+                  {isRealChat && canManageChat ? (
+                    <button
+                      type="button"
+                      className="thread-delete-btn"
+                      onClick={handleOpenDeleteChat}
+                      disabled={deletingChat}
+                    >
+                      Удалить
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </header>
 
             <div className="messages-wrap">
-              <div className="chat-date-pill">Сегодня</div>
-              {(botAiOpen ? botAiMessages : selectedMessages).map((message) => (
+              {threadEmptyHint ? (
+                <p className="chat-thread-empty">{threadEmptyHint}</p>
+              ) : (
+                <div className="chat-date-pill">Сегодня</div>
+              )}
+              {threadMessages.map((message) => (
                 <article
                   key={message.id}
                   className={`message-row${message.isMine ? " message-row--mine" : ""}${
@@ -1070,13 +1256,16 @@ function ChatPageContent() {
                 >
                   {!message.isMine ? (
                     <div
-                      className={`message-avatar ${message.avatarUrl && !botAiOpen && !message.isBot ? "message-avatar--user" : selected?.iconClass ?? "purple"}`}
+                      className={`message-avatar ${message.avatarUrl && !botAiOpen && !message.isBot ? "message-avatar--user" : selectedChannel?.iconClass ?? "purple"}`}
                       aria-hidden
                     >
                       {botAiOpen || message.isBot ? (
                         "🤖"
                       ) : message.avatarUrl ? (
-                        <img src={getAvatarSrc(message.avatarUrl)} alt="" />
+                        <UserAvatar
+                          src={getAvatarSrc(message.avatarUrl, message.avatarUrl)}
+                          fallback={message.author.charAt(0)}
+                        />
                       ) : (
                         message.author.charAt(0)
                       )}
@@ -1097,11 +1286,10 @@ function ChatPageContent() {
                   </div>
                   {message.isMine ? (
                     <div className="message-avatar message-avatar--user" aria-hidden>
-                      {avatarSrc ? (
-                        <img src={avatarSrc} alt="" />
-                      ) : (
-                        avatarInitials
-                      )}
+                      <UserAvatar
+                        src={avatarSrc}
+                        fallback={avatarInitials}
+                      />
                     </div>
                   ) : null}
                 </article>
@@ -1129,13 +1317,18 @@ function ChatPageContent() {
               value={botAiOpen ? botAiDraft : draft}
               onChange={botAiOpen ? setBotAiDraft : setDraft}
               onSubmit={botAiOpen ? sendBotAiMessage : sendMessage}
-              disabled={botAiOpen ? botAiLoading : isRealChat && !wsConnected}
+              disabled={
+                !hasActiveThread ||
+                (botAiOpen ? botAiLoading : isRealChat && !wsConnected)
+              }
               placeholder={
-                botAiOpen
-                  ? "Вопрос по программированию..."
-                  : isRealChat && !wsConnected
-                    ? "Подключение к чату…"
-                    : "Напишите сообщение..."
+                !hasActiveThread
+                  ? "Сначала выберите чат"
+                  : botAiOpen
+                    ? "Сообщение @botAi..."
+                    : isRealChat && !wsConnected
+                      ? "Подключение к чату…"
+                      : "Напишите сообщение..."
               }
             />
           </aside>

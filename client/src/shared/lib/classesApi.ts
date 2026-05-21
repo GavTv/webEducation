@@ -20,6 +20,20 @@ export type ClassAccessInfo = {
   isMember: boolean;
 };
 
+export type ChatChannelItem = {
+  id: number;
+  title: string;
+  parentRoomId: number;
+  color: string;
+  createdBy: number;
+  createdAt?: string;
+};
+
+export type GroupChannelsResponse = {
+  group: { id: number; title: string; color: string };
+  channels: ChatChannelItem[];
+};
+
 export async function fetchClasses(): Promise<ClassRoomItem[]> {
   const { data } = await axiosInstance.get<
     ServerResponseType<{ classes: ClassRoomItem[] }>
@@ -98,6 +112,51 @@ export async function fetchClassAccess(id: number): Promise<ClassAccessInfo> {
   }
 
   return data.data.access;
+}
+
+export async function fetchGroupChannels(
+  groupId: number,
+): Promise<GroupChannelsResponse> {
+  const { data } = await axiosInstance.get<
+    ServerResponseType<GroupChannelsResponse>
+  >(`classes/${groupId}/channels`);
+
+  if (data.statusCode !== 200 || !data.data?.channels) {
+    throw new Error(data.message ?? "Не удалось загрузить чаты группы");
+  }
+
+  return {
+    group: data.data.group,
+    channels: data.data.channels,
+  };
+}
+
+export async function createGroupChannel(
+  groupId: number,
+  payload: { title: string },
+): Promise<ChatChannelItem> {
+  const { data } = await axiosInstance.post<
+    ServerResponseType<{ channel: ChatChannelItem }>
+  >(`classes/${groupId}/channels`, payload);
+
+  if (data.statusCode !== 201 || !data.data?.channel) {
+    throw new Error(data.message ?? "Не удалось создать чат");
+  }
+
+  return data.data.channel;
+}
+
+export async function deleteGroupChannel(
+  groupId: number,
+  channelId: number,
+): Promise<void> {
+  const { data } = await axiosInstance.delete<ServerResponseType<null>>(
+    `classes/${groupId}/channels/${channelId}`,
+  );
+
+  if (data.statusCode !== 200) {
+    throw new Error(data.message ?? "Не удалось удалить чат");
+  }
 }
 
 export async function joinClass(id: number, password?: string): Promise<void> {

@@ -1,9 +1,10 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 
-const { Message, RoomMember, User } = require('../db/models');
+const { Message, Room, RoomMember, User } = require('../db/models');
 const ClassRoomService = require('../services/ClassRoomService');
 const { getCorsOrigins } = require('../config/corsOrigins');
+const { sanitizeAvatarUrl } = require('../utils/avatarFiles');
 
 try {
   process.loadEnvFile();
@@ -46,9 +47,14 @@ function getSenderRole(user) {
 }
 
 async function checkRoomMember(roomId, userId) {
+  const room = await Room.findByPk(roomId);
+  if (!room) return false;
+
+  const membershipRoomId = room.parentRoomId ?? roomId;
+
   const member = await RoomMember.findOne({
     where: {
-      roomId,
+      roomId: membershipRoomId,
       userId,
     },
   });
@@ -57,7 +63,7 @@ async function checkRoomMember(roomId, userId) {
 }
 
 async function getMessageWithSender(messageId) {
-  return Message.findByPk(messageId, {
+  const row = await Message.findByPk(messageId, {
     include: [
       {
         model: User,
@@ -66,10 +72,34 @@ async function getMessageWithSender(messageId) {
       },
     ],
   });
+
+  return serializeMessage(row);
+}
+
+function sanitizeSender(sender) {
+  if (!sender) return sender;
+
+  const plain = sender.get ? sender.get({ plain: true }) : sender;
+
+  return {
+    ...plain,
+    avatarUrl: sanitizeAvatarUrl(plain.avatarUrl),
+  };
+}
+
+function serializeMessage(message) {
+  if (!message) return message;
+
+  const plain = message.get ? message.get({ plain: true }) : message;
+
+  return {
+    ...plain,
+    sender: sanitizeSender(plain.sender),
+  };
 }
 
 async function getRoomMessageHistory(roomId) {
-  return Message.findAll({
+  const rows = await Message.findAll({
     where: { roomId },
     include: [
       {
@@ -80,6 +110,8 @@ async function getRoomMessageHistory(roomId) {
     ],
     order: [['createdAt', 'ASC']],
   });
+
+  return rows.map(serializeMessage);
 }
 
 function initChatSocket(server) {
@@ -104,7 +136,10 @@ function initChatSocket(server) {
         return next(new Error('Invalid access token'));
       }
 
-      socket.data.user = payload.user;
+      socket.data.user = {
+        ...payload.user,
+        avatarUrl: sanitizeAvatarUrl(payload.user.avatarUrl),
+      };
 
       return next();
     } catch (error) {
@@ -124,7 +159,7 @@ function initChatSocket(server) {
         id: user.id,
         name: user.name,
         username: user.username,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(user.avatarUrl),
       },
     });
 

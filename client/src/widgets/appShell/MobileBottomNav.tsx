@@ -18,7 +18,7 @@ export function MobileBottomNav({ active }: MobileBottomNavProps) {
         href={clientRoutes.classes}
       >
         <BookOpen size={22} strokeWidth={2} aria-hidden />
-        <span>Классы</span>
+        <span>Группы</span>
       </Link>
       <Link
         className={`app-mobile-tab${active === "chat" ? " app-mobile-tab--active" : ""}`}

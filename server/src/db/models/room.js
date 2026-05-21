@@ -19,6 +19,14 @@ module.exports = (sequelize, DataTypes) => {
           as: 'members',
         });
       }
+      Room.belongsTo(models.Room, {
+        foreignKey: 'parentRoomId',
+        as: 'parentGroup',
+      });
+      Room.hasMany(models.Room, {
+        foreignKey: 'parentRoomId',
+        as: 'channels',
+      });
     }
   }
 
@@ -29,8 +37,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       type: {
-        type: DataTypes.ENUM('group', 'course'),
+        type: DataTypes.ENUM('group', 'course', 'channel'),
         defaultValue: 'group',
+      },
+      parentRoomId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       createdBy: {
         type: DataTypes.INTEGER,

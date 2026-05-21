@@ -2,6 +2,7 @@
  * Зона ответственности: Вадим (регистрация и вход). Остальные не развивают этот сервис без договорённости.
  */
 const { User } = require('../db/models');
+const { sanitizeAvatarUrl } = require('../utils/avatarFiles');
 
 class AuthService {
   static async findUserByEmail(email) {
@@ -76,12 +77,25 @@ class AuthService {
 
   /** @returns {Promise<boolean>} true если строка удалена */
 
+  static async sanitizePublicUser(userRow) {
+    if (!userRow) return null;
+
+    const user = userRow.get ? userRow.get() : userRow;
+    const safeAvatarUrl = sanitizeAvatarUrl(user.avatarUrl);
+
+    if (user.avatarUrl && !safeAvatarUrl && user.id) {
+      await User.update({ avatarUrl: null }, { where: { id: user.id } });
+    }
+
+    return { ...user, avatarUrl: safeAvatarUrl };
+  }
+
   static async findPublicUserById(id) {
     const user = await User.findByPk(id, {
       attributes: { exclude: ['password'] },
     });
 
-    return user ? user.get() : null;
+    return this.sanitizePublicUser(user);
   }
 
   static async updateUserProfileById(id, profileData) {

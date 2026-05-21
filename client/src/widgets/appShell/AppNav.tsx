@@ -21,7 +21,7 @@ export function AppNav({ active, showAdminLink }: AppNavProps) {
         <span className="nav-icon" aria-hidden>
           <BookOpen size={NAV_ICON_SIZE} strokeWidth={2} />
         </span>
-        Классы
+        Группы
       </Link>
 
       <Link

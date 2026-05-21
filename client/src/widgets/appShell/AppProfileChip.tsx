@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UserAvatar } from "@/shared/ui/UserAvatar/UserAvatar";
 
 type AppProfileChipProps = {
   firstName: string;
@@ -23,10 +24,12 @@ export function AppProfileChip({
   ariaLabel = "Профиль",
   interactive = true,
 }: AppProfileChipProps) {
-  const avatarInner = avatarSrc ? (
-    <img src={avatarSrc} alt="" className="app-profile-avatar-img" />
-  ) : (
-    avatarInitials
+  const avatarInner = (
+    <UserAvatar
+      src={avatarSrc}
+      className="app-profile-avatar-img"
+      fallback={avatarInitials}
+    />
   );
 
   const body: ReactNode = (

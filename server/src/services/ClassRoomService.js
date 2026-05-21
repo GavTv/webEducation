@@ -4,6 +4,10 @@ const { Room, RoomMember, Message } = require('../db/models');
 const COLORS = ['purple', 'blue', 'green'];
 
 class ClassRoomService {
+  static isGroupRoom(room) {
+    return room && !room.parentRoomId;
+  }
+
   static async isMember(roomId, userId) {
     const row = await RoomMember.findOne({
       where: { roomId, userId },
@@ -11,8 +15,17 @@ class ClassRoomService {
     return Boolean(row);
   }
 
+  static async canAccessChatRoom(roomId, userId) {
+    const room = await Room.findByPk(roomId);
+    if (!room) return false;
+
+    const membershipRoomId = room.parentRoomId ?? room.id;
+    return this.isMember(membershipRoomId, userId);
+  }
+
   static async listForUser(user) {
     const rooms = await Room.findAll({
+      where: { parentRoomId: null },
       order: [['createdAt', 'DESC']],
     });
 
@@ -54,9 +67,55 @@ class ClassRoomService {
     });
   }
 
+  static async listChannels(groupId, user) {
+    const group = await Room.findByPk(groupId);
+    if (!group || group.parentRoomId) return { error: 'not_found' };
+
+    const isMember = await this.isMember(groupId, user.id);
+    const canManage = this.canUserManageRoom(user, group);
+
+    if (!isMember && !canManage) {
+      return { error: 'forbidden' };
+    }
+
+    await this.ensureDefaultChannel(group);
+
+    const channels = await Room.findAll({
+      where: { parentRoomId: groupId },
+      order: [['createdAt', 'ASC']],
+    });
+
+    return {
+      group: {
+        id: group.id,
+        title: group.title,
+        color: group.color,
+      },
+      channels: channels.map((channel) => {
+        const plain = channel.get();
+        delete plain.joinPasswordHash;
+        return plain;
+      }),
+    };
+  }
+
+  static async ensureDefaultChannel(group) {
+    const count = await Room.count({ where: { parentRoomId: group.id } });
+    if (count > 0) return null;
+
+    return Room.create({
+      title: 'Общий',
+      parentRoomId: group.id,
+      type: 'channel',
+      createdBy: group.createdBy,
+      color: group.color || 'purple',
+      description: null,
+    });
+  }
+
   static async getAccess(roomId, user) {
     const room = await Room.findByPk(roomId);
-    if (!room) return { error: 'not_found' };
+    if (!room || room.parentRoomId) return { error: 'not_found' };
 
     const isMember = await this.isMember(roomId, user.id);
     if (this.canUserManageRoom(user, room) || isMember) {
@@ -73,7 +132,7 @@ class ClassRoomService {
 
   static async joinRoom(roomId, user, password) {
     const room = await Room.findByPk(roomId);
-    if (!room) return { error: 'not_found' };
+    if (!room || room.parentRoomId) return { error: 'not_found' };
 
     if (this.canUserManageRoom(user, room)) {
       await RoomMember.findOrCreate({
@@ -106,9 +165,25 @@ class ClassRoomService {
   }
 
   static canUserManageRoom(user, room) {
-    if (!user) return false;
+    if (!user || !room || room.parentRoomId) return false;
     if (user.role === 'admin') return true;
     if (user.role === 'teacher' && room.createdBy === user.id) return true;
+    return false;
+  }
+
+  static async canUserManageRoomAsync(user, room) {
+    if (!user || !room) return false;
+    if (user.role === 'admin') return true;
+
+    if (!room.parentRoomId && user.role === 'teacher' && room.createdBy === user.id) {
+      return true;
+    }
+
+    if (room.parentRoomId && user.role === 'teacher') {
+      const parent = await Room.findByPk(room.parentRoomId);
+      return parent ? parent.createdBy === user.id : false;
+    }
+
     return false;
   }
 
@@ -122,6 +197,7 @@ class ClassRoomService {
       description: description?.trim() || null,
       createdBy,
       type: 'group',
+      parentRoomId: null,
       color: 'purple',
     });
 
@@ -136,14 +212,41 @@ class ClassRoomService {
       where: { roomId: room.id, userId: createdBy },
     });
 
+    await this.ensureDefaultChannel(room);
+
     const listed = await this.listForUser({ id: createdBy });
     return listed.find((r) => r.id === room.id) ?? room.get();
   }
 
+  static async createChannel(groupId, user, { title }) {
+    const group = await Room.findByPk(groupId);
+    if (!group || group.parentRoomId) return { error: 'not_found' };
+
+    if (!(await this.canUserManageRoomAsync(user, group))) {
+      return { error: 'forbidden' };
+    }
+
+    const channelTitle = typeof title === 'string' ? title.trim() : '';
+    if (!channelTitle) return { error: 'title_required' };
+
+    const channel = await Room.create({
+      title: channelTitle,
+      parentRoomId: groupId,
+      type: 'channel',
+      createdBy: user.id,
+      color: group.color || this.pickColor(groupId),
+      description: null,
+    });
+
+    return { channel: channel.get() };
+  }
+
   static async update(roomId, user, { title, description }) {
     const room = await Room.findByPk(roomId);
-    if (!room) return { error: 'not_found' };
-    if (!this.canUserManageRoom(user, room)) return { error: 'forbidden' };
+    if (!room || room.parentRoomId) return { error: 'not_found' };
+    if (!(await this.canUserManageRoomAsync(user, room))) {
+      return { error: 'forbidden' };
+    }
 
     const patch = {};
     if (typeof title === 'string' && title.trim()) patch.title = title.trim();
@@ -159,11 +262,43 @@ class ClassRoomService {
   static async delete(roomId, user) {
     const room = await Room.findByPk(roomId);
     if (!room) return { error: 'not_found' };
-    if (!this.canUserManageRoom(user, room)) return { error: 'forbidden' };
+    if (!(await this.canUserManageRoomAsync(user, room))) {
+      return { error: 'forbidden' };
+    }
+
+    if (room.parentRoomId) {
+      await Message.destroy({ where: { roomId } });
+      await room.destroy();
+      return { ok: true, deleted: 'channel' };
+    }
+
+    const children = await Room.findAll({ where: { parentRoomId: roomId } });
+    for (const child of children) {
+      await Message.destroy({ where: { roomId: child.id } });
+      await child.destroy();
+    }
 
     await RoomMember.destroy({ where: { roomId } });
     await Message.destroy({ where: { roomId } });
     await room.destroy();
+
+    return { ok: true, deleted: 'group' };
+  }
+
+  static async deleteChannel(groupId, channelId, user) {
+    const group = await Room.findByPk(groupId);
+    if (!group || group.parentRoomId) return { error: 'not_found' };
+
+    const channel = await Room.findOne({
+      where: { id: channelId, parentRoomId: groupId },
+    });
+    if (!channel) return { error: 'not_found' };
+    if (!(await this.canUserManageRoomAsync(user, group))) {
+      return { error: 'forbidden' };
+    }
+
+    await Message.destroy({ where: { roomId: channel.id } });
+    await channel.destroy();
 
     return { ok: true };
   }
@@ -172,13 +307,15 @@ class ClassRoomService {
     const room = await Room.findByPk(roomId);
     if (!room) return { error: 'not_found' };
 
+    const membershipRoomId = room.parentRoomId ?? room.id;
+
     if (user?.role === 'admin') {
       await Message.destroy({ where: { roomId } });
       return { ok: true, roomId };
     }
 
     if (user?.role === 'teacher') {
-      const isMember = await this.isMember(roomId, user.id);
+      const isMember = await this.isMember(membershipRoomId, user.id);
       if (!isMember) return { error: 'forbidden' };
       await Message.destroy({ where: { roomId } });
       return { ok: true, roomId };
@@ -189,8 +326,10 @@ class ClassRoomService {
 
   static async setPassword(roomId, user, joinPassword) {
     const room = await Room.findByPk(roomId);
-    if (!room) return { error: 'not_found' };
-    if (!this.canUserManageRoom(user, room)) return { error: 'forbidden' };
+    if (!room || room.parentRoomId) return { error: 'not_found' };
+    if (!(await this.canUserManageRoomAsync(user, room))) {
+      return { error: 'forbidden' };
+    }
 
     if (!joinPassword || !String(joinPassword).trim()) {
       await room.update({ joinPasswordHash: null });

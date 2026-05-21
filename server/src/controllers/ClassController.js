@@ -6,7 +6,7 @@ class ClassController {
     try {
       const classes = await ClassRoomService.listForUser(res.locals.user);
       return res.status(200).json(
-        formatResponse(200, 'Список классов', { classes }),
+        formatResponse(200, 'Список групп', { classes }),
       );
     } catch (error) {
       console.log('======== ClassController.list =========');
@@ -36,7 +36,7 @@ class ClassController {
       });
 
       return res.status(201).json(
-        formatResponse(201, 'Класс создан', { class: room }),
+        formatResponse(201, 'Группа создана', { class: room }),
       );
     } catch (error) {
       console.log('======== ClassController.create =========');
@@ -151,13 +151,110 @@ class ClassController {
           .json(formatResponse(403, 'Нет прав на удаление этого класса'));
       }
 
-      return res.status(200).json(formatResponse(200, 'Класс удалён'));
+      return res.status(200).json(formatResponse(200, 'Группа удалена'));
     } catch (error) {
       console.log('======== ClassController.remove =========');
       console.log(error);
       return res
         .status(500)
-        .json(formatResponse(500, 'Ошибка при удалении класса'));
+        .json(formatResponse(500, 'Ошибка при удалении группы'));
+    }
+  }
+
+  static async listChannels(req, res) {
+    try {
+      const user = res.locals.user;
+      const groupId = Number(req.params.groupId);
+      const result = await ClassRoomService.listChannels(groupId, user);
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Группа не найдена'));
+      }
+      if (result.error === 'forbidden') {
+        return res
+          .status(403)
+          .json(formatResponse(403, 'Нет доступа к чатам этой группы'));
+      }
+
+      return res.status(200).json(
+        formatResponse(200, 'Чаты группы', {
+          group: result.group,
+          channels: result.channels,
+        }),
+      );
+    } catch (error) {
+      console.log('======== ClassController.listChannels =========');
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка при загрузке чатов группы'));
+    }
+  }
+
+  static async createChannel(req, res) {
+    try {
+      const user = res.locals.user;
+      const groupId = Number(req.params.groupId);
+      const { title } = req.body ?? {};
+
+      const result = await ClassRoomService.createChannel(groupId, user, {
+        title,
+      });
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Группа не найдена'));
+      }
+      if (result.error === 'forbidden') {
+        return res
+          .status(403)
+          .json(formatResponse(403, 'Нет прав на создание чата в группе'));
+      }
+      if (result.error === 'title_required') {
+        return res
+          .status(400)
+          .json(formatResponse(400, 'Укажите название чата'));
+      }
+
+      return res.status(201).json(
+        formatResponse(201, 'Чат создан', { channel: result.channel }),
+      );
+    } catch (error) {
+      console.log('======== ClassController.createChannel =========');
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка при создании чата'));
+    }
+  }
+
+  static async removeChannel(req, res) {
+    try {
+      const user = res.locals.user;
+      const groupId = Number(req.params.groupId);
+      const channelId = Number(req.params.channelId);
+
+      const result = await ClassRoomService.deleteChannel(
+        groupId,
+        channelId,
+        user,
+      );
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Чат не найден'));
+      }
+      if (result.error === 'forbidden') {
+        return res
+          .status(403)
+          .json(formatResponse(403, 'Нет прав на удаление чата'));
+      }
+
+      return res.status(200).json(formatResponse(200, 'Чат удалён'));
+    } catch (error) {
+      console.log('======== ClassController.removeChannel =========');
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка при удалении чата'));
     }
   }
 
