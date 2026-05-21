@@ -136,6 +136,16 @@
   padding: 20px 14px 12px;
 }
 
+.channels-panel .bot-ai-room-card--pinned {
+  flex-shrink: 0;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.chat-panel .rooms .bot-ai-room-card--groups {
+  display: none;
+}
+
 .channels-panel-header {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -884,11 +894,59 @@
     display: none;
   }
 
-  .chat-columns--in-group.chat-columns--thread .thread-panel {
-    display: flex;
+  .educhat-page.app-page--hide-tabbar .desktop-shell {
     min-height: 100dvh;
-    padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .educhat-page.app-page--hide-tabbar .chat-columns--thread {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-columns--thread .thread-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    padding: 12px 14px 0;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     background: var(--app-page-bg-base);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .chat-columns--thread .thread-panel .messages-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 12px;
+  }
+
+  .chat-columns--thread .thread-panel .message-input-wrap {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    z-index: 40;
+    margin-top: 0;
+    flex-shrink: 0;
+    width: auto;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--app-page-bg-base);
+    box-shadow: 0 -16px 32px rgba(5, 9, 18, 0.95);
+  }
+
+  .chat-columns--thread .thread-panel .message-input {
+    width: 100%;
   }
 
   .thread-back-btn {
@@ -1023,11 +1081,36 @@
     height: 48px;
   }
 
-  .bot-card {
-    margin-top: auto;
-    margin-bottom: 8px;
-    position: relative;
-    z-index: 1;
+  .chat-panel > .bot-card {
+    display: none;
+  }
+
+  .chat-panel .rooms .bot-ai-room-card--groups {
+    display: grid;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+  }
+
+  .channels-panel .bot-ai-room-card--pinned {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--app-page-bg-base);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .channels-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    box-sizing: border-box;
+  }
+
+  .channels-list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin-top: 0;
   }
 
   .bot-ai-room-card {
@@ -1077,9 +1160,6 @@
     max-width: min(520px, calc(100vw - 88px));
   }
 
-  .app-page--hide-tabbar .chat-columns--thread .thread-panel {
-    min-height: 100dvh;
-  }
 }
 
 @media (min-width: 901px) and (max-width: 1200px) {
@@ -1260,13 +1340,15 @@
   padding-bottom: 14px;
 }
 
-.message-input-wrap {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-  padding-top: 10px;
-  background:
-    linear-gradient(to top, rgba(5, 9, 18, 0.98), rgba(5, 9, 18, 0.86) 72%, transparent);
+@media (min-width: 901px) {
+  .message-input-wrap {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding-top: 10px;
+    background:
+      linear-gradient(to top, rgba(5, 9, 18, 0.98), rgba(5, 9, 18, 0.86) 72%, transparent);
+  }
 }
 
 /* attachment button is not used */

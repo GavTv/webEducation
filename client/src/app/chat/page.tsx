@@ -1024,6 +1024,28 @@ function ChatPageContent() {
             </div>
 
             <div className="rooms">
+              <button
+                type="button"
+                className={`room-card bot-ai-room-card bot-ai-room-card--groups${
+                  botAiOpen ? " bot-ai-room-card--active selected" : ""
+                }`}
+                onClick={openBotChat}
+              >
+                <div className="room-icon purple">🤖</div>
+                <div className="room-info">
+                  <h3>
+                    @botAi
+                    <Star
+                      className="room-star"
+                      size={14}
+                      fill="currentColor"
+                      aria-hidden
+                    />
+                  </h3>
+                  <p>AI-помощник — всегда доступен</p>
+                </div>
+              </button>
+
               {roomsLoading ? (
                 <p className="chat-hint">Загрузка групп…</p>
               ) : null}
@@ -1119,29 +1141,29 @@ function ChatPageContent() {
               ) : null}
             </header>
 
-            <div className="rooms channels-list">
-              <button
-                type="button"
-                className={`room-card bot-ai-room-card${
-                  botAiOpen ? " bot-ai-room-card--active selected" : ""
-                }`}
-                onClick={openBotChat}
-              >
-                <div className="room-icon purple">🤖</div>
-                <div className="room-info">
-                  <h3>
-                    @botAi
-                    <Star
-                      className="room-star"
-                      size={14}
-                      fill="currentColor"
-                      aria-hidden
-                    />
-                  </h3>
-                  <p>AI-помощник — всегда доступен</p>
-                </div>
-              </button>
+            <button
+              type="button"
+              className={`room-card bot-ai-room-card bot-ai-room-card--pinned${
+                botAiOpen ? " bot-ai-room-card--active selected" : ""
+              }`}
+              onClick={openBotChat}
+            >
+              <div className="room-icon purple">🤖</div>
+              <div className="room-info">
+                <h3>
+                  @botAi
+                  <Star
+                    className="room-star"
+                    size={14}
+                    fill="currentColor"
+                    aria-hidden
+                  />
+                </h3>
+                <p>AI-помощник — всегда доступен</p>
+              </div>
+            </button>
 
+            <div className="rooms channels-list">
               {!selectedGroupId ? (
                 <p className="chat-hint">Сначала выберите группу слева</p>
               ) : null}
