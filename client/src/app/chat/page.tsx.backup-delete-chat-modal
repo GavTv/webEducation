@@ -178,9 +178,6 @@ function ChatPageContent() {
   const [clearChatOpen, setClearChatOpen] = useState(false);
   const [clearingChat, setClearingChat] = useState(false);
   const [clearChatError, setClearChatError] = useState<string | null>(null);
-  const [deleteChatOpen, setDeleteChatOpen] = useState(false);
-  const [deletingChat, setDeletingChat] = useState(false);
-  const [deleteChatError, setDeleteChatError] = useState<string | null>(null);
   const [createChatOpen, setCreateChatOpen] = useState(false);
   const [createChatTitle, setCreateChatTitle] = useState("");
   const [createChatDescription, setCreateChatDescription] = useState("");
@@ -678,22 +675,6 @@ function ChatPageContent() {
     setCreateChatOpen(false);
   }, [createChatLoading]);
 
-
-  const handleOpenDeleteChat = useCallback(() => {
-    setDeleteChatError(null);
-    setDeleteChatOpen(true);
-  }, []);
-
-  const handleCloseDeleteChat = useCallback(() => {
-    if (deletingChat) return;
-
-    setDeleteChatError(null);
-    setDeleteChatOpen(false);
-  }, [deletingChat]);
-
-
-
-
   const handleCreateChatSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -715,11 +696,7 @@ function ChatPageContent() {
           joinPassword: createChatPassword.trim(),
         });
 
-        setMemberClasses((prev) => [
-          created,
-          ...prev.filter((item) => item.id !== created.id),
-        ]);
-
+        setMemberClasses((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
         setSelectedId(created.id);
         setBotAiOpen(false);
         setMobileThreadOpen(true);
@@ -732,54 +709,45 @@ function ChatPageContent() {
         setCreateChatLoading(false);
       }
     },
-    [
-      createChatDescription,
-      createChatPassword,
-      createChatTitle,
-    ],
+    [createChatDescription, createChatLoading, createChatPassword, createChatTitle],
   );
 
-  const handleConfirmDeleteChat = useCallback(async () => {
+  const handleDeleteActiveChat = useCallback(async () => {
     if (!isRealChat || !selected) return;
 
-    setDeletingChat(true);
-    setDeleteChatError(null);
+    const ok = window.confirm(
+      `Удалить чат «${selected.title}»? Это удалит чат и все сообщения.`,
+    );
+
+    if (!ok) return;
 
     try {
       await deleteClass(selected.id);
 
       setMemberClasses((prev) => {
         const next = prev.filter((item) => item.id !== selected.id);
-        const nextSelectedId = next[0]?.id ?? 0;
-
-        setSelectedId(nextSelectedId);
-
+        const nextSelected = next[0]?.id ?? 0;
+        setSelectedId(nextSelected);
         return next;
       });
 
       setMessagesByRoomId((prev) => {
         const next = { ...prev };
         delete next[selected.id];
-
         return next;
       });
 
-      setDeleteChatOpen(false);
       setMobileThreadOpen(false);
     } catch (error) {
-      setDeleteChatError(
+      window.alert(
         error instanceof Error ? error.message : "Не удалось удалить чат",
       );
-    } finally {
-      setDeletingChat(false);
     }
   }, [isRealChat, selected]);
 
   const clearChatTitle = botAiOpen
     ? "Очистить чат с @botAi?"
     : `Очистить чат «${selected?.title ?? "класс"}»?`;
-
-  const deleteChatTitle = `Удалить чат «${selected?.title ?? "класс"}»?`;
 
   return (
     <main
@@ -799,22 +767,6 @@ function ChatPageContent() {
           onCancel={handleCloseClearChat}
           isBusy={clearingChat}
           errorMessage={clearChatError}
-        />
-      ) : null}
-
-      {deleteChatOpen ? (
-        <ConfirmModal
-          title={deleteChatTitle}
-          lines={[
-            "Чат будет удалён безвозвратно.",
-            "Все сообщения и доступ участников к этому чату будут потеряны.",
-          ]}
-          confirmLabel="Удалить"
-          cancelLabel="Отмена"
-          onConfirm={handleConfirmDeleteChat}
-          onCancel={handleCloseDeleteChat}
-          isBusy={deletingChat}
-          errorMessage={deleteChatError}
         />
       ) : null}
 
@@ -1051,8 +1003,7 @@ function ChatPageContent() {
                 <button
                   type="button"
                   className="thread-delete-btn"
-                  onClick={handleOpenDeleteChat}
-                  disabled={deletingChat}
+                  onClick={handleDeleteActiveChat}
                 >
                   Удалить чат
                 </button>

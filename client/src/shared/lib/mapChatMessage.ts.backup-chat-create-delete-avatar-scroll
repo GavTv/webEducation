@@ -5,7 +5,6 @@ export type UiChatMessage = {
   author: string;
   text: string;
   time: string;
-  avatarUrl?: string | null;
   isMine?: boolean;
   isBot?: boolean;
 };
@@ -30,7 +29,6 @@ export function serverMessageToUi(
     author: msg.sender?.name ?? msg.sender?.username ?? "Пользователь",
     text: msg.text,
     time: formatChatTime(msg.createdAt),
-    avatarUrl: msg.sender?.avatarUrl ?? null,
     isMine: myUserId != null && msg.senderId === myUserId,
   };
 }
