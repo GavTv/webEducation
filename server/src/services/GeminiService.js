@@ -1,8 +1,16 @@
-require('../utils/loadEnv')();
+const loadEnv = require('../utils/loadEnv');
 
 const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT ?? 20);
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() ?? '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+
+function readGeminiApiKey() {
+  loadEnv();
+  return process.env.GEMINI_API_KEY?.trim() ?? '';
+}
+
+function readGeminiModel() {
+  loadEnv();
+  return process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+}
 const GEMINI_FALLBACK_MODELS = (
   process.env.GEMINI_FALLBACK_MODELS ??
   'gemini-2.5-flash-lite,gemini-2.0-flash-lite'
@@ -61,7 +69,7 @@ function getTodayKey() {
 }
 
 function getModelsToTry() {
-  return [...new Set([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS])];
+  return [...new Set([readGeminiModel(), ...GEMINI_FALLBACK_MODELS])];
 }
 
 function shouldRetryWithNextModel(status, detail) {
@@ -103,6 +111,7 @@ function checkDailyLimit(userId) {
 }
 
 async function callGeminiModel(model, userMessage) {
+  const apiKey = readGeminiApiKey();
   const url = `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent`;
   const timeoutMs = Number(process.env.GEMINI_FETCH_TIMEOUT_MS ?? 30_000);
 
@@ -110,7 +119,7 @@ async function callGeminiModel(model, userMessage) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-goog-api-key': GEMINI_API_KEY,
+      'X-goog-api-key': apiKey,
     },
     body: JSON.stringify({
       systemInstruction: {
@@ -149,7 +158,7 @@ async function callGeminiModel(model, userMessage) {
 }
 
 async function askGemini(userMessage) {
-  if (!GEMINI_API_KEY) {
+  if (!readGeminiApiKey()) {
     const err = new Error('GEMINI_API_KEY_NOT_SET');
     err.code = 'GEMINI_API_KEY_NOT_SET';
     throw err;
@@ -176,7 +185,7 @@ async function askGemini(userMessage) {
 
 class GeminiService {
   static isConfigured() {
-    return Boolean(GEMINI_API_KEY);
+    return Boolean(readGeminiApiKey());
   }
 
   static checkDailyLimit(userId) {

@@ -753,15 +753,6 @@ function ChatPageContent() {
           isBot: true,
           isError: Boolean(data.error),
         });
-      } catch {
-        addBotAiMessage({
-          id: `botai-error-${Date.now()}`,
-          author: "@botAi",
-          text: "Ошибка соединения с сервером AI.",
-          time: formatTime(),
-          isBot: true,
-          isError: true,
-        });
       } finally {
         setBotAiLoading(false);
       }
