@@ -6,13 +6,3 @@ export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "admin", label: "Администратор" },
 ];
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  student: "Ученик",
-  teacher: "Учитель",
-  admin: "Администратор",
-};
-
-export function getRoleLabel(role?: string | null): string {
-  if (!role) return "Ученик";
-  return ROLE_LABELS[role as UserRole] ?? role;
-}

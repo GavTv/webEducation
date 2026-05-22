@@ -27,14 +27,6 @@
   margin-bottom: clamp(12px, 2vw, 20px);
 }
 
-.profile-header__back {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-}
-
 .profile-logout-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
@@ -312,12 +304,6 @@
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
-  }
-
-  .profile-header__back {
-    position: static;
-    transform: none;
-    flex-shrink: 0;
   }
 
   .profile-logout-btn {

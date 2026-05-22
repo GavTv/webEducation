@@ -293,7 +293,7 @@ export default function ClassesPage() {
               <>
                 <AppBackButton
                   href={clientRoutes.chat}
-                  className="classes-header__back"
+                  className="app-header__back"
                 />
                 <AppProfileChip
                   firstName={firstName}

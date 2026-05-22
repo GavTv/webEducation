@@ -22,6 +22,15 @@
   --app-mobile-tabbar-height: calc(64px + env(safe-area-inset-bottom, 0px));
 
   --app-page-bg-base: #070a13;
+
+  /* Акценты EduChat (кнопки, карточки, границы) */
+  --educhat-accent: #7c3aed;
+  --educhat-accent-soft: rgba(124, 58, 237, 0.14);
+  --educhat-accent-border: rgba(139, 92, 246, 0.45);
+  --educhat-surface: rgba(15, 23, 42, 0.76);
+  --educhat-surface-border: rgba(148, 163, 184, 0.12);
+  --educhat-radius-lg: 18px;
+  --educhat-radius-card: 22px;
   --app-page-bg: radial-gradient(
       circle at top left,
       rgba(120, 62, 255, 0.18),

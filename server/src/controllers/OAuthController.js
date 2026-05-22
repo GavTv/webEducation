@@ -61,13 +61,11 @@ class OAuthController {
 
       const code = error?.message;
       if (KNOWN_OAUTH_CODES.has(code)) {
-        console.log('======== OAuthController.oauthLogin =========', code);
         const { status, message } = OAuthService.mapErrorToHttp(code, provider);
         return res.status(status).json(formatResponse(status, message));
       }
 
-      console.log('======== OAuthController.oauthLogin =========');
-      console.log(error?.message || error);
+      console.error(error?.message || error);
       const { status, message } = OAuthService.mapErrorToHttp(code, provider);
       return res.status(status).json(formatResponse(status, message));
     }

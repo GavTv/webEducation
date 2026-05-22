@@ -1,18 +1,6 @@
 import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { extractApiMessage } from "@/shared/lib/extractApiMessage";
 import type { ServerResponseType } from "@/shared/types";
-import { AxiosError } from "axios";
-
-function extractApiMessage(err: unknown, fallback: string): string {
-  if (err instanceof AxiosError) {
-    const d = err.response?.data as
-      | Partial<ServerResponseType<unknown>>
-      | undefined;
-    if (d?.message) return d.message;
-    if (d?.error) return d.error;
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return fallback;
-}
 
 type ForgotOk = { ok: true };
 type VerifyOk = { resetToken: string };

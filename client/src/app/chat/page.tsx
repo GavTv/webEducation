@@ -1000,7 +1000,7 @@ function ChatPageContent() {
             <header className="chat-list-header app-content-header">
               <div className="chat-list-header-main">
                 <div>
-                  <h1>Группы</h1>
+                  <h1>Чаты</h1>
                   <p className="app-header-subtitle app-only-desktop">
                     Выберите группу, затем чат внутри неё
                   </p>

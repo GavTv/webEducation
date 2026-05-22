@@ -28,8 +28,7 @@ function verifyRefreshToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.log('======== verifyRefreshToken =========');
-    console.log(error);
+    console.error(error);
     return res.status(401).json(formatResponse(401, 'Невалидный refreshToken'));
   }
 }

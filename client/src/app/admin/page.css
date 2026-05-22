@@ -26,14 +26,6 @@
   text-align: center;
 }
 
-.admin-header__back {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-}
-
 .admin-user-cards {
   display: none;
   list-style: none;
@@ -219,10 +211,6 @@
   .admin-header__title {
     padding: 0 48px;
     font-size: 17px;
-  }
-
-  .admin-header__back {
-    top: 0;
   }
 
   .admin-state {
