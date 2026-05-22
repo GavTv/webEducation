@@ -21,7 +21,11 @@
   },
   "main": "src/App.js",
   "scripts": {
-    "dev": "nodemon src/App.js",
+    "dev": "NODE_ENV=development nodemon src/App.js",
+    "seed:admin": "NODE_ENV=development npx sequelize-cli db:seed --seed 20260517120100-admin-user.js",
+    "seed:admin:prod": "NODE_ENV=production npx sequelize-cli db:seed --seed 20260517120100-admin-user.js",
+    "cleanup:demo": "NODE_ENV=development node scripts/remove-demo-seed-data.js",
+    "cleanup:demo:prod": "NODE_ENV=production node scripts/remove-demo-seed-data.js",
     "start": "node src/App.js",
     "db": "npx sequelize-cli",
     "migrate": "npx sequelize-cli db:migrate",

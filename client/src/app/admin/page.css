@@ -1,18 +1,44 @@
 /* Оболочка — widgets/appShell/appShell.css */
 
 .admin-content {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
-.admin-header h1 {
-  margin: 8px 0 0;
-  font-size: 32px;
+.admin-header.app-content-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-bottom: clamp(12px, 2vw, 24px);
+  padding: 0;
+}
+
+.admin-header__title {
+  margin: 0;
+  padding: 0 52px;
+  width: 100%;
+  max-width: none;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
   letter-spacing: -0.03em;
+  text-align: center;
 }
 
-.admin-header p {
-  margin: 10px 0 0;
-  color: #9aa1b8;
+.admin-header__back {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.admin-user-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .admin-table-wrap {
@@ -53,26 +79,6 @@
   background: rgba(124, 58, 237, 0.06);
 }
 
-.role-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  background: rgba(124, 58, 237, 0.18);
-  color: #d8c4ff;
-}
-
-.role-badge--admin {
-  background: rgba(34, 197, 94, 0.15);
-  color: #86efac;
-}
-
-.role-badge--teacher {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-}
-
 .role-select {
   min-width: 150px;
   padding: 8px 10px;
@@ -84,6 +90,15 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.role-select--compact {
+  min-width: 0;
+  flex: 1;
+  max-width: 140px;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 8px;
 }
 
 .role-select:disabled {
@@ -111,9 +126,10 @@
 }
 
 .admin-state {
-  margin-top: 40px;
+  margin-top: 24px;
   color: #9aa1b8;
   text-align: center;
+  font-size: 14px;
 }
 
 .admin-state--error {
@@ -122,7 +138,7 @@
 
 .admin-state .spin {
   display: inline-block;
-  margin-right: 8px;
+  margin-right: 6px;
   vertical-align: middle;
   animation: admin-spin 0.9s linear infinite;
 }
@@ -165,6 +181,12 @@
   cursor: not-allowed;
 }
 
+.admin-user-protected {
+  color: #64748b;
+  font-size: 13px;
+  user-select: none;
+}
+
 .admin-user-delete .spin {
   animation: admin-spin 0.9s linear infinite;
 }
@@ -176,12 +198,133 @@
 }
 
 @media (max-width: 900px) {
+  .admin-page.app-content,
+  .admin-content.app-content {
+    padding: 12px 12px calc(var(--app-mobile-tabbar-height) + 10px);
+  }
+
   .admin-shell {
     grid-template-columns: 1fr;
   }
 
   .admin-sidebar {
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: none;
+  }
+
+  .admin-header.app-content-header {
+    min-height: 32px;
+    margin-bottom: 10px;
+  }
+
+  .admin-header__title {
+    padding: 0 48px;
+    font-size: 17px;
+  }
+
+  .admin-header__back {
+    top: 0;
+  }
+
+  .admin-state {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+
+  .admin-table-wrap {
+    display: none;
+  }
+
+  .admin-user-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .admin-user-cards__empty {
+    padding: 16px 12px;
+    text-align: center;
+    font-size: 12px;
+    color: #9aa1b8;
+    border-radius: 12px;
+    background: rgba(15, 20, 36, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .admin-user-card {
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(15, 20, 36, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .admin-user-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .admin-user-card__identity {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-user-card__name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f3f4f6;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-user-card__email {
+    font-size: 11px;
+    color: #9aa1b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-user-card__username {
+    font-size: 10px;
+    color: #7f8796;
+  }
+
+  .admin-user-card__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .admin-user-card__date {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  .admin-user-card .admin-user-delete {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .admin-user-card .admin-user-protected {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .admin-user-card .role-saving {
+    margin-top: 2px;
+    font-size: 10px;
   }
 }

@@ -1,6 +1,10 @@
 const { User } = require('../db/models');
 const AuthService = require('../services/AuthService');
 const formatResponse = require('../utils/formatResponse');
+const {
+  isProtectedMockAdmin,
+  protectedMockAdminMessage,
+} = require('../utils/protectedUsers');
 
 const ALLOWED_ROLES = ['student', 'teacher', 'admin'];
 
@@ -14,7 +18,13 @@ class UserAdminController {
 
       return res.status(200).json(
         formatResponse(200, 'Список пользователей', {
-          users: users.map((u) => u.get()),
+          users: users.map((u) => {
+            const row = u.get();
+            return {
+              ...row,
+              isProtected: isProtectedMockAdmin(u),
+            };
+          }),
         }),
       );
     } catch (error) {
@@ -42,6 +52,17 @@ class UserAdminController {
         return res
           .status(404)
           .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      if (isProtectedMockAdmin(target)) {
+        return res
+          .status(403)
+          .json(
+            formatResponse(
+              403,
+              'Нельзя изменить роль системного администратора',
+            ),
+          );
       }
 
       if (target.role === 'admin' && role !== 'admin') {
@@ -95,6 +116,12 @@ class UserAdminController {
           .json(formatResponse(404, 'Пользователь не найден'));
       }
 
+      if (isProtectedMockAdmin(target)) {
+        return res
+          .status(403)
+          .json(formatResponse(403, protectedMockAdminMessage()));
+      }
+
       if (target.role === 'admin') {
         const adminCount = await User.count({ where: { role: 'admin' } });
         if (adminCount <= 1) {
@@ -104,7 +131,17 @@ class UserAdminController {
         }
       }
 
-      const deleted = await AuthService.deleteUserById(targetId);
+      let deleted;
+      try {
+        deleted = await AuthService.deleteUserById(targetId);
+      } catch (error) {
+        if (error?.code === 'PROTECTED_MOCK_ADMIN') {
+          return res
+            .status(403)
+            .json(formatResponse(403, protectedMockAdminMessage()));
+        }
+        throw error;
+      }
       if (!deleted) {
         return res
           .status(404)

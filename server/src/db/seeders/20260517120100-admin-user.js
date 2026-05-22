@@ -62,7 +62,7 @@ module.exports = {
     const email = (
       process.env.ADMIN_USER_EMAIL ||
       process.env.ADMIN_EMAIL ||
-      'admin@educhat.local'
+      'taras@educhat.local'
     )
       .toLowerCase()
       .trim();

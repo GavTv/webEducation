@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
@@ -15,8 +14,11 @@ import {
 } from "@/shared/lib/adminUsersApi";
 import { ROLE_OPTIONS } from "@/shared/lib/roleLabels";
 import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
+import { AppBackButton } from "@/widgets/appShell/AppBackButton";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
+import { isAdmin } from "@/shared/lib/permissions";
 import "../classes/page.css";
 import "./page.css";
 
@@ -79,7 +81,8 @@ export default function AdminPage() {
     void loadUsers();
   }, [isInitialized, user, router, loadUsers]);
 
-  const isAdmin = user?.role === "admin";
+  const isAdminUser = user?.role === "admin";
+  const showAdminLink = isAdmin(user?.role);
 
   const handleRoleChange = async (userId: number, role: UserRole) => {
     setSavingUserId(userId);
@@ -134,12 +137,12 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdminUser) {
     return null;
   }
 
   return (
-    <main className="admin-page app-page">
+    <main className="admin-page app-page app-page--with-tabbar">
       {userToDelete ? (
         <ConfirmModal
           title="Удалить пользователя?"
@@ -159,7 +162,7 @@ export default function AdminPage() {
         <aside className="admin-sidebar classes-sidebar app-sidebar">
           <BrandLogo />
 
-          <AppNav active="admin" showAdminLink />
+          <AppNav active="admin" showAdminLink={showAdminLink} />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
@@ -171,15 +174,12 @@ export default function AdminPage() {
         </aside>
 
         <section className="admin-content classes-content app-content">
-          <header className="admin-header classes-header app-content-header">
-            <div>
-              <p className="eyebrow">Панель администратора</p>
-              <h1>Управление пользователями</h1>
-              <p>Все зарегистрированные аккаунты EduChat</p>
-            </div>
-            <Link className="nav-link" href={clientRoutes.classes}>
-              ← К классам
-            </Link>
+          <header className="admin-header app-content-header">
+            <AppBackButton
+              href={clientRoutes.classes}
+              className="admin-header__back"
+            />
+            <h1 className="admin-header__title">Аккаунты</h1>
           </header>
 
           {loading ? (
@@ -201,6 +201,87 @@ export default function AdminPage() {
           ) : null}
 
           {!loading && !error ? (
+            <>
+            <ul className="admin-user-cards" aria-label="Список пользователей">
+              {users.length === 0 ? (
+                <li className="admin-user-cards__empty">Пользователей пока нет</li>
+              ) : (
+                users.map((row) => (
+                  <li key={row.id} className="admin-user-card">
+                    <div className="admin-user-card__head">
+                      <div className="admin-user-card__identity">
+                        <span className="admin-user-card__name">{row.name}</span>
+                        <span className="admin-user-card__email">{row.email}</span>
+                        <span className="admin-user-card__username">
+                          @{row.username}
+                        </span>
+                      </div>
+                      {row.isProtected ? (
+                        <span
+                          className="admin-user-protected"
+                          title="Системный администратор"
+                        >
+                          —
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="admin-user-delete"
+                          aria-label={`Удалить ${row.name}`}
+                          disabled={
+                            row.id === user.id ||
+                            savingUserId === row.id ||
+                            deletingUserId === row.id
+                          }
+                          onClick={() => handleOpenDelete(row)}
+                        >
+                          {deletingUserId === row.id ? (
+                            <Loader2 className="spin" size={14} />
+                          ) : (
+                            <X size={14} strokeWidth={2} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <div className="admin-user-card__foot">
+                      <label className="sr-only" htmlFor={`role-m-${row.id}`}>
+                        Роль для {row.name}
+                      </label>
+                      <select
+                        id={`role-m-${row.id}`}
+                        className="role-select role-select--compact"
+                        value={row.role ?? "student"}
+                        disabled={
+                          savingUserId === row.id || row.isProtected === true
+                        }
+                        onChange={(e) =>
+                          void handleRoleChange(
+                            row.id,
+                            e.target.value as UserRole,
+                          )
+                        }
+                      >
+                        {ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <time
+                        className="admin-user-card__date"
+                        dateTime={row.createdAt}
+                      >
+                        {formatRegisteredAt(row.createdAt)}
+                      </time>
+                    </div>
+                    {savingUserId === row.id ? (
+                      <span className="role-saving">Сохранение…</span>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead>
@@ -232,7 +313,9 @@ export default function AdminPage() {
                             id={`role-${row.id}`}
                             className="role-select"
                             value={row.role ?? "student"}
-                            disabled={savingUserId === row.id}
+                            disabled={
+                              savingUserId === row.id || row.isProtected === true
+                            }
                             onChange={(e) =>
                               void handleRoleChange(
                                 row.id,
@@ -252,23 +335,32 @@ export default function AdminPage() {
                         </td>
                         <td>{formatRegisteredAt(row.createdAt)}</td>
                         <td className="admin-table__actions-cell">
-                          <button
-                            type="button"
-                            className="admin-user-delete"
-                            aria-label={`Удалить ${row.name}`}
-                            disabled={
-                              row.id === user.id ||
-                              savingUserId === row.id ||
-                              deletingUserId === row.id
-                            }
-                            onClick={() => handleOpenDelete(row)}
-                          >
-                            {deletingUserId === row.id ? (
-                              <Loader2 className="spin" size={18} />
-                            ) : (
-                              <X size={18} strokeWidth={2} />
-                            )}
-                          </button>
+                          {row.isProtected ? (
+                            <span
+                              className="admin-user-protected"
+                              title="Системный администратор"
+                            >
+                              —
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="admin-user-delete"
+                              aria-label={`Удалить ${row.name}`}
+                              disabled={
+                                row.id === user.id ||
+                                savingUserId === row.id ||
+                                deletingUserId === row.id
+                              }
+                              onClick={() => handleOpenDelete(row)}
+                            >
+                              {deletingUserId === row.id ? (
+                                <Loader2 className="spin" size={18} />
+                              ) : (
+                                <X size={18} strokeWidth={2} />
+                              )}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -276,9 +368,12 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+            </>
           ) : null}
         </section>
       </section>
+
+      <MobileBottomNav active="admin" showAdminLink={showAdminLink} />
     </main>
   );
 }

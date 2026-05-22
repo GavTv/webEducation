@@ -5,7 +5,10 @@ import type { ServerResponseType } from "@/shared/types";
 export type AdminUserListItem = Pick<
   UserType,
   "id" | "name" | "email" | "username" | "role" | "createdAt"
->;
+> & {
+  /** Системный мок-админ (taras@educhat.local) — нельзя удалить */
+  isProtected?: boolean;
+};
 
 export async function fetchAdminUsers(): Promise<AdminUserListItem[]> {
   const { data } = await axiosInstance.get<

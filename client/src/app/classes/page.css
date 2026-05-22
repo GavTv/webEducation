@@ -1,5 +1,37 @@
 /* Оболочка и сайдбар — widgets/appShell/appShell.css */
 
+.classes-header--admin-view {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+  margin-bottom: clamp(12px, 2vw, 24px);
+  padding: 0;
+}
+
+.classes-header__back {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+
+.classes-header--admin-view .app-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: none;
+}
+
+.classes-header--admin-view .app-profile-text {
+  display: block;
+}
+
 .classes-top {
   display: flex;
   align-items: center;
@@ -234,6 +266,20 @@
 }
 
 @media (max-width: 900px) {
+  .classes-header--admin-view {
+    align-items: center;
+    min-height: 48px;
+    margin-bottom: 16px;
+  }
+
+  .classes-header--admin-view .app-profile-chip {
+    justify-self: end;
+  }
+
+  .classes-header--admin-view .app-profile-text {
+    display: block;
+  }
+
   .classes-top {
     flex-direction: column;
     align-items: stretch;
