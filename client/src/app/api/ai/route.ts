@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
           {
             error: "GEMINI_API_KEY_NOT_SET",
             answer:
-              "Добавь GEMINI_API_KEY в client/.env.local и перезапусти npm run dev.",
+              "Не задан GEMINI_API_KEY. Локально: client/.env.local. На Vercel: Settings → Environment Variables → GEMINI_API_KEY, затем Redeploy.",
             used: limit.used,
             limit: limit.limit,
           },

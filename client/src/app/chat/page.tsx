@@ -52,6 +52,20 @@ const MOBILE_BP = "(max-width: 900px)";
 const BOT_AI_OPEN_STORAGE_KEY = "webEducation:botAiOpen";
 const BOT_AI_MESSAGES_STORAGE_KEY = "webEducation:botAiMessages";
 
+function buildChatUrl(classId?: number | null, channelId?: number | null) {
+  const params = new URLSearchParams();
+  if (classId != null) params.set("classId", String(classId));
+  if (channelId != null) params.set("channelId", String(channelId));
+  const query = params.toString();
+  return query ? `${clientRoutes.chat}?${query}` : clientRoutes.chat;
+}
+
+function isMobileChatView() {
+  return (
+    typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches
+  );
+}
+
 type BotAiMessage = UiChatMessage & {
   isError?: boolean;
 };
@@ -162,6 +176,8 @@ function ChatPageContent() {
   const lastScrolledRoomRef = useRef<number | null>(null);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const selectedChannelIdRef = useRef(selectedChannelId);
+  /** Пока true — не подставлять channelId из URL (ручной выбор группы). */
+  const skipUrlChannelSyncRef = useRef(false);
 
   const [botAiOpen, setBotAiOpen] = useState(false);
   const [botAiDraft, setBotAiDraft] = useState("");
@@ -320,6 +336,13 @@ function ChatPageContent() {
     selectedChannelIdRef.current = selectedChannelId;
   }, [selectedChannelId]);
 
+  const syncChatUrl = useCallback(
+    (classId?: number | null, channelId?: number | null) => {
+      router.replace(buildChatUrl(classId, channelId), { scroll: false });
+    },
+    [router],
+  );
+
   const loadGroupChannels = useCallback(async (groupId: number) => {
     setChannelsLoading(true);
     try {
@@ -341,23 +364,35 @@ function ChatPageContent() {
       return;
     }
 
-    let cancelled = false;
+    void loadGroupChannels(selectedGroupId);
+  }, [selectedGroupId, loadGroupChannels]);
 
-    void loadGroupChannels(selectedGroupId).then((channels) => {
-      if (cancelled) return;
+  useEffect(() => {
+    if (!selectedGroupId || channelsLoading) return;
 
-      const channelIdParam = searchParams.get("channelId");
-      const preferredId = channelIdParam ? Number(channelIdParam) : NaN;
-      const preferred = channels.find((ch) => ch.id === preferredId);
-      const nextId = preferred?.id ?? channels[0]?.id ?? null;
+    if (skipUrlChannelSyncRef.current) {
+      skipUrlChannelSyncRef.current = false;
+      return;
+    }
 
-      setSelectedChannelId(nextId);
-    });
+    const channelIdParam = searchParams.get("channelId");
+    if (!channelIdParam) {
+      setSelectedChannelId(null);
+      setMobileThreadOpen(false);
+      return;
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedGroupId, loadGroupChannels, searchParams]);
+    const preferredId = Number(channelIdParam);
+    if (!Number.isFinite(preferredId)) return;
+
+    const preferred = groupChannels.find((ch) => ch.id === preferredId);
+    if (!preferred) return;
+
+    setSelectedChannelId(preferred.id);
+    if (isMobileChatView()) {
+      setMobileThreadOpen(true);
+    }
+  }, [searchParams, selectedGroupId, groupChannels, channelsLoading]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -491,9 +526,6 @@ function ChatPageContent() {
     if (memberClasses.some((c) => c.id === id)) {
       setSelectedGroupId(id);
       setBotAiOpen(false);
-
-      const mq = window.matchMedia(MOBILE_BP);
-
     }
   }, [searchParams, memberClasses]);
 
@@ -559,30 +591,38 @@ function ChatPageContent() {
     };
   }, []);
 
-  const selectGroup = useCallback((id: number) => {
-    setBotAiOpen(false);
-    setSelectedGroupId(id);
-    setSelectedChannelId(null);
-    setMobileThreadOpen(false);
+  const selectGroup = useCallback(
+    (id: number) => {
+      skipUrlChannelSyncRef.current = true;
+      setBotAiOpen(false);
+      setSelectedGroupId(id);
+      setSelectedChannelId(null);
+      setMobileThreadOpen(false);
+      syncChatUrl(id, null);
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
-    }
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
+      }
+    },
+    [syncChatUrl],
+  );
 
-  }, []);
+  const selectChannel = useCallback(
+    (id: number) => {
+      setBotAiOpen(false);
+      setSelectedChannelId(id);
+      setMobileThreadOpen(isMobileChatView());
 
-  const selectChannel = useCallback((id: number) => {
-    setBotAiOpen(false);
-    setSelectedChannelId(id);
+      if (selectedGroupId != null) {
+        syncChatUrl(selectedGroupId, id);
+      }
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
-    }
-
-    if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
-      setMobileThreadOpen(true);
-    }
-  }, []);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
+      }
+    },
+    [selectedGroupId, syncChatUrl],
+  );
 
   const closeMobileThread = useCallback(() => {
     setMobileThreadOpen(false);
@@ -594,26 +634,35 @@ function ChatPageContent() {
         window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
       }
     }
-  }, [botAiOpen]);
+
+    if (selectedGroupId != null && !botAiOpen) {
+      skipUrlChannelSyncRef.current = true;
+      setSelectedChannelId(null);
+      syncChatUrl(selectedGroupId, null);
+    }
+  }, [botAiOpen, selectedGroupId, syncChatUrl]);
 
   const closeMobileChannels = useCallback(() => {
     setSelectedGroupId(null);
     setSelectedChannelId(null);
     setMobileThreadOpen(false);
-  }, []);
+    syncChatUrl(null, null);
+  }, [syncChatUrl]);
 
   const openBotChat = useCallback(() => {
+    skipUrlChannelSyncRef.current = true;
     setBotAiOpen(true);
     setSelectedChannelId(null);
+    setMobileThreadOpen(isMobileChatView());
+
+    if (selectedGroupId != null) {
+      syncChatUrl(selectedGroupId, null);
+    }
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
     }
-
-    if (typeof window !== "undefined" && window.matchMedia(MOBILE_BP).matches) {
-      setMobileThreadOpen(true);
-    }
-  }, []);
+  }, [selectedGroupId, syncChatUrl]);
 
   const clearBotAiChat = useCallback(() => {
     setBotAiMessages(botAiStartMessages);
@@ -838,7 +887,8 @@ function ChatPageContent() {
         setGroupChannels((prev) => [...prev, created]);
         setSelectedChannelId(created.id);
         setBotAiOpen(false);
-        setMobileThreadOpen(true);
+        setMobileThreadOpen(isMobileChatView());
+        syncChatUrl(selectedGroupId, created.id);
         setCreateChatOpen(false);
       } catch (error) {
         setCreateChatError(
@@ -848,7 +898,7 @@ function ChatPageContent() {
         setCreateChatLoading(false);
       }
     },
-    [createChatTitle, selectedGroupId],
+    [createChatTitle, selectedGroupId, syncChatUrl],
   );
 
   const handleConfirmDeleteChat = useCallback(async () => {
@@ -865,7 +915,10 @@ function ChatPageContent() {
       );
 
       setGroupChannels(remaining);
-      setSelectedChannelId(remaining[0]?.id ?? null);
+      skipUrlChannelSyncRef.current = true;
+      setSelectedChannelId(null);
+      setMobileThreadOpen(false);
+      syncChatUrl(selectedGroupId, null);
 
       setMessagesByRoomId((prev) => {
         const next = { ...prev };
@@ -874,8 +927,6 @@ function ChatPageContent() {
       });
 
       setDeleteChatOpen(false);
-      setMobileThreadOpen(false);
-
     } catch (error) {
       setDeleteChatError(
         error instanceof Error ? error.message : "Не удалось удалить чат",
@@ -883,7 +934,7 @@ function ChatPageContent() {
     } finally {
       setDeletingChat(false);
     }
-  }, [groupChannels, isRealChat, selectedChannelId, selectedGroupId]);
+  }, [groupChannels, isRealChat, selectedChannelId, selectedGroupId, syncChatUrl]);
 
   const clearChatTitle = botAiOpen
     ? "Очистить чат с @botAi?"
@@ -894,7 +945,9 @@ function ChatPageContent() {
   return (
     <main
       className={`educhat-page app-page classes-page app-page--with-tabbar${
-        mobileThreadOpen || selectedGroupId ? " app-page--hide-tabbar" : ""
+        mobileThreadOpen || selectedGroupId || botAiOpen
+          ? " app-page--hide-tabbar"
+          : ""
       }`}
     >
       {clearChatOpen ? (
@@ -994,7 +1047,9 @@ function ChatPageContent() {
         <div
           className={`chat-columns${
             selectedGroupId ? " chat-columns--in-group" : ""
-          }${mobileThreadOpen ? " chat-columns--thread" : ""}`}
+          }${botAiOpen && !selectedGroupId ? " chat-columns--bot-open" : ""}${
+            mobileThreadOpen ? " chat-columns--thread" : ""
+          }`}
         >
           <section className="chat-panel">
             <header className="chat-list-header app-content-header">
@@ -1028,28 +1083,6 @@ function ChatPageContent() {
             </div>
 
             <div className="rooms">
-              <button
-                type="button"
-                className={`room-card bot-ai-room-card bot-ai-room-card--groups${
-                  botAiOpen ? " bot-ai-room-card--active selected" : ""
-                }`}
-                onClick={openBotChat}
-              >
-                <div className="room-icon purple">🤖</div>
-                <div className="room-info">
-                  <h3>
-                    @botAi
-                    <Star
-                      className="room-star"
-                      size={14}
-                      fill="currentColor"
-                      aria-hidden
-                    />
-                  </h3>
-                  <p>AI-помощник — всегда доступен</p>
-                </div>
-              </button>
-
               {roomsLoading ? (
                 <p className="chat-hint">Загрузка групп…</p>
               ) : null}
@@ -1104,21 +1137,6 @@ function ChatPageContent() {
                 </button>
               ))}
             </div>
-
-            <button
-              type="button"
-              className={`bot-card${botAiOpen ? " bot-card--active" : ""}`}
-              onClick={openBotChat}
-              aria-label="Открыть чат с @botAi"
-            >
-              <div className="bot-avatar">🤖</div>
-
-              <div>
-                <h3>@botAi</h3>
-                <p>Ваш AI-помощник. Задавайте вопросы!</p>
-              </div>
-              <span className="bot-card-action">Написать</span>
-            </button>
           </section>
 
           <section className="channels-panel">
@@ -1141,28 +1159,6 @@ function ChatPageContent() {
                 </button>
               ) : null}
             </header>
-
-            <button
-              type="button"
-              className={`room-card bot-ai-room-card bot-ai-room-card--pinned${
-                botAiOpen ? " bot-ai-room-card--active selected" : ""
-              }`}
-              onClick={openBotChat}
-            >
-              <div className="room-icon purple">🤖</div>
-              <div className="room-info">
-                <h3>
-                  @botAi
-                  <Star
-                    className="room-star"
-                    size={14}
-                    fill="currentColor"
-                    aria-hidden
-                  />
-                </h3>
-                <p>AI-помощник — всегда доступен</p>
-              </div>
-            </button>
 
             <div className="rooms channels-list">
               {!selectedGroupId ? (
@@ -1192,6 +1188,29 @@ function ChatPageContent() {
                   </div>
                 </button>
               ))}
+
+              <button
+                type="button"
+                className={`room-card bot-ai-room-card bot-ai-room-card--channels${
+                  botAiOpen ? " bot-ai-room-card--active selected" : ""
+                }`}
+                onClick={openBotChat}
+                aria-label="Открыть чат с @botAi"
+              >
+                <div className="room-icon purple">🤖</div>
+                <div className="room-info">
+                  <h3>
+                    @botAi
+                    <Star
+                      className="room-star"
+                      size={14}
+                      fill="currentColor"
+                      aria-hidden
+                    />
+                  </h3>
+                  <p>AI-помощник — всегда доступен</p>
+                </div>
+              </button>
             </div>
 
             {canManageChat && selectedGroupId ? (
