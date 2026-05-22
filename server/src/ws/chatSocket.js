@@ -143,8 +143,7 @@ function initChatSocket(server) {
 
       return next();
     } catch (error) {
-      console.log('======== socket auth error =========');
-      console.log(error.message);
+      console.error(error.message);
 
       return next(new Error('Unauthorized'));
     }
@@ -224,8 +223,7 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket room join error =========');
-        console.log(error);
+        console.error(error);
 
         const response = {
           status: 'error',
@@ -314,8 +312,7 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket room clear error =========');
-        console.log(error);
+        console.error(error);
 
         const response = {
           status: 'error',
@@ -426,8 +423,7 @@ function initChatSocket(server) {
           callback(response);
         }
       } catch (error) {
-        console.log('======== socket message send error =========');
-        console.log(error);
+        console.error(error);
 
         const response = {
           status: 'error',

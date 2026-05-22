@@ -177,7 +177,7 @@ export default function AdminPage() {
           <header className="admin-header app-content-header">
             <AppBackButton
               href={clientRoutes.classes}
-              className="admin-header__back"
+              className="app-header__back"
             />
             <h1 className="admin-header__title">Аккаунты</h1>
           </header>

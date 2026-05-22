@@ -1,6 +1,6 @@
 # webEducation — backend
 
-Express + Sequelize (PostgreSQL). Роли: **admin**, **teacher**, **student** (отдельные таблицы).
+Express + Sequelize (PostgreSQL) + Socket.IO. Пользователи в таблице **`Users`** (роли: **admin**, **teacher**, **student**).
 
 ## Требования
 
@@ -13,57 +13,35 @@ Express + Sequelize (PostgreSQL). Роли: **admin**, **teacher**, **student** 
 cd server
 npm install
 cp .env.example .env
-# Отредактируйте .env: DB (строка подключения Postgres) и секреты для JWT
+# DB, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, CORS_ORIGINS
 ```
-
-Подключение к БД — переменная **`DB`** в development (так же читает **`sequelize-cli`** из `src/db/config/database.json`, как у преподавателя). Для **`test`** и **`production`** задаются **`DB_TEST`** и **`DB_PROD`**.
-
-Создайте базу данных в PostgreSQL, затем выполните миграции из каталога `server`:
 
 ```bash
 npm run migrate
 npm run dev
 ```
 
-Сервер слушает порт из **`PORT`** (по умолчанию в коде приложения — `3000`, в `.env.example` задан явно).
+Порт — **`PORT`** (по умолчанию `3000`). Клиент (Next.js) ходит на **`/api`** и WebSocket этого же сервера.
 
-## Полезные команды
+## Команды
 
 | Команда | Назначение |
 |--------|------------|
-| `npm run dev` | Запуск с nodemon |
-| `npm start` | Обычный запуск |
-| `npm run migrate` | Применить миграции |
-| `npm run migrate:undo` | Откатить все миграции |
+| `npm run dev` | nodemon |
+| `npm run migrate` | миграции |
+| `npm run seed:admin` | mock-админ (локально) |
+| `npm run cleanup:demo` | удалить демо-данные из БД |
 
-## Разделение в команде
+## API (`/api`)
 
-- **Вадим** — **вход и регистрация**. Файл **`routes/authRoute.js`** под это; нужно добавить **`router.use('/auth', authRouter)`** в **`apiRoute.js`**, когда появятся маршруты.
-- **Артём** — групповой мессенджер через **`routes/messageRoute.js`** (**`/api/messenger/...`**, см. ниже).
+| Префикс | Назначение |
+|---------|------------|
+| **`/api/auth`** | вход, регистрация, профиль, OAuth, сброс пароля |
+| **`/api/admin`** | список пользователей, смена роли, удаление |
+| **`/api/classes`** | группы, каналы, пароль группы |
 
-## API
-
-Общий префикс: **`/api`** (подключение в **`routes/apiRoute.js`**).
-
-| Префикс | Файл | Назначение |
-|-----------|------|-------------|
-| **`/api/admins`** | `adminRoute.js` | действия главного админа (приглашения, списки, удаление связей и т.д.) |
-| **`/api/teachers`** | `teacherRoute.js` | профиль учителя, группы, задания |
-| **`/api/students`** | `studentRoute.js` | профиль ученика, ответы, прогресс, комнаты |
-| **`/api/messenger`** | **`messageRoute.js`** | групповые чаты: `GET/POST /groups`, сообщения по `groups/:groupId/messages` |
-
-**`routes/viewRoute.js`** — отдача **`/`** через **`public/index.html`**, не часть **`/api`**.
-
-Остальное (например **`/api/auth`**, health-check) — по мере подключения в **`apiRoute.js`**.
-Остальное (например **`/api/auth`**, health-check) — по мере подключения в **`apiRoute.js`**.
-Остальное (например **`/api/auth`**, health-check) — по мере подключения в **`apiRoute.js`**.
-Остальное (например **`/api/auth`**, health-check) — по мере подключения в **`apiRoute.js`**.
-
-
-
-## Модели и авторизация
-
-
+Чат: **WebSocket** (`ws/chatSocket.js`), сообщения в таблице **`Messages`**.
 
 ## CORS
 
+**`CORS_ORIGINS`** в `.env` — через запятую (URL фронтенда).

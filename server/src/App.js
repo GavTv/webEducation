@@ -4,7 +4,6 @@ require('./utils/loadEnv')();
 const express = require('express');
 const http = require('http');
 const apiRouter = require('./routes/apiRoute');
-const viewRouter = require('./routes/viewRoute');
 const serverConfig = require('./config/serverConfig');
 const initChatSocket = require('./ws/chatSocket');
 const { ensureMockAdmin } = require('./utils/ensureMockAdmin');
@@ -21,7 +20,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 serverConfig(app);
 
 app.use('/api', apiRouter);
-app.use('/', viewRouter);
 
 const server = http.createServer(app);
 initChatSocket(server);

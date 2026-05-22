@@ -10,13 +10,6 @@
   padding: 0;
 }
 
-.classes-header__back {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 2;
-}
-
 .classes-header--admin-view .app-profile-chip {
   display: inline-flex;
   align-items: center;
@@ -62,7 +55,7 @@
   padding: 0 18px;
   border: 0;
   border-radius: 14px;
-  background: #7c3aed;
+  background: var(--educhat-accent);
   color: #ffffff;
   font: inherit;
   font-size: 15px;

@@ -29,27 +29,10 @@ import { isAdmin } from "@/shared/lib/permissions";
 import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
 import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { formatPlatformSince } from "@/shared/lib/formatPlatformSince";
+import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
 import "../classes/page.css";
 import "./page.css";
-
-function getApiOrigin() {
-  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-  return raw.replace(/\/+$/, "").replace(/\/api$/i, "");
-}
-
-function getAvatarSrc(avatarUrl?: string | null) {
-  if (!avatarUrl) {
-    return "";
-  }
-
-  if (avatarUrl.startsWith("http")) {
-    return avatarUrl;
-  }
-
-  return `${getApiOrigin()}${avatarUrl}`;
-}
 
 function splitName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -336,7 +319,7 @@ export default function ProfilePage() {
           <header className="profile-page-header app-content-header">
             <AppBackButton
               href={clientRoutes.chat}
-              className="profile-header__back"
+              className="app-header__back"
             />
             <button
               type="button"

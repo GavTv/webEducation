@@ -23,5 +23,3 @@ export function useAutoDismiss(
     return () => window.clearTimeout(id);
   }, [active, delayMs]);
 }
-
-export const AUTO_DISMISS_MS = DEFAULT_DISMISS_MS;

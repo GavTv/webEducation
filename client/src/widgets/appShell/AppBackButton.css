@@ -45,3 +45,20 @@
 .app-back-btn:active .app-back-btn__icon {
   transform: translateX(-4px);
 }
+
+/* Позиция в шапке страниц (группы, админка, профиль) */
+.app-header__back {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .profile-page-header .app-header__back,
+  .classes-header--admin-view .app-header__back {
+    position: static;
+    transform: none;
+  }
+}

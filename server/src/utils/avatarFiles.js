@@ -35,8 +35,7 @@ function deleteAvatarFile(avatarUrl) {
       fs.unlinkSync(filePath);
     }
   } catch (error) {
-    console.log('======== deleteAvatarFile =========');
-    console.log(error.message);
+    console.error(error.message);
   }
 }
 

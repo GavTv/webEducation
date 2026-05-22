@@ -13,6 +13,18 @@ function syncAuthEnv() {
 }
 syncAuthEnv();
 
+/** Без секрета Auth.js отдаёт ClientFetchError на /api/auth/session */
+function resolveAuthSecret(): string | undefined {
+  const fromEnv = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (fromEnv?.trim()) {
+    return fromEnv.trim();
+  }
+  if (process.env.NODE_ENV === "development") {
+    return "educhat-local-dev-auth-secret";
+  }
+  return undefined;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   basePath: "/api/auth",
   trustHost: true,
@@ -29,7 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_GITHUB_SECRET ?? "",
     }),
   ],
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret: resolveAuthSecret(),
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, account }) {

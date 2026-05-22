@@ -2,7 +2,6 @@
  * Пути клиента.
  */
 export const clientRoutes = {
-  home: "/",
   auth: "/auth",
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
@@ -13,8 +12,6 @@ export const clientRoutes = {
   profile: "/profile",
   admin: "/admin",
 } as const;
-
-export type ClientRouteKey = keyof typeof clientRoutes;
 
 export type AuthModeParam = "login" | "register";
 

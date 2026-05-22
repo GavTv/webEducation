@@ -28,8 +28,7 @@ class UserAdminController {
         }),
       );
     } catch (error) {
-      console.log('======== UserAdminController.listUsers =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при загрузке пользователей'));
@@ -84,8 +83,7 @@ class UserAdminController {
         formatResponse(200, 'Роль обновлена', { user }),
       );
     } catch (error) {
-      console.log('======== UserAdminController.updateUserRole =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при смене роли'));
@@ -150,8 +148,7 @@ class UserAdminController {
 
       return res.status(200).json(formatResponse(200, 'Пользователь удалён'));
     } catch (error) {
-      console.log('======== UserAdminController.deleteUser =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при удалении пользователя'));

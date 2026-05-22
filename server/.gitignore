@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# User-uploaded avatars (local storage)
+public/uploads/avatars/*
+!public/uploads/avatars/.gitkeep
