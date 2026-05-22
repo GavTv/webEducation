@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { authPath } from "@/shared/consts/clientRoutes";
+import { clientRoutes } from "@/shared/consts/clientRoutes";
+import styles from "./not-found.module.css";
 
 export default function NotFoundPage() {
   return (
-    <main className="app-main">
-      <div className="app-container">
-        <h1 className="app-title">404</h1>
-        <p className="app-lead">Страница не найдена.</p>
-        <p className="app-meta">
-          <Link href={authPath("login")}>На главную</Link>
-        </p>
+    <main className={styles.page}>
+      <div className={styles.actions}>
+        <p className={styles.lead}>Страница не найдена</p>
+        <Link href={clientRoutes.classes} className={styles.link}>
+          На главную
+        </Link>
       </div>
     </main>
   );
