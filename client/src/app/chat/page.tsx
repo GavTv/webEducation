@@ -892,11 +892,7 @@ function ChatPageContent() {
   const deleteChatTitle = `Удалить чат «${selectedChannel?.title ?? "чат"}»?`;
 
   return (
-    <main
-      className={`educhat-page app-page classes-page app-page--with-tabbar${
-        mobileThreadOpen || selectedGroupId ? " app-page--hide-tabbar" : ""
-      }`}
-    >
+    <main className="educhat-page app-page classes-page app-page--with-tabbar">
       {clearChatOpen ? (
         <ConfirmModal
           title={clearChatTitle}

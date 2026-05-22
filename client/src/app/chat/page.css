@@ -962,7 +962,8 @@
   .chat-columns--in-group:not(.chat-columns--thread) .channels-panel {
     display: flex;
     min-height: 100dvh;
-    padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 14px
+      calc(var(--app-mobile-tabbar-height) + 16px + env(safe-area-inset-bottom, 0px));
     background: var(--app-page-bg-base);
   }
 
@@ -974,7 +975,7 @@
     display: none;
   }
 
-  .educhat-page.app-page--hide-tabbar .desktop-shell {
+  .educhat-page .desktop-shell:has(.chat-columns--thread) {
     min-height: 100dvh;
     height: 100dvh;
     display: flex;
@@ -982,7 +983,7 @@
     overflow: hidden;
   }
 
-  .educhat-page.app-page--hide-tabbar .chat-columns--thread {
+  .educhat-page .desktop-shell:has(.chat-columns--thread) .chat-columns--thread {
     flex: 1;
     min-height: 0;
     height: 100%;
@@ -998,7 +999,9 @@
     min-height: 0;
     height: 100%;
     padding: 12px 14px 0;
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(
+      68px + var(--app-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px)
+    );
     background: var(--app-page-bg-base);
     box-sizing: border-box;
     overflow: hidden;
@@ -1015,8 +1018,8 @@
     position: fixed;
     left: 14px;
     right: 14px;
-    bottom: 0;
-    z-index: 40;
+    bottom: var(--app-mobile-tabbar-height);
+    z-index: 150;
     margin-top: 0;
     flex-shrink: 0;
     width: auto;
@@ -1055,10 +1058,6 @@
     height: 52px;
     font-size: 15px;
     box-shadow: 0 10px 28px rgba(124, 58, 237, 0.32);
-  }
-
-  .chat-columns--in-group:not(.chat-columns--thread) .channels-panel {
-    padding-bottom: 12px;
   }
 
   .thread-header {
@@ -1122,7 +1121,7 @@
     border-radius: 12px;
   }
 
-  .educhat-page:not(.app-page--hide-tabbar) .chat-panel {
+  .educhat-page .chat-panel {
     min-height: 100dvh;
     padding-bottom: calc(var(--app-mobile-tabbar-height) + 24px);
     box-sizing: border-box;
