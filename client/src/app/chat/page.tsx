@@ -45,6 +45,7 @@ import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
+import { sendBotAiMessage as requestBotAiReply } from "@/shared/lib/botAiApi";
 import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
 import "./page.css";
 
@@ -742,29 +743,21 @@ function ChatPageContent() {
       setBotAiLoading(true);
 
       try {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message: text }),
-        });
-
-        const data = await response.json().catch(() => null);
+        const data = await requestBotAiReply(text);
 
         addBotAiMessage({
           id: `botai-answer-${Date.now()}`,
           author: "@botAi",
-          text: data?.answer || "Не получилось получить ответ от AI.",
+          text: data.answer || "Не получилось получить ответ от AI.",
           time: formatTime(),
           isBot: true,
-          isError: !response.ok,
+          isError: Boolean(data.error),
         });
       } catch {
         addBotAiMessage({
           id: `botai-error-${Date.now()}`,
           author: "@botAi",
-          text: "Ошибка соединения с AI route.",
+          text: "Ошибка соединения с сервером AI.",
           time: formatTime(),
           isBot: true,
           isError: true,
@@ -975,7 +968,7 @@ function ChatPageContent() {
         <aside className="classes-sidebar app-sidebar">
           <BrandLogo />
 
-          <AppNav active="chat" showAdminLink={showAdminLink} />
+          <AppNav active="classes" showAdminLink={showAdminLink} />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
@@ -1351,7 +1344,7 @@ function ChatPageContent() {
         </div>
       </section>
 
-      <MobileBottomNav active="chat" showAdminLink={showAdminLink} />
+      <MobileBottomNav active="classes" showAdminLink={showAdminLink} />
     </main>
   );
 }
