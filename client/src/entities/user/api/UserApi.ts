@@ -1,4 +1,4 @@
-import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { axiosInstance, refreshSession } from "@/shared/lib/axiosInstance";
 import type { ServerResponseType } from "@/shared/types";
 import type {
   UserLoginData,
@@ -30,9 +30,16 @@ export type UserUpdateProfileData = {
 
 export default class UserApi {
   static async refresh() {
-    const { data } = await axiosInstance.get<
-      ServerResponseType<UserWithTokenType>
-    >(USER_API_URLS.REFRESH);
+    const data = await refreshSession<ServerResponseType<UserWithTokenType>>();
+
+    if (!data || data.statusCode !== 200 || !data.data?.user) {
+      return {
+        statusCode: 401,
+        message: "Сессия не найдена",
+        data: null,
+        error: "Сессия не найдена",
+      } as ServerResponseType<UserWithTokenType>;
+    }
 
     return data;
   }

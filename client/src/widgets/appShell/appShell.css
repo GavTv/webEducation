@@ -345,6 +345,11 @@
   display: block;
 }
 
+/* Плавающий аватар профиля на мобилке (все разделы приложения) */
+.mobile-profile-fab {
+  display: none;
+}
+
 /* Нижняя навигация (мобильная) */
 .app-mobile-tabbar {
   display: none;
@@ -526,6 +531,42 @@
   }
 
   .classes-top:not(:has(.add-button)) {
+    display: none;
+  }
+
+  .mobile-profile-fab {
+    display: block;
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: 14px;
+    z-index: 220;
+    pointer-events: auto;
+  }
+
+  .mobile-profile-fab .app-profile-chip {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .mobile-profile-fab .app-profile-text {
+    display: none;
+  }
+
+  .mobile-profile-fab .app-profile-avatar-wrap {
+    width: 48px;
+    height: 48px;
+  }
+
+  .mobile-profile-fab .app-profile-avatar-wrap .app-profile-avatar {
+    font-size: 16px;
+    border: 2px solid rgba(139, 92, 246, 0.45);
+    box-sizing: border-box;
+  }
+
+  .chat-list-header .app-profile-chip,
+  .classes-header:not(.classes-header--admin-view) .app-profile-chip {
     display: none;
   }
 

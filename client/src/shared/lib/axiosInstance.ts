@@ -15,6 +15,8 @@ export const axiosInstance = axios.create({
 });
 
 let accessToken = "";
+let authBootstrapComplete = false;
+let refreshInflight: Promise<unknown> | null = null;
 
 export function setAccessToken(newToken: string) {
   accessToken = newToken;
@@ -22,6 +24,42 @@ export function setAccessToken(newToken: string) {
 
 export function getAccessToken() {
   return accessToken;
+}
+
+/** После первой проверки сессии (refresh при старте) — можно редиректить на логин. */
+export function setAuthBootstrapComplete(value = true) {
+  authBootstrapComplete = value;
+}
+
+function isAuthBootstrapComplete() {
+  return authBootstrapComplete;
+}
+
+/** Один запрос refresh на все параллельные вызовы (старт + interceptor). */
+export function refreshSession<T = unknown>(): Promise<T | null> {
+  if (!refreshInflight) {
+    refreshInflight = axiosInstance
+      .get("auth/refresh")
+      .then(({ data }) => {
+        const payload = data as { data?: { accessToken?: string } };
+        setAccessToken(payload.data?.accessToken ?? "");
+        return data as T;
+      })
+      .catch(() => {
+        setAccessToken("");
+        return null;
+      })
+      .finally(() => {
+        refreshInflight = null;
+      });
+  }
+
+  return refreshInflight as Promise<T | null>;
+}
+
+export async function refreshSessionAccessToken(): Promise<string> {
+  const data = await refreshSession<{ data?: { accessToken?: string } }>();
+  return data?.data?.accessToken ?? "";
 }
 
 function hasAuthHeader(config: InternalAxiosRequestConfig) {
@@ -49,22 +87,22 @@ axiosInstance.interceptors.response.use(
 
     if (shouldTryRefresh) {
       previousRequest.sent = true;
-      try {
-        const { data } = await axiosInstance.get("auth/refresh");
-        const newToken = data.data?.accessToken ?? "";
-        setAccessToken(newToken);
+      const newToken = await refreshSessionAccessToken();
+
+      if (newToken) {
         previousRequest.headers.Authorization = `Bearer ${newToken}`;
         return axiosInstance(previousRequest);
-      } catch {
-        setAccessToken("");
-        if (
-          typeof window !== "undefined" &&
-          !window.location.pathname.startsWith("/auth")
-        ) {
-          window.location.href = "/auth?mode=login";
-        }
-        return Promise.reject(error);
       }
+
+      if (
+        isAuthBootstrapComplete() &&
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/auth")
+      ) {
+        window.location.href = "/auth?mode=login";
+      }
+
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   },
