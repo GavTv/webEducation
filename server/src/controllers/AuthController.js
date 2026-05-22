@@ -411,7 +411,19 @@ class AuthController {
           .json(formatResponse(403, 'Невалидный пользователь'));
       }
 
-      const deleted = await AuthService.deleteUserById(user.id);
+      let deleted;
+      try {
+        deleted = await AuthService.deleteUserById(user.id);
+      } catch (deleteError) {
+        if (deleteError?.code === 'PROTECTED_MOCK_ADMIN') {
+          const { protectedMockAdminMessage } = require('../utils/protectedUsers');
+          return res
+            .status(403)
+            .json(formatResponse(403, protectedMockAdminMessage()));
+        }
+        throw deleteError;
+      }
+
       if (!deleted) {
         return res
           .status(404)

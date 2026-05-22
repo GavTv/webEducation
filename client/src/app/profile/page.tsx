@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { authPath } from "@/shared/consts/clientRoutes";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { Calendar, Camera, Loader2, LogOut, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
@@ -21,13 +21,13 @@ import {
 } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
 import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
+import { AppBackButton } from "@/widgets/appShell/AppBackButton";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import { isAdmin } from "@/shared/lib/permissions";
 import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
 import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
-import { getRoleLabel } from "@/shared/lib/roleLabels";
 import { formatPlatformSince } from "@/shared/lib/formatPlatformSince";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
 import "../classes/page.css";
@@ -56,8 +56,7 @@ function splitName(fullName: string) {
 
   return {
     firstName: parts[0] || "",
-    lastName: parts[1] || "",
-    patronymic: parts.slice(2).join(" "),
+    lastName: parts.slice(1).join(" "),
   };
 }
 
@@ -67,7 +66,6 @@ export default function ProfilePage() {
 
   const firstNameInputRef = useRef<HTMLInputElement | null>(null);
   const lastNameInputRef = useRef<HTMLInputElement | null>(null);
-  const patronymicInputRef = useRef<HTMLInputElement | null>(null);
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
   const user = useAppSelector((s) => s.user.user);
@@ -79,12 +77,10 @@ export default function ProfilePage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [patronymic, setPatronymic] = useState("");
   const [phone, setPhone] = useState("");
 
   const [isFirstNameEditable, setIsFirstNameEditable] = useState(false);
   const [isLastNameEditable, setIsLastNameEditable] = useState(false);
-  const [isPatronymicEditable, setIsPatronymicEditable] = useState(false);
   const [isPhoneEditable, setIsPhoneEditable] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -118,12 +114,10 @@ export default function ProfilePage() {
 
       setFirstName(parsedName.firstName);
       setLastName(parsedName.lastName);
-      setPatronymic(parsedName.patronymic);
       setPhone(user.phone?.trim() ?? "");
 
       setIsFirstNameEditable(false);
       setIsLastNameEditable(false);
-      setIsPatronymicEditable(false);
       setIsPhoneEditable(false);
 
       setAvatarFile(null);
@@ -140,11 +134,11 @@ export default function ProfilePage() {
   }, [avatarPreview, user?.avatarUrl]);
 
   const fullName = useMemo(() => {
-    return [firstName, lastName, patronymic]
+    return [firstName, lastName]
       .map((part) => part.trim())
       .filter(Boolean)
       .join(" ");
-  }, [firstName, lastName, patronymic]);
+  }, [firstName, lastName]);
 
   const avatarInitials = useMemo(
     () => getNameInitials(firstName, lastName, user?.name),
@@ -155,8 +149,6 @@ export default function ProfilePage() {
     () => formatPlatformSince(user?.createdAt),
     [user?.createdAt],
   );
-
-  const roleLabel = useMemo(() => getRoleLabel(user?.role), [user?.role]);
 
   const showAdminLink = isAdmin(user?.role);
 
@@ -173,6 +165,30 @@ export default function ProfilePage() {
     input.focus();
     input.setSelectionRange(end, end);
   }, []);
+
+  const enableFirstNameEdit = useCallback(() => {
+    if (isFirstNameEditable) {
+      return;
+    }
+    setIsFirstNameEditable(true);
+    setTimeout(() => focusFieldEnd(firstNameInputRef.current), 0);
+  }, [focusFieldEnd, isFirstNameEditable]);
+
+  const enableLastNameEdit = useCallback(() => {
+    if (isLastNameEditable) {
+      return;
+    }
+    setIsLastNameEditable(true);
+    setTimeout(() => focusFieldEnd(lastNameInputRef.current), 0);
+  }, [focusFieldEnd, isLastNameEditable]);
+
+  const enablePhoneEdit = useCallback(() => {
+    if (isPhoneEditable) {
+      return;
+    }
+    setIsPhoneEditable(true);
+    setTimeout(() => focusFieldEnd(phoneInputRef.current), 0);
+  }, [focusFieldEnd, isPhoneEditable]);
 
   const handleLogout = useCallback(() => {
     dispatch(logoutThunk())
@@ -244,7 +260,7 @@ export default function ProfilePage() {
       dispatch(setError(null));
 
       if (fullName.trim().length < 2) {
-        dispatch(setError("ФИО должно быть минимум 2 символа"));
+        dispatch(setError("Укажите имя и фамилию (минимум 2 символа)"));
         return;
       }
 
@@ -270,7 +286,6 @@ export default function ProfilePage() {
           setAvatarPreview("");
           setIsFirstNameEditable(false);
           setIsLastNameEditable(false);
-          setIsPatronymicEditable(false);
           setIsPhoneEditable(false);
           setSuccessMessage("Профиль сохранён");
         })
@@ -319,7 +334,10 @@ export default function ProfilePage() {
 
         <section className="profile-main classes-content app-content">
           <header className="profile-page-header app-content-header">
-            <h1>Профиль</h1>
+            <AppBackButton
+              href={clientRoutes.chat}
+              className="profile-header__back"
+            />
             <button
               type="button"
               className="app-header-action-btn profile-logout-btn"
@@ -361,7 +379,6 @@ export default function ProfilePage() {
               <div className="profile-hero-text">
                 <div className="profile-name-row">
                   <h2>{fullName || user.name}</h2>
-                  <span className="profile-role-badge">{roleLabel}</span>
                 </div>
                 <p className="profile-username">@{user.username}</p>
                 {platformSince ? (
@@ -384,27 +401,16 @@ export default function ProfilePage() {
                     className="profile-field-input"
                     value={firstName}
                     readOnly={!isFirstNameEditable}
+                    onClick={enableFirstNameEdit}
+                    onFocus={enableFirstNameEdit}
                     onChange={(event) => {
                       setFirstName(event.target.value);
                       setSuccessMessage("");
                     }}
                     onBlur={() => setIsFirstNameEditable(false)}
                     placeholder="Имя"
+                    aria-label="Имя"
                   />
-                  <button
-                    type="button"
-                    className="profile-field-edit"
-                    aria-label="Редактировать имя"
-                    onClick={() => {
-                      setIsFirstNameEditable(true);
-                      setTimeout(
-                        () => focusFieldEnd(firstNameInputRef.current),
-                        0,
-                      );
-                    }}
-                  >
-                    ✎
-                  </button>
                 </div>
 
                 <div className="profile-field">
@@ -414,63 +420,16 @@ export default function ProfilePage() {
                     className="profile-field-input"
                     value={lastName}
                     readOnly={!isLastNameEditable}
+                    onClick={enableLastNameEdit}
+                    onFocus={enableLastNameEdit}
                     onChange={(event) => {
                       setLastName(event.target.value);
                       setSuccessMessage("");
                     }}
                     onBlur={() => setIsLastNameEditable(false)}
                     placeholder="Фамилия"
+                    aria-label="Фамилия"
                   />
-                  <button
-                    type="button"
-                    className="profile-field-edit"
-                    aria-label="Редактировать фамилию"
-                    onClick={() => {
-                      setIsLastNameEditable(true);
-                      setTimeout(
-                        () => focusFieldEnd(lastNameInputRef.current),
-                        0,
-                      );
-                    }}
-                  >
-                    ✎
-                  </button>
-                </div>
-
-                <div className="profile-field profile-field--wide">
-                  <span className="profile-field-label">
-                    Отчество (необязательно)
-                  </span>
-                  <input
-                    ref={patronymicInputRef}
-                    className="profile-field-input"
-                    value={
-                      !isPatronymicEditable && !patronymic.trim()
-                        ? "Не указано"
-                        : patronymic
-                    }
-                    readOnly={!isPatronymicEditable}
-                    onChange={(event) => {
-                      setPatronymic(event.target.value);
-                      setSuccessMessage("");
-                    }}
-                    onBlur={() => setIsPatronymicEditable(false)}
-                    placeholder="Не указано"
-                  />
-                  <button
-                    type="button"
-                    className="profile-field-edit"
-                    aria-label="Редактировать отчество"
-                    onClick={() => {
-                      setIsPatronymicEditable(true);
-                      setTimeout(
-                        () => focusFieldEnd(patronymicInputRef.current),
-                        0,
-                      );
-                    }}
-                  >
-                    ✎
-                  </button>
                 </div>
 
                 <div className="profile-field">
@@ -497,6 +456,8 @@ export default function ProfilePage() {
                         : phone
                     }
                     readOnly={!isPhoneEditable}
+                    onClick={enablePhoneEdit}
+                    onFocus={enablePhoneEdit}
                     onChange={(event) => {
                       setPhone(event.target.value);
                       setSuccessMessage("");
@@ -504,29 +465,9 @@ export default function ProfilePage() {
                     onBlur={() => setIsPhoneEditable(false)}
                     placeholder="+7 900 000-00-00"
                     autoComplete="tel"
+                    aria-label="Телефон"
                   />
-                  <button
-                    type="button"
-                    className="profile-field-edit"
-                    aria-label="Редактировать телефон"
-                    onClick={() => {
-                      setIsPhoneEditable(true);
-                      setTimeout(() => focusFieldEnd(phoneInputRef.current), 0);
-                    }}
-                  >
-                    ✎
-                  </button>
                 </div>
-              </div>
-
-              <div className="profile-privacy-banner" role="note">
-                <span className="profile-privacy-icon" aria-hidden>
-                  i
-                </span>
-                <p>
-                  Эти данные видны только вам и не отображаются другим
-                  пользователям
-                </p>
               </div>
 
               <FadeAlert text={authError} className="profile-error" />
@@ -551,21 +492,23 @@ export default function ProfilePage() {
             </section>
           </form>
 
-          <div className="profile-delete-row">
-            <button
-              type="button"
-              className="profile-delete-btn"
-              onClick={handleOpenDelete}
-              disabled={isLoading}
-            >
-              <Trash2 size={18} aria-hidden />
-              Удалить аккаунт
-            </button>
-          </div>
+          {!showAdminLink ? (
+            <div className="profile-delete-row">
+              <button
+                type="button"
+                className="profile-delete-btn"
+                onClick={handleOpenDelete}
+                disabled={isLoading}
+              >
+                <Trash2 size={18} aria-hidden />
+                Удалить аккаунт
+              </button>
+            </div>
+          ) : null}
         </section>
       </section>
 
-      <MobileBottomNav active="profile" />
+      <MobileBottomNav active="profile" showAdminLink={showAdminLink} />
     </main>
   );
 }

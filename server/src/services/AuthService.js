@@ -105,6 +105,16 @@ class AuthService {
   }
 
   static async deleteUserById(id) {
+    const row = await User.findByPk(id);
+    if (!row) return false;
+
+    const { isProtectedMockAdmin } = require('../utils/protectedUsers');
+    if (isProtectedMockAdmin(row)) {
+      const err = new Error('PROTECTED_MOCK_ADMIN');
+      err.code = 'PROTECTED_MOCK_ADMIN';
+      throw err;
+    }
+
     const n = await User.destroy({ where: { id } });
     return n > 0;
   }

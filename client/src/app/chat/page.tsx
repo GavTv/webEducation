@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Search, Star } from "lucide-react";
+import { Lock, Search, Star } from "lucide-react";
 import { ChatMessageInput } from "./ChatMessageInput";
 import {
   createGroupChannel,
@@ -40,6 +40,7 @@ import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { UserAvatar } from "@/shared/ui/UserAvatar/UserAvatar";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
+import { AppBackButton } from "@/widgets/appShell/AppBackButton";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
@@ -101,7 +102,7 @@ function channelToChatRoom(
   };
 }
 
-const CHAT_UI_STORAGE_VERSION = "2";
+const CHAT_UI_STORAGE_VERSION = "3";
 
 function applyHistory(
   roomId: number,
@@ -395,7 +396,10 @@ function ChatPageContent() {
     const socket = createChatSocket();
     socketRef.current = socket;
 
-    const onConnect = () => setWsConnected(true);
+    const onConnect = () => {
+      setWsConnected(true);
+      setMessagesByRoomId({});
+    };
     const onDisconnect = () => setWsConnected(false);
 
     const onHistory = (payload: RoomHistoryPayload | ChannelHistoryPayload) => {
@@ -1119,14 +1123,11 @@ function ChatPageContent() {
 
           <section className="channels-panel">
             <header className="channels-panel-header">
-              <button
-                type="button"
+              <AppBackButton
                 className="thread-back-btn channels-panel-back"
                 onClick={closeMobileChannels}
-                aria-label="К списку групп"
-              >
-                <ArrowLeft size={20} strokeWidth={2} aria-hidden />
-              </button>
+                ariaLabel="К списку групп"
+              />
               <div>
                 <h2>{selectedGroupRoom?.title ?? "Чаты группы"}</h2>
               </div>
@@ -1208,14 +1209,11 @@ function ChatPageContent() {
 
           <aside className="thread-panel">
             <header className="thread-header">
-              <button
-                type="button"
+              <AppBackButton
                 className="thread-back-btn"
                 onClick={closeMobileThread}
-                aria-label="К списку чатов"
-              >
-                <ArrowLeft size={20} strokeWidth={2} aria-hidden />
-              </button>
+                ariaLabel="К списку чатов"
+              />
               <div
                 className={`thread-avatar ${botAiOpen ? "purple" : selectedChannel?.iconClass ?? "purple"}`}
               >
@@ -1357,7 +1355,7 @@ function ChatPageContent() {
         </div>
       </section>
 
-      <MobileBottomNav active="chat" />
+      <MobileBottomNav active="chat" showAdminLink={showAdminLink} />
     </main>
   );
 }

@@ -427,8 +427,8 @@
     padding-bottom: calc(var(--app-mobile-tabbar-height) + 12px);
   }
 
-  .app-content-header,
-  .classes-header,
+  .app-content-header:not(.admin-header):not(.classes-header--admin-view),
+  .classes-header:not(.classes-header--admin-view),
   .profile-page-header,
   .chat-list-header {
     display: grid;
@@ -446,7 +446,7 @@
   }
 
   .app-content-header .app-profile-chip,
-  .classes-header .app-profile-chip,
+  .classes-header:not(.classes-header--admin-view) .app-profile-chip,
   .chat-list-header .app-profile-chip {
     grid-column: 2;
     grid-row: 1 / span 2;
@@ -461,7 +461,7 @@
   }
 
   .app-content-header .app-profile-text,
-  .classes-header .app-profile-text,
+  .classes-header:not(.classes-header--admin-view) .app-profile-text,
   .chat-list-header .app-profile-text {
     display: none;
   }
@@ -480,7 +480,7 @@
   }
 
   .classes-header h1,
-  .app-content-header h1,
+  .app-content-header:not(.admin-header) h1,
   .chat-list-header h1 {
     grid-column: 1;
     grid-row: 1;
@@ -580,5 +580,29 @@
 
   .app-mobile-tab--active svg {
     color: #a78bfa;
+  }
+
+  .app-mobile-tabbar--with-admin {
+    gap: 2px;
+    padding-inline: 8px;
+  }
+
+  .app-mobile-tabbar--with-admin .app-mobile-tab {
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 11px;
+    gap: 3px;
+  }
+
+  .app-mobile-tabbar--with-admin .app-mobile-tab svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-mobile-tabbar--with-admin .app-mobile-tab span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

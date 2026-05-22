@@ -99,9 +99,9 @@
   min-height: 0;
 }
 
-/* Внутри группы: скрыть список групп, оставить чаты + переписку */
+/* Внутри группы: список чатов фиксированной ширины, переписка — остаток */
 .chat-columns--in-group {
-  grid-template-columns: minmax(220px, min(28vw, 300px)) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, min(360px, 38vw)) minmax(0, 1fr);
 }
 
 .chat-columns--in-group .chat-panel {
@@ -187,14 +187,102 @@
   box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
 }
 
-.channels-panel-back {
-  display: none;
-}
-
 .channels-list {
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+@media (min-width: 901px) {
+  .thread-header {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 14px;
+    row-gap: 10px;
+    align-items: center;
+  }
+
+  .thread-header .thread-back-btn {
+    display: none !important;
+  }
+
+  .thread-avatar {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: start;
+  }
+
+  .thread-header-text {
+    grid-column: 2;
+    grid-row: 1;
+    flex: unset;
+    min-width: 0;
+  }
+
+  .thread-header-actions {
+    grid-column: 2;
+    grid-row: 2;
+    margin-left: 0;
+    justify-self: start;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .thread-header-text h2 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chat-columns--in-group .channels-panel {
+    padding: 16px 18px 14px;
+  }
+
+  .chat-columns--in-group .channels-panel-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-bottom: 12px;
+  }
+
+  .chat-columns--in-group .channels-panel-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .channels-list .room-card,
+  .channels-panel > .bot-ai-room-card--pinned {
+    grid-template-columns: 48px minmax(0, 1fr);
+    min-height: 68px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 16px;
+  }
+
+  .channels-list .room-card .room-icon,
+  .channels-panel > .bot-ai-room-card--pinned .room-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .channels-list .room-card .room-info p,
+  .channels-panel > .bot-ai-room-card--pinned .room-info p {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .chat-columns--in-group .thread-panel {
+    min-width: 0;
+    padding: 18px 20px 16px;
+    border-left: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .chat-columns--in-group .messages-wrap {
+    padding: 16px 0;
+    gap: 12px;
+  }
 }
 
 .create-chat-group-hint {
@@ -804,23 +892,11 @@
 }
 
 .thread-back-btn {
-  display: none;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
-  cursor: pointer;
+  display: none !important;
 }
 
-.thread-back-btn:hover {
-  border-color: rgba(139, 92, 246, 0.45);
-  color: #fff;
+.channels-panel-back {
+  display: none !important;
 }
 
 .message-attach-btn {
@@ -867,7 +943,11 @@
   }
 
   .channels-panel-back {
-    display: inline-flex;
+    display: inline-flex !important;
+  }
+
+  .thread-back-btn {
+    display: inline-flex !important;
   }
 
   .chat-columns--in-group .chat-panel,
@@ -947,10 +1027,6 @@
 
   .chat-columns--thread .thread-panel .message-input {
     width: 100%;
-  }
-
-  .thread-back-btn {
-    display: inline-flex;
   }
 
   .channels-panel-header {
@@ -1173,7 +1249,7 @@
   }
 
   .chat-columns--in-group {
-    grid-template-columns: minmax(220px, 26vw) minmax(0, 1fr);
+    grid-template-columns: minmax(240px, 32vw) minmax(0, 1fr);
   }
 }
 

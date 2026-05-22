@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { AppBackButton } from "@/widgets/appShell/AppBackButton";
 import { AppNav } from "@/widgets/appShell/AppNav";
 import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
@@ -283,26 +284,48 @@ export default function ClassesPage() {
         </aside>
 
         <section className="classes-content app-content">
-          <header className="classes-header app-content-header">
-            <div>
-              <h1>
-                <span className="app-heading-mobile">Группы</span>
-                <span className="app-heading-desktop">
-                  Добро пожаловать, {firstName}! 👋
-                </span>
-              </h1>
-              <p className="app-header-subtitle">
-                Выберите группу, чтобы начать общение
-              </p>
-            </div>
+          <header
+            className={`classes-header app-content-header${
+              showAdminLink ? " classes-header--admin-view" : ""
+            }`}
+          >
+            {showAdminLink ? (
+              <>
+                <AppBackButton
+                  href={clientRoutes.chat}
+                  className="classes-header__back"
+                />
+                <AppProfileChip
+                  firstName={firstName}
+                  avatarSrc={avatarSrc}
+                  avatarInitials={avatarInitials}
+                  interactive={false}
+                  ariaLabel={`${firstName}, онлайн`}
+                />
+              </>
+            ) : (
+              <>
+                <div>
+                  <h1>
+                    <span className="app-heading-mobile">Группы</span>
+                    <span className="app-heading-desktop">
+                      Добро пожаловать, {firstName}! 👋
+                    </span>
+                  </h1>
+                  <p className="app-header-subtitle">
+                    Выберите группу, чтобы начать общение
+                  </p>
+                </div>
 
-            <AppProfileChip
-              firstName={firstName}
-              avatarSrc={avatarSrc}
-              avatarInitials={avatarInitials}
-              interactive={false}
-              ariaLabel={`${firstName}, онлайн`}
-            />
+                <AppProfileChip
+                  firstName={firstName}
+                  avatarSrc={avatarSrc}
+                  avatarInitials={avatarInitials}
+                  interactive={false}
+                  ariaLabel={`${firstName}, онлайн`}
+                />
+              </>
+            )}
           </header>
 
           <div className="classes-top">
@@ -471,7 +494,7 @@ export default function ClassesPage() {
         onSubmit={handleJoinSubmit}
       />
 
-      <MobileBottomNav active="classes" />
+      <MobileBottomNav active="classes" showAdminLink={showAdminLink} />
     </main>
   );
 }
