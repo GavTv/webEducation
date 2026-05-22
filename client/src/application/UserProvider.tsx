@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
+import { setAuthBootstrapDone } from "@/shared/lib/axiosInstance";
 import { UserErrorAutoClear } from "./UserErrorAutoClear";
 
 export default function UserProvider({
@@ -13,7 +14,9 @@ export default function UserProvider({
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(refreshTokenThunk());
+    void dispatch(refreshTokenThunk()).finally(() => {
+      setAuthBootstrapDone(true);
+    });
   }, [dispatch]);
 
   return (

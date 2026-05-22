@@ -12,12 +12,32 @@ import EduChatAuthScreen from "@/features/auth/ui/EduChatAuthScreen";
 export default function AuthGate() {
   const router = useRouter();
   const user = useAppSelector((s) => s.user.user);
+  const isInitialized = useAppSelector((s) => s.user.isInitialized);
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (user) {
       router.replace(clientRoutes.classes);
     }
-  }, [user, router]);
+  }, [user, isInitialized, router]);
+
+  if (!isInitialized) {
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--app-page-bg)",
+          color: "#9ca3af",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        Загрузка…
+      </div>
+    );
+  }
 
   if (user) {
     return (

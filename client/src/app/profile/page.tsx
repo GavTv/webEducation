@@ -16,7 +16,6 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
   deleteAccountThunk,
   logoutThunk,
-  refreshTokenThunk,
   updateProfileThunk,
 } from "@/entities/user/api/UserApiThunk";
 import { setError } from "@/entities/user/slice/userSlice";
@@ -72,24 +71,15 @@ export default function ProfilePage() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (user) {
       setAuthChecked(true);
       return;
     }
 
-    if (!isInitialized) {
-      return;
-    }
-
-    dispatch(refreshTokenThunk())
-      .unwrap()
-      .then(() => {
-        setAuthChecked(true);
-      })
-      .catch(() => {
-        router.replace(authPath("login"));
-      });
-  }, [dispatch, isInitialized, router, user]);
+    router.replace(authPath("login"));
+  }, [isInitialized, router, user]);
 
   useEffect(() => {
     if (user) {
