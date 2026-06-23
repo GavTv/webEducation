@@ -1,6 +1,16 @@
-# webEducation
+# webEducation (EduChat)
 
-Образовательная веб-платформа: личные кабинеты для администратора, учителя и ученика, групповые чаты и управление классами.
+Образовательная веб-платформа для учебных чатов: личные кабинеты для **admin**, **teacher** и **student**, групповые чаты, управление классами и AI-помощник **@botAi**.
+
+**Демо:** 
+
+## Возможности
+
+- Регистрация и вход по email/паролю
+- Быстрый вход через **GitHub** и **Google** (OAuth)
+- Групповые чаты и учебные комнаты
+- AI-ассистент для помощи в чатах
+- Роли: администратор, учитель, ученик
 
 ## Стек
 
@@ -11,7 +21,7 @@
 
 ```bash
 # Backend (порт 3000)
-cd server && npm install && npm run migrate && npm run dev
+cd server && npm install && cp .env.example .env && npm run migrate && npm run dev
 
 # Frontend (порт 5173)
 cd client && npm install && npm run dev
