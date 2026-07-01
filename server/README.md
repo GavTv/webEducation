@@ -45,3 +45,4 @@ npm run dev
 ## CORS
 
 **`CORS_ORIGINS`** в `.env` — через запятую (URL фронтенда).
+**`CORS_ORIGINS`** в `.env` — через запятую (URL фронтенда).
