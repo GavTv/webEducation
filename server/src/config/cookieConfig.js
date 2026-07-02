@@ -13,7 +13,7 @@ function getRefreshCookieBase() {
     path: '/',
     sameSite: prod ? 'none' : 'lax',
     secure: prod,
-    /** Safari / cross-origin: elbrus-chat.ru → API на Render */
+    /** Safari / cross-origin: клиентский домен → API на Render */
     ...(prod ? { partitioned: true } : {}),
   };
 }

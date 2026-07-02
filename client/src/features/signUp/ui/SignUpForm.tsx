@@ -220,7 +220,7 @@ export default function SignUpForm({
     <>
       <h1 className={styles.title}>Создайте аккаунт</h1>
       <p className={styles.subtitle}>
-        Присоединяйтесь к EduChat и общайтесь в учебных чатах
+        Присоединяйтесь к My Work Chat и общайтесь в рабочих чатах
       </p>
 
       <form className={styles.form} onSubmit={handleSignUp}>
@@ -365,19 +365,11 @@ export default function SignUpForm({
 
       <p className={signUpStyles.legal}>
         Нажимая «Создать аккаунт», вы принимаете{" "}
-        <a
-          href="https://elbrusboot.camp/docs/end_user_license_agreement.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="#" target="_blank" rel="noopener noreferrer">
           Пользовательское соглашение
         </a>{" "}
         и{" "}
-        <a
-          href="https://elbrusboot.camp/privacy-policy/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="#" target="_blank" rel="noopener noreferrer">
           Политику конфиденциальности
         </a>
         .

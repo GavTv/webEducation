@@ -5,8 +5,8 @@ import UserProvider from "@/application/UserProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "webEducation",
-  description: "Клиент курса",
+  title: "My Work Chat",
+  description: "Рабочий чат для команды",
 };
 
 export default function RootLayout({

@@ -56,10 +56,10 @@ function createTransport() {
 }
 
 /** Отображаемый отправитель по умолчанию (можно переопределить SMTP_FROM). */
-const DEFAULT_SMTP_FROM = 'EduChat <noreply@elbrusboot.camp>';
+const DEFAULT_SMTP_FROM = 'My Work Chat <noreply@myworkchat.local>';
 
 /**
- * Поле From: приоритет SMTP_FROM, иначе бренд + noreply@elbrusboot.camp.
+ * Поле From: приоритет SMTP_FROM, иначе бренд по умолчанию.
  * Реальная доставка зависит от SMTP (например Gmail — см. .env.example).
  */
 function resolveFromAddress() {

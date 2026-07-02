@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
         <header className={styles.brandRow}>
           <img
             src="/educhat-logo.png?v=2"
-            alt="EduChat"
+            alt="My Work Chat"
             className={styles.brandLogoImg}
             width={944}
             height={283}

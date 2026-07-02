@@ -17,7 +17,7 @@ export function BrandLogo({ className }: BrandLogoProps) {
         height={52}
         decoding="async"
       />
-      <span className={styles.name}>EduChat</span>
+      <span className={styles.name}>My Work Chat</span>
     </div>
   );
 }
