@@ -21,3 +21,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: GROK_API_KEY
+        sync: false
+      - key: GROK_API_BASE
+        value: https://ai.starimg.ru/v1
+      - key: GROK_MODEL
+        value: grok-4

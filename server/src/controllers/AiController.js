@@ -1,4 +1,4 @@
-const GeminiService = require('../services/GeminiService');
+const GrokService = require('../services/GrokService');
 
 class AiController {
   static async chat(req, res) {
@@ -21,7 +21,7 @@ class AiController {
       }
 
       const userId = res.locals.user?.id;
-      const limit = GeminiService.checkDailyLimit(userId);
+      const limit = GrokService.checkDailyLimit(userId);
 
       if (!limit.allowed) {
         return res.status(429).json({
@@ -32,17 +32,17 @@ class AiController {
         });
       }
 
-      if (!GeminiService.isConfigured()) {
+      if (!GrokService.isConfigured()) {
         return res.status(503).json({
-          error: 'GEMINI_API_KEY_NOT_SET',
-          answer: GeminiService.getMissingKeyMessage(),
+          error: 'GROK_API_KEY_NOT_SET',
+          answer: GrokService.getMissingKeyMessage(),
           used: limit.used,
           limit: limit.limit,
         });
       }
 
       try {
-        const answer = await GeminiService.chat(message);
+        const answer = await GrokService.chat(message);
 
         return res.status(200).json({
           answer,
@@ -52,22 +52,22 @@ class AiController {
       } catch (error) {
         console.error('[AiController.chat]', error);
 
-        if (error.code === 'GEMINI_API_KEY_NOT_SET') {
+        if (error.code === 'GROK_API_KEY_NOT_SET') {
           return res.status(503).json({
-            error: 'GEMINI_API_KEY_NOT_SET',
-            answer: GeminiService.getMissingKeyMessage(),
+            error: 'GROK_API_KEY_NOT_SET',
+            answer: GrokService.getMissingKeyMessage(),
             used: limit.used,
             limit: limit.limit,
           });
         }
 
         const answer =
-          error.code === 'GEMINI_API_ERROR'
-            ? GeminiService.formatGeminiError(error.message)
+          error.code === 'GROK_API_ERROR'
+            ? GrokService.formatGrokError(error.message)
             : 'Сейчас AI не ответил. Попробуй позже.';
 
         return res.status(500).json({
-          error: 'GEMINI_ERROR',
+          error: 'GROK_ERROR',
           answer,
           used: limit.used,
           limit: limit.limit,
