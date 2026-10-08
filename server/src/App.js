@@ -19,6 +19,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 serverConfig(app);
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 app.use('/api', apiRouter);
 
 const server = http.createServer(app);
@@ -31,7 +35,7 @@ async function startServer() {
     console.error('[ensureMockAdmin] не удалось создать мок-админа:', error);
   }
 
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

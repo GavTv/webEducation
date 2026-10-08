@@ -1,24 +1,37 @@
-# Blueprint для Render.com: New → Blueprint → подключить репозиторий
+# Blueprint: Render → New → Blueprint → этот репозиторий.
+# Сервис и база в одном регионе, чтобы DB_PROD был внутренним адресом без SSL.
+databases:
+  - name: webeducation-db
+    databaseName: webeducation
+    user: webeducation
+    region: frankfurt
+
 services:
   - type: web
     name: webeducation-api
     runtime: node
+    region: frankfurt
+    plan: starter
     rootDir: server
     buildCommand: npm install
+    preDeployCommand: npm run migrate:prod
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: DB_PROD
-        sync: false
+        fromDatabase:
+          name: webeducation-db
+          property: connectionString
       - key: ACCESS_TOKEN_SECRET
         generateValue: true
       - key: REFRESH_TOKEN_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        sync: false
+        value: https://my-workchat.ru,https://www.my-workchat.ru
+      - key: CLIENT_URL
+        value: https://my-workchat.ru
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GROK_API_KEY
