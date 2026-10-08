@@ -1,13 +1,8 @@
 import { io, type Socket } from "socket.io-client";
+import { getApiOrigin } from "@/shared/lib/apiOrigin";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
 
-/** Origin API-сервера без `/api` (Socket.IO висит на том же хосте, что Express). */
-export function getApiOrigin(): string {
-  let raw = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000").trim();
-  raw = raw.replace(/\/+$/, "");
-  raw = raw.replace(/\/api$/i, "");
-  return raw;
-}
+export { getApiOrigin };
 
 export type ChatSocketUser = {
   id: number;

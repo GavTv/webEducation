@@ -1,8 +1,4 @@
-export function getApiOrigin() {
-  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-  return raw.replace(/\/+$/, "").replace(/\/api$/i, "");
-}
+import { getApiOrigin } from "@/shared/lib/apiOrigin";
 
 export function getAvatarSrc(
   avatarUrl?: string | null,

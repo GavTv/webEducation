@@ -2,6 +2,7 @@ import axios from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import type { ServerResponseType } from "@/shared/types";
 import type { UserWithTokenType } from "@/entities/user/model";
+import { getApiBaseUrl } from "./apiOrigin";
 import {
   getAccessToken,
   hydrateAccessTokenFromSessionStorage,
@@ -15,14 +16,6 @@ import {
 } from "./authSession";
 
 hydrateAccessTokenFromSessionStorage();
-
-/** Origin без хвостовых слэшей и без суффикса `/api`, чтобы не получить `/api/api/`. */
-function getApiBaseUrl() {
-  let raw = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000").trim();
-  raw = raw.replace(/\/+$/, "");
-  raw = raw.replace(/\/api$/i, "");
-  return `${raw}/api/`;
-}
 
 export const axiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
