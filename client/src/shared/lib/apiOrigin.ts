@@ -13,5 +13,12 @@ export function getApiOrigin(): string {
 }
 
 export function getApiBaseUrl(): string {
+  if (process.env.NODE_ENV === "production") {
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}/api/backend/`;
+    }
+    return `${RENDER_API_ORIGIN}/api/`;
+  }
+
   return `${getApiOrigin()}/api/`;
 }
