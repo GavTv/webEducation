@@ -20,6 +20,7 @@ hydrateAccessTokenFromSessionStorage();
 export const axiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true,
+  timeout: 75_000,
 });
 
 export {

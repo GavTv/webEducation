@@ -58,7 +58,18 @@ export const registerThunk = createAsyncThunk<
     }
     return rejectWithValue(data.message ?? "Ошибка при регистрации");
   } catch (error) {
-    const d = (error as AxiosError<ServerResponseType<null>>).response?.data;
+    const requestError = error as AxiosError<ServerResponseType<null>>;
+    if (requestError.code === "ECONNABORTED" || requestError.code === "ETIMEDOUT") {
+      return rejectWithValue(
+        "Сервер запускается после простоя. Подождите около минуты и попробуйте ещё раз.",
+      );
+    }
+    if (!requestError.response) {
+      return rejectWithValue(
+        "Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.",
+      );
+    }
+    const d = requestError.response.data;
     return rejectWithValue(d?.error ?? d?.message ?? "Ошибка при регистрации");
   }
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AtSign, Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { registerThunk } from "@/entities/user/api/UserApiThunk";
@@ -14,10 +14,6 @@ import {
   getRegisterUsernameFormatError,
   PASSWORD_RULES_MSG,
 } from "@/shared/lib/registerFieldValidators";
-import {
-  checkEmailAvailability,
-  checkUsernameAvailability,
-} from "@/shared/lib/authAvailabilityApi";
 import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
 import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { AuthField } from "../../auth/shared/AuthField";
@@ -50,11 +46,6 @@ export default function SignUpForm({
   const [signUpErrors, setSignUpErrors] = useState<
     Partial<Record<SignUpFieldKey, string | null>>
   >({});
-  const [emailChecking, setEmailChecking] = useState(false);
-  const [usernameChecking, setUsernameChecking] = useState(false);
-  const emailCheckGen = useRef(0);
-  const usernameCheckGen = useRef(0);
-
   const hasSignUpFieldErrors = Object.values(signUpErrors).some(Boolean);
 
   useAutoDismiss(hasSignUpFieldErrors, () => {
@@ -64,83 +55,6 @@ export default function SignUpForm({
   const clearSignUpField = useCallback((key: SignUpFieldKey) => {
     setSignUpErrors((p) => ({ ...p, [key]: null }));
   }, []);
-
-  const runEmailValidation = useCallback(async (raw: string): Promise<boolean> => {
-    const gen = ++emailCheckGen.current;
-    const formatErr = getRegisterEmailFormatError(raw);
-    if (formatErr) {
-      if (gen === emailCheckGen.current) {
-        setSignUpErrors((p) => ({ ...p, email: formatErr }));
-      }
-      return false;
-    }
-    if (gen === emailCheckGen.current) {
-      setSignUpErrors((p) => ({ ...p, email: null }));
-    }
-    setEmailChecking(true);
-    try {
-      const res = await checkEmailAvailability(raw);
-      if (gen !== emailCheckGen.current) return false;
-      if (!res.formatOk) {
-        setSignUpErrors((p) => ({
-          ...p,
-          email: res.message ?? "Некорректный email",
-        }));
-        return false;
-      }
-      if (res.available === false) {
-        setSignUpErrors((p) => ({
-          ...p,
-          email: res.message ?? "Email уже занят",
-        }));
-        return false;
-      }
-      setSignUpErrors((p) => ({ ...p, email: null }));
-      return true;
-    } finally {
-      if (gen === emailCheckGen.current) setEmailChecking(false);
-    }
-  }, []);
-
-  const runUsernameValidation = useCallback(
-    async (raw: string): Promise<boolean> => {
-      const gen = ++usernameCheckGen.current;
-      const formatErr = getRegisterUsernameFormatError(raw);
-      if (formatErr) {
-        if (gen === usernameCheckGen.current) {
-          setSignUpErrors((p) => ({ ...p, username: formatErr }));
-        }
-        return false;
-      }
-      if (gen === usernameCheckGen.current) {
-        setSignUpErrors((p) => ({ ...p, username: null }));
-      }
-      setUsernameChecking(true);
-      try {
-        const res = await checkUsernameAvailability(raw);
-        if (gen !== usernameCheckGen.current) return false;
-        if (!res.formatOk) {
-          setSignUpErrors((p) => ({
-            ...p,
-            username: res.message ?? "Некорректное имя пользователя",
-          }));
-          return false;
-        }
-        if (res.available === false) {
-          setSignUpErrors((p) => ({
-            ...p,
-            username: res.message ?? "Имя уже занято",
-          }));
-          return false;
-        }
-        setSignUpErrors((p) => ({ ...p, username: null }));
-        return true;
-      } finally {
-        if (gen === usernameCheckGen.current) setUsernameChecking(false);
-      }
-    },
-    [],
-  );
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,21 +74,6 @@ export default function SignUpForm({
 
     setSignUpErrors((p) => ({ ...p, ...patch }));
     if (Object.keys(patch).length > 0) return;
-
-    const okEmail = await runEmailValidation(signUpEmail);
-    const okUser = await runUsernameValidation(signUpUsername);
-    if (!okEmail || !okUser) return;
-
-    const pe2 = getRegisterPasswordError(signUpPassword);
-    if (pe2) {
-      setSignUpErrors((p) => ({ ...p, password: pe2 }));
-      return;
-    }
-    const ce2 = getRegisterConfirmError(signUpPassword, signUpConfirm);
-    if (ce2) {
-      setSignUpErrors((p) => ({ ...p, confirm: ce2 }));
-      return;
-    }
 
     try {
       await dispatch(
@@ -196,7 +95,7 @@ export default function SignUpForm({
   );
 
   const signUpSubmitDisabled = useMemo(() => {
-    if (isLoading || emailChecking || usernameChecking) return true;
+    if (isLoading) return true;
     if (getRegisterNameError(signUpName)) return true;
     if (getRegisterUsernameFormatError(signUpUsername)) return true;
     if (getRegisterEmailFormatError(signUpEmail)) return true;
@@ -206,8 +105,6 @@ export default function SignUpForm({
     return false;
   }, [
     isLoading,
-    emailChecking,
-    usernameChecking,
     signUpName,
     signUpUsername,
     signUpEmail,
@@ -250,11 +147,11 @@ export default function SignUpForm({
             clearSignUpField("username");
           }}
           onBlurField={() => {
-            void runUsernameValidation(signUpUsername);
+            const err = getRegisterUsernameFormatError(signUpUsername);
+            setSignUpErrors((p) => ({ ...p, username: err }));
           }}
           autoComplete="username"
           errorMessage={signUpErrors.username}
-          isChecking={usernameChecking}
         />
         <AuthField
           label="Email"
@@ -266,11 +163,11 @@ export default function SignUpForm({
             clearSignUpField("email");
           }}
           onBlurField={() => {
-            void runEmailValidation(signUpEmail);
+            const err = getRegisterEmailFormatError(signUpEmail);
+            setSignUpErrors((p) => ({ ...p, email: err }));
           }}
           autoComplete="email"
           errorMessage={signUpErrors.email}
-          isChecking={emailChecking}
         />
         <AuthField
           label="Пароль"
@@ -284,9 +181,6 @@ export default function SignUpForm({
           onBlurField={() => {
             const err = getRegisterPasswordError(signUpPassword);
             setSignUpErrors((p) => ({ ...p, password: err }));
-          }}
-          onFocusField={() => {
-            void runEmailValidation(signUpEmail);
           }}
           autoComplete="new-password"
           errorMessage={signUpErrors.password}
@@ -315,10 +209,6 @@ export default function SignUpForm({
           onBlurField={() => {
             const err = getRegisterConfirmError(signUpPassword, signUpConfirm);
             setSignUpErrors((p) => ({ ...p, confirm: err }));
-          }}
-          onFocusField={() => {
-            const pe = getRegisterPasswordError(signUpPassword);
-            setSignUpErrors((p) => ({ ...p, password: pe }));
           }}
           autoComplete="new-password"
           errorMessage={signUpErrors.confirm}
