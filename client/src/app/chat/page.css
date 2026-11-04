@@ -1387,6 +1387,123 @@
   }
 }
 
+@media (max-width: 600px) {
+  .chat-columns--thread .thread-panel {
+    padding: 8px 10px 0;
+    padding-bottom: calc(
+      58px + var(--app-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .chat-columns--thread .thread-header {
+    grid-template-columns: 34px 38px minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  .chat-columns--thread .thread-back-btn,
+  .chat-columns--thread .thread-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .chat-columns--thread .thread-back-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .chat-columns--thread .thread-avatar {
+    font-size: 16px;
+    border-radius: 11px;
+  }
+
+  .chat-columns--thread .thread-header-text h2 {
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .chat-columns--thread .thread-header-text p {
+    min-width: 0;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-columns--thread .ai-agent-switcher {
+    gap: 6px;
+    padding: 7px 0 0;
+  }
+
+  .chat-columns--thread .ai-agent-pill {
+    min-height: 30px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .chat-columns--thread .messages-wrap {
+    gap: 10px;
+    padding-top: 12px;
+    padding-bottom: 8px;
+  }
+
+  .chat-columns--thread .message-row {
+    gap: 7px;
+  }
+
+  .chat-columns--thread .message-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .chat-columns--thread .message-bubble {
+    max-width: calc(100vw - 70px);
+    padding: 8px 10px 7px;
+    border-radius: 14px;
+  }
+
+  .chat-columns--thread .message-author {
+    margin-bottom: 3px;
+    font-size: 12px;
+  }
+
+  .chat-columns--thread .message-bubble p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .chat-columns--thread .message-footer time {
+    font-size: 10px;
+  }
+
+  .chat-columns--thread .message-input-wrap {
+    left: 10px;
+    right: 10px;
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .chat-columns--thread .message-input {
+    gap: 4px;
+    padding: 5px 5px 5px 8px;
+  }
+
+  .chat-columns--thread .message-input input {
+    font-size: 14px;
+  }
+
+  .chat-columns--thread .message-emoji-btn,
+  .chat-columns--thread .message-send-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 /* Current user avatar in chat topbar */
 .topbar .chat-current-user-avatar {
   width: 88px;

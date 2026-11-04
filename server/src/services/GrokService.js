@@ -115,11 +115,11 @@ function formatGrokError(message) {
   if (/model.*not found|404|invalid model/i.test(message)) {
     return 'Модель Grok не найдена. Укажи id из «Доступные модели» в GROK_MODEL.';
   }
-  if (/503|UNAVAILABLE|high demand|timeout/i.test(message)) {
-    return 'Grok сейчас перегружен. Попробуй через минуту.';
+  if (/ECONNRESET|ENOTFOUND|fetch failed|ECONNREFUSED|ETIMEDOUT|UND_ERR|timeout/i.test(message)) {
+    return 'AI-провайдер не ответил вовремя. Проверь соединение и попробуй ещё раз чуть позже.';
   }
-  if (/ECONNRESET|ENOTFOUND|fetch failed|ECONNREFUSED|ETIMEDOUT/i.test(message)) {
-    return 'Не удалось связаться с Grok (ai.starimg.ru). Проверь сеть и GROK_API_BASE.';
+  if (/503|UNAVAILABLE|high demand|overloaded/i.test(message)) {
+    return 'Grok сейчас перегружен. Попробуй через минуту.';
   }
   return 'Сейчас AI не ответил. Подробности в логах сервера.';
 }
