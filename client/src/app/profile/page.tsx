@@ -9,9 +9,22 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
-import { Calendar, Camera, Loader2, LogOut, Trash2 } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Calendar,
+  Camera,
+  Code2,
+  GraduationCap,
+  Loader2,
+  LogOut,
+  PenLine,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import {
   deleteAccountThunk,
@@ -30,8 +43,16 @@ import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { formatPlatformSince } from "@/shared/lib/formatPlatformSince";
 import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
 import { getNameInitials } from "@/shared/lib/getNameInitials";
+import { aiAgents, type AiAgentId } from "@/shared/lib/aiAgents";
 import "../classes/page.css";
 import "./page.css";
+
+const aiAgentIcons: Record<AiAgentId, LucideIcon> = {
+  coder: Code2,
+  study: GraduationCap,
+  writer: PenLine,
+  career: BriefcaseBusiness,
+};
 
 function splitName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -464,6 +485,41 @@ export default function ProfilePage() {
               </div>
             </section>
           </form>
+
+          <section className="profile-ai-section" aria-labelledby="profile-ai-title">
+            <div className="profile-ai-heading">
+              <div>
+                <span className="profile-ai-eyebrow">
+                  <Sparkles size={15} aria-hidden />
+                  Персональная AI-команда
+                </span>
+                <h2 id="profile-ai-title">Помощники для ваших задач</h2>
+                <p>Выберите специалиста — он уже доступен в чате.</p>
+              </div>
+            </div>
+
+            <div className="profile-ai-grid">
+              {aiAgents.map((agent) => {
+                const AgentIcon = aiAgentIcons[agent.id];
+                return (
+                  <Link
+                    className={`profile-ai-card profile-ai-card--${agent.id}`}
+                    href={`${clientRoutes.chat}?agent=${agent.id}`}
+                    key={agent.id}
+                  >
+                    <span className="profile-ai-card-icon">
+                      <AgentIcon size={21} strokeWidth={2} aria-hidden />
+                    </span>
+                    <span className="profile-ai-card-content">
+                      <strong>{agent.name}</strong>
+                      <span>{agent.description}</span>
+                    </span>
+                    <span className="profile-ai-card-action">Открыть</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
 
           {!showAdminLink ? (
             <div className="profile-delete-row">

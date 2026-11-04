@@ -1,6 +1,7 @@
 import axios from "axios";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
 import { extractApiMessage } from "@/shared/lib/extractApiMessage";
+import type { AiAgentId } from "@/shared/lib/aiAgents";
 
 export type BotAiResponse = {
   answer: string;
@@ -33,9 +34,12 @@ function parseBotAiPayload(data: unknown): BotAiResponse | null {
   return null;
 }
 
-export async function sendBotAiMessage(message: string): Promise<BotAiResponse> {
+export async function sendBotAiMessage(
+  message: string,
+  agentId: AiAgentId = "coder",
+): Promise<BotAiResponse> {
   try {
-    const { data } = await axiosInstance.post("ai/chat", { message });
+    const { data } = await axiosInstance.post("ai/chat", { message, agentId });
     const parsed = parseBotAiPayload(data);
 
     if (parsed) {

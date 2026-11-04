@@ -52,6 +52,17 @@ ${PROGRAMMING_TOPICS.map((topic, index) => `${index + 1}. ${topic}`).join('\n')}
 - Не выдумывай файлы проекта. Если не хватает контекста, попроси показать файл или ошибку.
 `.trim();
 
+const AGENT_PROMPTS = {
+  coder: SYSTEM_PROMPT,
+  study: `Ты «Учебный навигатор» в My Work Chat. Помогай разбираться в школьных и профессиональных темах, составлять реалистичные планы занятий и проверять понимание короткими вопросами. Объясняй по-русски ясно и небольшими шагами, учитывай срок и уровень, который назвал пользователь. Не делай работу за ученика: помогай понять и самостоятельно выполнить её. Не выдумывай факты; если не уверен, скажи об этом. Не давай медицинских, юридических и инвестиционных рекомендаций.`,
+  writer: `Ты «Помощник по текстам» в My Work Chat. Помогай улучшать структуру, ясность, тон и грамотность писем, резюме, учебных и рабочих текстов. Сохраняй смысл и индивидуальный голос автора, предлагай варианты и кратко объясняй правки. Не придумывай достижения или факты от имени пользователя. Отвечай по-русски, если пользователь не попросил другой язык. Не помогай создавать опасный, незаконный или обманный контент.`,
+  career: `Ты «Карьерный навигатор» в My Work Chat. Помогай готовиться к собеседованиям, разбирать вакансии и составлять реалистичные планы развития навыков. Давай конкретные упражнения и примеры ответов, опирайся на опыт, который сообщил пользователь. Не обещай трудоустройство и не выдумывай сведения о компаниях. Не давай финансовых или юридических рекомендаций. Отвечай по-русски и поддерживай уважительный, деловой тон.`,
+};
+
+function getAgentSystemPrompt(agentId) {
+  return AGENT_PROMPTS[agentId] || SYSTEM_PROMPT;
+}
+
 function readApiKey() {
   loadEnv();
   return process.env.GROK_API_KEY?.trim() ?? '';
@@ -248,7 +259,7 @@ function extractAnswer(data) {
   return '';
 }
 
-async function callGrokModel(model, userMessage) {
+async function callGrokModel(model, userMessage, agentId) {
   const url = `${readApiBase()}/chat/completions`;
   const timeoutMs = Number(process.env.GROK_FETCH_TIMEOUT_MS ?? 30_000);
 
@@ -263,7 +274,7 @@ async function callGrokModel(model, userMessage) {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: getAgentSystemPrompt(agentId) },
           { role: 'user', content: userMessage },
         ],
         temperature: 0.4,
@@ -314,7 +325,7 @@ async function listGrokModels() {
   return discoveredModels;
 }
 
-async function askGrok(userMessage) {
+async function askGrok(userMessage, agentId) {
   if (!readApiKey()) {
     const err = new Error('GROK_API_KEY_NOT_SET');
     err.code = 'GROK_API_KEY_NOT_SET';
@@ -326,7 +337,7 @@ async function askGrok(userMessage) {
   let sawMissingModel = false;
 
   for (const model of models) {
-    const result = await callGrokModel(model, userMessage);
+    const result = await callGrokModel(model, userMessage, agentId);
     if (result.ok) return result.text;
 
     lastError = `${model}: ${result.status} ${result.detail}`;
@@ -339,7 +350,7 @@ async function askGrok(userMessage) {
       (model) => !models.includes(model),
     );
     for (const model of extra.slice(0, 3)) {
-      const result = await callGrokModel(model, userMessage);
+      const result = await callGrokModel(model, userMessage, agentId);
       if (result.ok) return result.text;
       lastError = `${model}: ${result.status} ${result.detail}`;
       if (!shouldRetryWithNextModel(result.status, result.detail)) break;
@@ -360,8 +371,8 @@ class GrokService {
     return checkDailyLimit(userId);
   }
 
-  static async chat(userMessage) {
-    return askGrok(userMessage);
+  static async chat(userMessage, agentId = 'coder') {
+    return askGrok(userMessage, agentId);
   }
 
   static formatGrokError(message) {

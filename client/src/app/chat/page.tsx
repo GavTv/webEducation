@@ -47,6 +47,7 @@ import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
 import { BrandLogo } from "@/widgets/appShell/BrandLogo";
 import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
 import { sendBotAiMessage as requestBotAiReply } from "@/shared/lib/botAiApi";
+import { aiAgents, findAiAgent, type AiAgentId } from "@/shared/lib/aiAgents";
 import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
 import "./page.css";
 
@@ -140,6 +141,7 @@ function ChatPageContent() {
   const showAdminLink = isAdmin(user?.role);
 
   const searchParams = useSearchParams();
+  const requestedAgentId = searchParams.get("agent");
   const [memberClasses, setMemberClasses] = useState<ClassRoomItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
@@ -172,6 +174,7 @@ function ChatPageContent() {
   const selectedChannelIdRef = useRef(selectedChannelId);
 
   const [botAiOpen, setBotAiOpen] = useState(false);
+  const [activeAgentId, setActiveAgentId] = useState<AiAgentId>("coder");
   const [botAiDraft, setBotAiDraft] = useState("");
   const [botAiLoading, setBotAiLoading] = useState(false);
   const [clearChatOpen, setClearChatOpen] = useState(false);
@@ -288,6 +291,27 @@ function ChatPageContent() {
     () => channelRooms.find((room) => room.id === selectedChannelId) ?? null,
     [channelRooms, selectedChannelId],
   );
+
+  const activeAgent = findAiAgent(activeAgentId);
+
+  useEffect(() => {
+    if (!requestedAgentId) return;
+    const agent = aiAgents.find((item) => item.id === requestedAgentId);
+    if (!agent) {
+      router.replace(clientRoutes.chat);
+      return;
+    }
+
+    setActiveAgentId(agent.id);
+    setBotAiOpen(true);
+    setSelectedChannelId(null);
+    setBotAiMessages((messages) =>
+      messages.length === 1 && messages[0]?.id === "bot-start"
+        ? [{ ...botAiStartMessages[0], author: agent.name, text: agent.greeting }]
+        : messages,
+    );
+    window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
+  }, [requestedAgentId, router]);
 
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -519,6 +543,60 @@ function ChatPageContent() {
     emitJoinRoom(socket, selectedChannelId);
   }, [selectedChannelId, wsConnected, user, botAiOpen]);
 
+  useEffect(() => {
+    if (
+      !user ||
+      !selectedGroupId ||
+      !selectedChannelId ||
+      wsConnected ||
+      botAiOpen
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: number;
+
+    const syncMessages = async () => {
+      try {
+        const messages = await fetchChannelMessages(
+          selectedGroupId,
+          selectedChannelId,
+        );
+        if (cancelled) return;
+
+        const loaded = messages.map((message) =>
+          serverMessageToUi(message, user.id),
+        );
+        setMessagesByRoomId((previous) => {
+          const current = previous[selectedChannelId] ?? [];
+          const ids = new Set(current.map((message) => message.id));
+          const freshMessages = loaded.filter(
+            (message) => !ids.has(message.id),
+          );
+          if (freshMessages.length === 0) return previous;
+          return {
+            ...previous,
+            [selectedChannelId]: [...current, ...freshMessages],
+          };
+        });
+      } catch {
+        if (!cancelled) setSocketError(true);
+      }
+
+      if (!cancelled) {
+        timer = window.setTimeout(syncMessages, 2500);
+      }
+    };
+
+    timer = window.setTimeout(syncMessages, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [user, selectedGroupId, selectedChannelId, wsConnected, botAiOpen]);
+
   const displayAuthorName = useMemo(() => {
     if (!userName) return firstName;
     return firstName;
@@ -673,6 +751,24 @@ function ChatPageContent() {
     }
   }, []);
 
+  const chooseAiAgent = useCallback(
+    (agentId: AiAgentId) => {
+      const agent = findAiAgent(agentId);
+      setActiveAgentId(agent.id);
+      setBotAiOpen(true);
+      setSelectedChannelId(null);
+      setMessageError(null);
+      setBotAiMessages((messages) =>
+        messages.length === 1 && messages[0]?.id === "bot-start"
+          ? [{ ...botAiStartMessages[0], author: agent.name, text: agent.greeting }]
+          : messages,
+      );
+      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
+      router.replace(`${clientRoutes.chat}?agent=${agent.id}`);
+    },
+    [router],
+  );
+
   const clearBotAiChat = useCallback(() => {
     setBotAiMessages(botAiStartMessages);
     window.localStorage.setItem(
@@ -822,11 +918,11 @@ function ChatPageContent() {
       setBotAiLoading(true);
 
       try {
-        const data = await requestBotAiReply(text);
+        const data = await requestBotAiReply(text, activeAgentId);
 
         addBotAiMessage({
           id: `botai-answer-${Date.now()}`,
-          author: "@botAi",
+          author: activeAgent.name,
           text: data.answer || "Не получилось получить ответ от AI.",
           time: formatTime(),
           isBot: true,
@@ -836,7 +932,7 @@ function ChatPageContent() {
         setBotAiLoading(false);
       }
     },
-    [addBotAiMessage, botAiDraft, botAiLoading],
+    [addBotAiMessage, activeAgent.name, activeAgentId, botAiDraft, botAiLoading],
   );
 
 
@@ -1279,7 +1375,11 @@ function ChatPageContent() {
                 {botAiOpen ? "🤖" : selectedChannel?.icon ?? "#"}
               </div>
               <div className="thread-header-text">
-                <h2>{botAiOpen ? "@botAi" : selectedChannel?.title ?? "Чат"}</h2>
+                <h2>
+                  {botAiOpen
+                    ? `@botAi · ${activeAgent.shortName}`
+                    : selectedChannel?.title ?? "Чат"}
+                </h2>
                 <p>
                   <span
                     className={`chat-online-dot${
@@ -1292,7 +1392,7 @@ function ChatPageContent() {
                     aria-hidden
                   />
                   {botAiOpen
-                    ? "AI-помощник: код, учёба и немного общения"
+                    ? activeAgent.description
                     : isRealChat
                       ? wsConnected
                         ? selectedGroupRoom?.onlineLabel ?? "Подключено"
@@ -1339,6 +1439,24 @@ function ChatPageContent() {
                 </div>
               ) : null}
             </header>
+
+            {botAiOpen ? (
+              <nav className="ai-agent-switcher" aria-label="AI-помощники">
+                {aiAgents.map((agent) => (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    className={`ai-agent-pill${
+                      agent.id === activeAgentId ? " ai-agent-pill--active" : ""
+                    }`}
+                    aria-pressed={agent.id === activeAgentId}
+                    onClick={() => chooseAiAgent(agent.id)}
+                  >
+                    {agent.shortName}
+                  </button>
+                ))}
+              </nav>
+            ) : null}
 
             <div className="messages-wrap">
               {threadEmptyHint ? (

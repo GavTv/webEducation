@@ -653,6 +653,39 @@
   cursor: pointer;
 }
 
+.ai-agent-switcher {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ai-agent-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-agent-pill {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #aab3c9;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ai-agent-pill:hover,
+.ai-agent-pill--active {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(109, 40, 217, 0.2);
+  color: #e9d5ff;
+}
+
 .chat-action-error {
   margin: 6px 4px 0;
   color: #fca5a5;
