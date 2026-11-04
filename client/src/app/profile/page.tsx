@@ -306,7 +306,13 @@ export default function ProfilePage() {
         return;
       }
 
-      setBio(response.answer.slice(0, 500));
+      const draft = response.answer.trim();
+      if (!draft) {
+        setProfileAiError("AI вернул пустое описание. Попробуйте ещё раз.");
+        return;
+      }
+
+      setBio(draft.slice(0, 500));
       setProfileAiOpen(false);
       setSuccessMessage("Черновик добавлен. Проверьте его и сохраните профиль.");
     } catch {
@@ -314,7 +320,7 @@ export default function ProfilePage() {
     } finally {
       setProfileAiLoading(false);
     }
-  }, [fullName, profileAiLoading, profileFacts, user?.name]);
+  }, [fullName, profileAiLoading, profileFacts, user]);
 
   if (!isInitialized || !authChecked || !user) {
     return (

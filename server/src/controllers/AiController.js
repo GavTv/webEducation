@@ -82,9 +82,14 @@ class AiController {
           error.code === 'GROK_API_ERROR'
             ? GrokService.formatGrokError(error.message)
             : 'Сейчас AI не ответил. Попробуй позже.';
+        const timedOut =
+          error.code === 'GROK_API_ERROR' &&
+          /timeout|timed out|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|ABORT_ERR/i.test(
+            error.message,
+          );
 
-        return res.status(500).json({
-          error: 'GROK_ERROR',
+        return res.status(timedOut ? 504 : 502).json({
+          error: timedOut ? 'GROK_UPSTREAM_TIMEOUT' : 'GROK_UPSTREAM_ERROR',
           answer,
           used: limit.used,
           limit: limit.limit,

@@ -33,7 +33,7 @@ export {
 registerRefreshRequest(async () => {
   const { data } = await axiosInstance.get<
     ServerResponseType<UserWithTokenType>
-  >("auth/refresh");
+  >("auth/refresh", { timeout: 20_000 });
   return data;
 });
 

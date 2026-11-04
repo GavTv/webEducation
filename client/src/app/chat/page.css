@@ -6,8 +6,12 @@
 }
 
 .educhat-page--loading {
+  display: flex;
+  min-height: 100dvh;
+  padding: 24px;
   align-items: center;
   justify-content: center;
+  background: #090b18;
 }
 
 .chat-mobile-topbar {
@@ -84,9 +88,55 @@
 
 .desktop-shell--loading {
   min-height: 320px;
-  height: 50dvh;
+  min-height: 50dvh;
   width: min(var(--app-shell-max-width), 90vw);
-  grid-template-columns: 1fr;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 24px;
+  background: rgba(16, 20, 39, 0.88);
+}
+
+.chat-loading-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px;
+  color: #cbd5e1;
+  text-align: center;
+}
+
+.chat-loading-card p {
+  margin: 4px 0 0;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.chat-loading-card > span:last-child {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.chat-loading-indicator {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(167, 139, 250, 0.24);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: chat-loading-spin 0.8s linear infinite;
+}
+
+@keyframes chat-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-loading-indicator {
+    animation: none;
+  }
 }
 
 .chat-columns {

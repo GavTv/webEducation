@@ -1639,18 +1639,20 @@ function ChatPageContent() {
 }
 
 function ChatFallback() {
-
-
   return (
-    <main className="educhat-page educhat-page--loading">
-      <section className="desktop-shell desktop-shell--loading" />
+    <main className="educhat-page educhat-page--loading" role="status" aria-live="polite">
+      <section className="desktop-shell desktop-shell--loading">
+        <div className="chat-loading-card">
+          <span className="chat-loading-indicator" aria-hidden="true" />
+          <p>Подключаем чаты…</p>
+          <span>Это может занять несколько секунд.</span>
+        </div>
+      </section>
     </main>
   );
 }
 
 export default function ChatPage() {
-
-
   return (
     <Suspense fallback={<ChatFallback />}>
       <ChatPageContent />
