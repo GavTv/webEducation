@@ -26,7 +26,7 @@
     "seed:admin:prod": "NODE_ENV=production npx sequelize-cli db:seed --seed 20260517120100-admin-user.js",
     "cleanup:demo": "NODE_ENV=development node scripts/remove-demo-seed-data.js",
     "cleanup:demo:prod": "NODE_ENV=production node scripts/remove-demo-seed-data.js",
-    "start": "node src/App.js",
+    "start": "if [ \"$NODE_ENV\" = \"production\" ]; then npm run migrate:prod || exit $?; fi; node src/App.js",
     "db": "npx sequelize-cli",
     "migrate": "npx sequelize-cli db:migrate",
     "migrate:prod": "NODE_ENV=production npx sequelize-cli db:migrate",
