@@ -16,3 +16,9 @@ services:
         value: https://my-workchat.ru,https://www.my-workchat.ru
       - key: CLIENT_URL
         value: https://my-workchat.ru
+      - key: GROK_API_BASE
+        value: https://ai.starimg.ru/v1
+      - key: GROK_MODEL
+        value: grok-4.7
+      - key: GROK_API_KEY
+        sync: false

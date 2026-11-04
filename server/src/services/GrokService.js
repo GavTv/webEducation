@@ -7,7 +7,7 @@ loadEnv();
 
 const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT ?? 20);
 const DEFAULT_BASE = 'https://ai.starimg.ru/v1';
-const DEFAULT_MODEL = 'grok-4';
+const DEFAULT_MODEL = 'grok-4.7';
 
 const dailyLimits = new Map();
 let discoveredModels = null;
@@ -244,6 +244,16 @@ async function fetchGrok(url, options) {
     });
   } catch (error) {
     if (!isNetworkFailure(error)) throw error;
+    const hostname = new URL(url).hostname;
+    const addresses = await dns.promises
+      .lookup(hostname, { all: true, family: 4 })
+      .catch(() => []);
+    const usesFakeIp = addresses.some(({ address }) => {
+      const [first, second] = address.split('.').map(Number);
+      return first === 198 && second === 18;
+    });
+
+    if (!usesFakeIp) throw error;
     return fetchDirect(url, options);
   }
 }
