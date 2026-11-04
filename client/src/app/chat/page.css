@@ -3,6 +3,8 @@
     "Segoe UI", sans-serif;
   font-family: var(--educhat-font);
   color: #ffffff;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .educhat-page--loading {
@@ -1176,7 +1178,7 @@
     height: 100%;
     padding: 12px 14px 0;
     padding-bottom: calc(
-      68px + var(--app-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px)
+      60px + var(--app-mobile-tabbar-height)
     );
     background: var(--app-page-bg-base);
     box-sizing: border-box;
@@ -1199,13 +1201,17 @@
     margin-top: 0;
     flex-shrink: 0;
     width: auto;
-    padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 0;
     background: var(--app-page-bg-base);
     box-shadow: 0 -16px 32px rgba(5, 9, 18, 0.95);
   }
 
   .chat-columns--thread .thread-panel .message-input {
     width: 100%;
+  }
+
+  .chat-columns--thread .message-input input {
+    font-size: 16px;
   }
 
   .channels-panel-header {
@@ -1440,9 +1446,7 @@
 @media (max-width: 600px) {
   .chat-columns--thread .thread-panel {
     padding: 8px 10px 0;
-    padding-bottom: calc(
-      58px + var(--app-mobile-tabbar-height) + env(safe-area-inset-bottom, 0px)
-    );
+    padding-bottom: calc(60px + var(--app-mobile-tabbar-height));
   }
 
   .chat-columns--thread .thread-header {
@@ -1500,6 +1504,9 @@
     gap: 10px;
     padding-top: 12px;
     padding-bottom: 8px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .chat-columns--thread .message-row {
@@ -1535,7 +1542,7 @@
   .chat-columns--thread .message-input-wrap {
     left: 10px;
     right: 10px;
-    padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 0;
   }
 
   .chat-columns--thread .message-input {
@@ -1544,7 +1551,7 @@
   }
 
   .chat-columns--thread .message-input input {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .chat-columns--thread .message-emoji-btn,

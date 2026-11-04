@@ -168,7 +168,7 @@ function ChatPageContent() {
   const [messageSending, setMessageSending] = useState(false);
   const [historyRetry, setHistoryRetry] = useState(0);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesWrapRef = useRef<HTMLDivElement>(null);
   const lastScrolledRoomRef = useRef<number | null>(null);
   const socketRef = useRef<ReturnType<typeof createChatSocket> | null>(null);
   const selectedChannelIdRef = useRef(selectedChannelId);
@@ -609,7 +609,13 @@ function ChatPageContent() {
     const behavior = roomChanged ? "auto" : "smooth";
 
     const id = requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+      const messagesWrap = messagesWrapRef.current;
+      if (!messagesWrap) return;
+
+      messagesWrap.scrollTo({
+        top: messagesWrap.scrollHeight,
+        behavior,
+      });
     });
 
     return () => cancelAnimationFrame(id);
@@ -1520,7 +1526,7 @@ function ChatPageContent() {
               </div>
             ) : null}
 
-            <div className="messages-wrap">
+            <div ref={messagesWrapRef} className="messages-wrap">
               {threadEmptyHint ? (
                 <p className="chat-thread-empty">{threadEmptyHint}</p>
               ) : (
@@ -1603,7 +1609,7 @@ function ChatPageContent() {
                   </div>
                 </article>
               ) : null}
-              <div ref={messagesEndRef} className="messages-end" aria-hidden />
+              <div className="messages-end" aria-hidden />
             </div>
 
             <ChatMessageInput
@@ -1633,7 +1639,7 @@ function ChatPageContent() {
         </div>
       </section>
 
-      <MobileBottomNav active="classes" showAdminLink={showAdminLink} />
+      <MobileBottomNav active="chat" showAdminLink={showAdminLink} />
     </main>
   );
 }
