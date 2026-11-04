@@ -1,6 +1,7 @@
 import { axiosInstance } from "@/shared/lib/axiosInstance";
 import { extractApiMessage } from "@/shared/lib/extractApiMessage";
 import type { ServerResponseType } from "@/shared/types";
+import type { ChatMessage } from "@/shared/lib/chatSocket";
 
 export type ClassRoomItem = {
   id: number;
@@ -33,6 +34,37 @@ export type GroupChannelsResponse = {
   group: { id: number; title: string; color: string };
   channels: ChatChannelItem[];
 };
+
+export async function fetchChannelMessages(
+  groupId: number,
+  channelId: number,
+): Promise<ChatMessage[]> {
+  const { data } = await axiosInstance.get<
+    ServerResponseType<{ messages: ChatMessage[] }>
+  >(`classes/${groupId}/channels/${channelId}/messages`, { timeout: 30000 });
+
+  if (data.statusCode !== 200 || !data.data?.messages) {
+    throw new Error(data.message ?? "Не удалось загрузить сообщения");
+  }
+
+  return data.data.messages;
+}
+
+export async function sendChannelMessage(
+  groupId: number,
+  channelId: number,
+  text: string,
+): Promise<ChatMessage> {
+  const { data } = await axiosInstance.post<
+    ServerResponseType<{ message: ChatMessage }>
+  >(`classes/${groupId}/channels/${channelId}/messages`, { text }, { timeout: 30000 });
+
+  if (data.statusCode !== 201 || !data.data?.message) {
+    throw new Error(data.message ?? "Не удалось отправить сообщение");
+  }
+
+  return data.data.message;
+}
 
 export async function fetchClasses(): Promise<ClassRoomItem[]> {
   const { data } = await axiosInstance.get<

@@ -1,5 +1,6 @@
 const ClassRoomService = require('../services/ClassRoomService');
 const formatResponse = require('../utils/formatResponse');
+const { sanitizeAvatarUrl } = require('../utils/avatarFiles');
 
 class ClassController {
   static async list(req, res) {
@@ -181,6 +182,81 @@ class ClassController {
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка при загрузке чатов группы'));
+    }
+  }
+
+  static async listChannelMessages(req, res) {
+    try {
+      const groupId = Number(req.params.groupId);
+      const channelId = Number(req.params.channelId);
+      const result = await ClassRoomService.listChannelMessages(
+        groupId,
+        channelId,
+        res.locals.user,
+      );
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Чат не найден'));
+      }
+      if (result.error === 'forbidden') {
+        return res.status(403).json(formatResponse(403, 'Нет доступа к этому чату'));
+      }
+
+      const messages = result.messages.map((message) => {
+        const plain = message.get({ plain: true });
+        if (plain.sender) {
+          plain.sender.avatarUrl = sanitizeAvatarUrl(plain.sender.avatarUrl);
+        }
+        return plain;
+      });
+
+      return res.status(200).json(formatResponse(200, 'Сообщения чата', { messages }));
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json(formatResponse(500, 'Не удалось загрузить сообщения'));
+    }
+  }
+
+  static async sendChannelMessage(req, res) {
+    try {
+      const groupId = Number(req.params.groupId);
+      const channelId = Number(req.params.channelId);
+      const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+
+      if (!text) {
+        return res.status(400).json(formatResponse(400, 'Введите текст сообщения'));
+      }
+      if (text.length > 1000) {
+        return res.status(400).json(formatResponse(400, 'Сообщение должно быть короче 1000 символов'));
+      }
+
+      const result = await ClassRoomService.sendChannelMessage(
+        groupId,
+        channelId,
+        res.locals.user,
+        text,
+      );
+
+      if (result.error === 'not_found') {
+        return res.status(404).json(formatResponse(404, 'Чат не найден'));
+      }
+      if (result.error === 'forbidden') {
+        return res.status(403).json(formatResponse(403, 'Нет доступа к этому чату'));
+      }
+
+      const message = result.message.get({ plain: true });
+      if (message.sender) {
+        message.sender.avatarUrl = sanitizeAvatarUrl(message.sender.avatarUrl);
+      }
+
+      req.app.get('io')
+        ?.to(`room:${channelId}`)
+        .emit('message:new', { message });
+
+      return res.status(201).json(formatResponse(201, 'Сообщение отправлено', { message }));
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json(formatResponse(500, 'Не удалось отправить сообщение'));
     }
   }
 

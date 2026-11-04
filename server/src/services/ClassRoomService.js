@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { Room, RoomMember, Message } = require('../db/models');
+const { Room, RoomMember, Message, User } = require('../db/models');
 
 const COLORS = ['purple', 'blue', 'green'];
 
@@ -97,6 +97,65 @@ class ClassRoomService {
         return plain;
       }),
     };
+  }
+
+  static async listChannelMessages(groupId, channelId, user) {
+    const channel = await Room.findOne({
+      where: { id: channelId, parentRoomId: groupId },
+    });
+    if (!channel) return { error: 'not_found' };
+
+    const isMember = await this.isMember(groupId, user.id);
+    const group = await Room.findByPk(groupId);
+    const canManage = this.canUserManageRoom(user, group);
+    if (!isMember && !canManage) return { error: 'forbidden' };
+
+    const messages = await Message.findAll({
+      where: { roomId: channelId },
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+        },
+      ],
+      order: [['createdAt', 'ASC']],
+    });
+
+    return { messages };
+  }
+
+  static async sendChannelMessage(groupId, channelId, user, text) {
+    const channel = await Room.findOne({
+      where: { id: channelId, parentRoomId: groupId },
+    });
+    if (!channel) return { error: 'not_found' };
+
+    const isMember = await this.isMember(groupId, user.id);
+    const group = await Room.findByPk(groupId);
+    const canManage = this.canUserManageRoom(user, group);
+    if (!isMember && !canManage) return { error: 'forbidden' };
+
+    const message = await Message.create({
+      roomId: channelId,
+      senderId: user.id,
+      senderRole: ['student', 'teacher', 'admin'].includes(user.role)
+        ? user.role
+        : 'student',
+      text,
+    });
+
+    const created = await Message.findByPk(message.id, {
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'name', 'email', 'username', 'avatarUrl'],
+        },
+      ],
+    });
+
+    return { message: created };
   }
 
   static async ensureDefaultChannel(group) {

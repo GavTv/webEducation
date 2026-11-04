@@ -26,7 +26,7 @@ app.get('/health', (_req, res) => {
 app.use('/api', apiRouter);
 
 const server = http.createServer(app);
-initChatSocket(server);
+app.set('io', initChatSocket(server));
 
 async function startServer() {
   try {

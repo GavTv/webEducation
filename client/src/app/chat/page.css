@@ -606,6 +606,59 @@
   font-size: 14px;
 }
 
+.chat-reconnect-btn {
+  margin: 6px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #c4b5fd;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chat-online-dot--pending {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.chat-online-dot--error {
+  background: #f87171;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+}
+
+.chat-thread-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 40px auto 0;
+  max-width: 340px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.chat-thread-state--error {
+  color: #fca5a5;
+}
+
+.chat-thread-state button {
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(139, 92, 246, 0.12);
+  color: #ddd6fe;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chat-action-error {
+  margin: 6px 4px 0;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
 .thread-header-text {
   flex: 1;
   min-width: 0;

@@ -11,6 +11,18 @@ router.get(
   ClassController.listChannels,
 );
 
+router.get(
+  '/:groupId/channels/:channelId/messages',
+  verifyAccessToken,
+  ClassController.listChannelMessages,
+);
+
+router.post(
+  '/:groupId/channels/:channelId/messages',
+  verifyAccessToken,
+  ClassController.sendChannelMessage,
+);
+
 router.post(
   '/:groupId/channels',
   verifyAccessToken,

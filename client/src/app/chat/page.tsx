@@ -18,8 +18,10 @@ import {
   deleteGroupChannel,
   fetchClassAccess,
   fetchClasses,
+  fetchChannelMessages,
   fetchGroupChannels,
   joinClass,
+  sendChannelMessage,
   type ChatChannelItem,
   type ClassRoomItem,
 } from "@/shared/lib/classesApi";
@@ -27,7 +29,6 @@ import {
   createChatSocket,
   emitClearRoom,
   emitJoinRoom,
-  emitSendMessage,
   type ChannelHistoryPayload,
   type MessageNewPayload,
   type RoomClearedPayload,
@@ -142,6 +143,7 @@ function ChatPageContent() {
   const [memberClasses, setMemberClasses] = useState<ClassRoomItem[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
+  const [socketError, setSocketError] = useState(false);
   const groupRooms = useMemo(
     () => memberClasses.map(classToChatRoom),
     [memberClasses],
@@ -158,6 +160,11 @@ function ChatPageContent() {
   const [messagesByRoomId, setMessagesByRoomId] = useState<
     Record<number, UiChatMessage[]>
   >({});
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [messageSending, setMessageSending] = useState(false);
+  const [historyRetry, setHistoryRetry] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastScrolledRoomRef = useRef<number | null>(null);
@@ -321,6 +328,48 @@ function ChatPageContent() {
     selectedChannelIdRef.current = selectedChannelId;
   }, [selectedChannelId]);
 
+  useEffect(() => {
+    if (!user || !selectedGroupId || !selectedChannelId || botAiOpen) return;
+
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(null);
+
+    void fetchChannelMessages(selectedGroupId, selectedChannelId)
+      .then((messages) => {
+        if (cancelled) return;
+        const loaded = messages.map((message) =>
+          serverMessageToUi(message, user.id),
+        );
+        setMessagesByRoomId((previous) => {
+          const current = previous[selectedChannelId] ?? [];
+          const ids = new Set(loaded.map((message) => message.id));
+          return {
+            ...previous,
+            [selectedChannelId]: [
+              ...loaded,
+              ...current.filter((message) => !ids.has(message.id)),
+            ],
+          };
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setHistoryError(
+          error instanceof Error
+            ? error.message
+            : "Не удалось загрузить сообщения",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, selectedGroupId, selectedChannelId, botAiOpen, historyRetry]);
+
   const loadGroupChannels = useCallback(async (groupId: number) => {
     setChannelsLoading(true);
     try {
@@ -399,9 +448,13 @@ function ChatPageContent() {
 
     const onConnect = () => {
       setWsConnected(true);
-      setMessagesByRoomId({});
+      setSocketError(false);
     };
     const onDisconnect = () => setWsConnected(false);
+    const onConnectError = () => {
+      setWsConnected(false);
+      setSocketError(true);
+    };
 
     const onHistory = (payload: RoomHistoryPayload | ChannelHistoryPayload) => {
       const roomId =
@@ -411,6 +464,7 @@ function ChatPageContent() {
             ? payload.channelId
             : 0;
       if (!roomId) return;
+      setHistoryError(null);
       setMessagesByRoomId((prev) => ({
         ...prev,
         ...applyHistory(roomId, payload.messages, user.id),
@@ -430,6 +484,7 @@ function ChatPageContent() {
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
     socket.on("room:history", onHistory);
     socket.on("channel:history", onHistory);
     const onRoomCleared = (payload: RoomClearedPayload) => {
@@ -445,6 +500,7 @@ function ChatPageContent() {
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
       socket.off("room:history", onHistory);
       socket.off("channel:history", onHistory);
       socket.off("message:new", onMessageNew);
@@ -575,6 +631,7 @@ function ChatPageContent() {
   const selectChannel = useCallback((id: number) => {
     setBotAiOpen(false);
     setSelectedChannelId(id);
+    setMessageError(null);
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "false");
@@ -630,20 +687,42 @@ function ChatPageContent() {
   };
 
   const sendMessage = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       const text = draft.trim();
 
-      if (!text || !selectedChannelId) return;
+      if (!text || !selectedChannelId || !selectedGroupId || messageSending) return;
 
-      const socket = socketRef.current;
-      if (!socket?.connected) return;
-
-      emitSendMessage(socket, selectedChannelId, text);
-      setDraft("");
+      setMessageSending(true);
+      setMessageError(null);
+      try {
+        const message = await sendChannelMessage(
+          selectedGroupId,
+          selectedChannelId,
+          text,
+        );
+        const uiMessage = serverMessageToUi(message, user?.id);
+        setMessagesByRoomId((previous) => {
+          const current = previous[selectedChannelId] ?? [];
+          if (current.some((item) => item.id === uiMessage.id)) return previous;
+          return {
+            ...previous,
+            [selectedChannelId]: [...current, uiMessage],
+          };
+        });
+        setDraft("");
+      } catch (error) {
+        setMessageError(
+          error instanceof Error
+            ? error.message
+            : "Не удалось отправить сообщение",
+        );
+      } finally {
+        setMessageSending(false);
+      }
     },
-    [draft, selectedChannelId],
+    [draft, selectedChannelId, selectedGroupId, messageSending, user],
   );
 
 
@@ -1202,17 +1281,37 @@ function ChatPageContent() {
               <div className="thread-header-text">
                 <h2>{botAiOpen ? "@botAi" : selectedChannel?.title ?? "Чат"}</h2>
                 <p>
-                  <span className="chat-online-dot" aria-hidden />
+                  <span
+                    className={`chat-online-dot${
+                      isRealChat && !wsConnected
+                        ? socketError
+                          ? " chat-online-dot--error"
+                          : " chat-online-dot--pending"
+                        : ""
+                    }`}
+                    aria-hidden
+                  />
                   {botAiOpen
                     ? "AI-помощник: код, учёба и немного общения"
                     : isRealChat
                       ? wsConnected
                         ? selectedGroupRoom?.onlineLabel ?? "Подключено"
-                        : "Подключение…"
+                        : socketError
+                          ? "Чат доступен · переподключение…"
+                          : "Подключение…"
                       : selectedGroupRoom
                         ? `Группа: ${selectedGroupRoom.title}`
                         : "Выберите чат в группе"}
                 </p>
+                {isRealChat && socketError ? (
+                  <button
+                    type="button"
+                    className="chat-reconnect-btn"
+                    onClick={() => socketRef.current?.connect()}
+                  >
+                    Переподключить чат
+                  </button>
+                ) : null}
               </div>
               {canClearActiveChat || (isRealChat && canManageChat) ? (
                 <div className="thread-header-actions">
@@ -1247,6 +1346,20 @@ function ChatPageContent() {
               ) : (
                 <div className="chat-date-pill">Сегодня</div>
               )}
+              {isRealChat && historyLoading && threadMessages.length === 0 ? (
+                <p className="chat-thread-state">Загружаем переписку…</p>
+              ) : null}
+              {isRealChat && historyError ? (
+                <div className="chat-thread-state chat-thread-state--error" role="alert">
+                  <span>{historyError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryRetry((attempt) => attempt + 1)}
+                  >
+                    Загрузить ещё раз
+                  </button>
+                </div>
+              ) : null}
               {threadMessages.map((message) => (
                 <article
                   key={message.id}
@@ -1319,18 +1432,23 @@ function ChatPageContent() {
               onSubmit={botAiOpen ? sendBotAiMessage : sendMessage}
               disabled={
                 !hasActiveThread ||
-                (botAiOpen ? botAiLoading : isRealChat && !wsConnected)
+                (botAiOpen ? botAiLoading : messageSending)
               }
               placeholder={
                 !hasActiveThread
                   ? "Сначала выберите чат"
                   : botAiOpen
                     ? "Сообщение @botAi..."
-                    : isRealChat && !wsConnected
-                      ? "Подключение к чату…"
+                    : messageSending
+                      ? "Отправляем сообщение…"
                       : "Напишите сообщение..."
               }
             />
+            {messageError ? (
+              <p className="chat-action-error" role="alert">
+                {messageError}
+              </p>
+            ) : null}
           </aside>
         </div>
       </section>
