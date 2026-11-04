@@ -8,6 +8,7 @@ export type UserType = {
   role?: UserRole;
   avatarUrl?: string | null;
   phone?: string | null;
+  bio?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

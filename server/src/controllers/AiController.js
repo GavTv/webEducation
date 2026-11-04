@@ -6,11 +6,22 @@ class AiController {
       const message =
         typeof req.body?.message === 'string' ? req.body.message.trim() : '';
       const requestedAgentId = req.body?.agentId;
-      const agentId = ['coder', 'study', 'writer', 'career'].includes(
-        requestedAgentId,
-      )
+      const supportedAgents = [
+        'coder',
+        'study',
+        'writer',
+        'career',
+        'profile',
+        'reply',
+        'summary',
+      ];
+      const agentId = supportedAgents.includes(requestedAgentId)
         ? requestedAgentId
         : 'coder';
+      const context =
+        typeof req.body?.context === 'string'
+          ? req.body.context.trim().slice(0, 3000)
+          : '';
 
       if (!message) {
         return res.status(400).json({
@@ -48,7 +59,7 @@ class AiController {
       }
 
       try {
-        const answer = await GrokService.chat(message, agentId);
+        const answer = await GrokService.chat(message, agentId, context);
 
         return res.status(200).json({
           answer,

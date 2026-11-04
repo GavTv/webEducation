@@ -57,6 +57,9 @@ const AGENT_PROMPTS = {
   study: `Ты «Учебный навигатор» в My Work Chat. Помогай разбираться в школьных и профессиональных темах, составлять реалистичные планы занятий и проверять понимание короткими вопросами. Объясняй по-русски ясно и небольшими шагами, учитывай срок и уровень, который назвал пользователь. Не делай работу за ученика: помогай понять и самостоятельно выполнить её. Не выдумывай факты; если не уверен, скажи об этом. Не давай медицинских, юридических и инвестиционных рекомендаций.`,
   writer: `Ты «Помощник по текстам» в My Work Chat. Помогай улучшать структуру, ясность, тон и грамотность писем, резюме, учебных и рабочих текстов. Сохраняй смысл и индивидуальный голос автора, предлагай варианты и кратко объясняй правки. Не придумывай достижения или факты от имени пользователя. Отвечай по-русски, если пользователь не попросил другой язык. Не помогай создавать опасный, незаконный или обманный контент.`,
   career: `Ты «Карьерный навигатор» в My Work Chat. Помогай готовиться к собеседованиям, разбирать вакансии и составлять реалистичные планы развития навыков. Давай конкретные упражнения и примеры ответов, опирайся на опыт, который сообщил пользователь. Не обещай трудоустройство и не выдумывай сведения о компаниях. Не давай финансовых или юридических рекомендаций. Отвечай по-русски и поддерживай уважительный, деловой тон.`,
+  profile: `Ты редактор профиля My Work Chat. На основе только фактов, которые дал пользователь, составь ясное и естественное описание профиля до 500 символов. Не выдумывай образование, опыт, навыки или достижения. Если сведений мало, задай уточняющие вопросы вместо готового описания. Верни только текст описания без кавычек и пояснений.`,
+  reply: `Ты помощник ответа в My Work Chat. Пользователь передаст фрагмент переписки и попросит подготовить ответ. Учитывай контекст и тон участников, предложи один короткий готовый черновик. Не отправляй его за пользователя и не выдумывай факты. Верни только текст ответа.`,
+  summary: `Ты секретарь чата My Work Chat. Пользователь передаст фрагмент переписки. Составь короткую выжимку: основные темы, принятые решения и задачи со сроками, если они явно указаны. Не выдумывай ответственных, сроки и договорённости. Если задач или решений нет, прямо так и напиши.`,
 };
 
 function getAgentSystemPrompt(agentId) {
@@ -259,7 +262,7 @@ function extractAnswer(data) {
   return '';
 }
 
-async function callGrokModel(model, userMessage, agentId) {
+async function callGrokModel(model, userMessage, agentId, context) {
   const url = `${readApiBase()}/chat/completions`;
   const timeoutMs = Number(process.env.GROK_FETCH_TIMEOUT_MS ?? 30_000);
 
@@ -275,6 +278,7 @@ async function callGrokModel(model, userMessage, agentId) {
         model,
         messages: [
           { role: 'system', content: getAgentSystemPrompt(agentId) },
+          ...(context ? [{ role: 'user', content: `Контекст переписки:\n${context}` }] : []),
           { role: 'user', content: userMessage },
         ],
         temperature: 0.4,
@@ -325,7 +329,7 @@ async function listGrokModels() {
   return discoveredModels;
 }
 
-async function askGrok(userMessage, agentId) {
+async function askGrok(userMessage, agentId, context) {
   if (!readApiKey()) {
     const err = new Error('GROK_API_KEY_NOT_SET');
     err.code = 'GROK_API_KEY_NOT_SET';
@@ -337,7 +341,7 @@ async function askGrok(userMessage, agentId) {
   let sawMissingModel = false;
 
   for (const model of models) {
-    const result = await callGrokModel(model, userMessage, agentId);
+    const result = await callGrokModel(model, userMessage, agentId, context);
     if (result.ok) return result.text;
 
     lastError = `${model}: ${result.status} ${result.detail}`;
@@ -350,7 +354,7 @@ async function askGrok(userMessage, agentId) {
       (model) => !models.includes(model),
     );
     for (const model of extra.slice(0, 3)) {
-      const result = await callGrokModel(model, userMessage, agentId);
+      const result = await callGrokModel(model, userMessage, agentId, context);
       if (result.ok) return result.text;
       lastError = `${model}: ${result.status} ${result.detail}`;
       if (!shouldRetryWithNextModel(result.status, result.detail)) break;
@@ -371,8 +375,8 @@ class GrokService {
     return checkDailyLimit(userId);
   }
 
-  static async chat(userMessage, agentId = 'coder') {
-    return askGrok(userMessage, agentId);
+  static async chat(userMessage, agentId = 'coder', context = '') {
+    return askGrok(userMessage, agentId, context);
   }
 
   static formatGrokError(message) {

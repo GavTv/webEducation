@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, Search, Star } from "lucide-react";
+import { ListChecks, Lock, MessageSquareReply, Search, Star } from "lucide-react";
 import { ChatMessageInput } from "./ChatMessageInput";
 import {
   createGroupChannel,
@@ -935,6 +935,54 @@ function ChatPageContent() {
     [addBotAiMessage, activeAgent.name, activeAgentId, botAiDraft, botAiLoading],
   );
 
+  const runChatHelper = useCallback(
+    async (agentId: "reply" | "summary") => {
+      if (botAiLoading || threadMessages.length === 0) return;
+
+      const context = threadMessages
+        .slice(-10)
+        .map((message) => `${message.author}: ${message.text.slice(0, 220)}`)
+        .join("\n")
+        .slice(-2800);
+      const isReply = agentId === "reply";
+      const prompt = isReply
+        ? "Подготовь черновик ответа на последние сообщения в переданном контексте. Учитывай тон переписки, не выдумывай факты."
+        : "Сделай краткую выжимку переписки: основные темы, решения и задачи со сроками, если они есть. Не выдумывай детали.";
+      const agent = findAiAgent(agentId);
+
+      setActiveAgentId(agentId);
+      setBotAiOpen(true);
+      setSelectedChannelId(null);
+      setMobileThreadOpen(true);
+      window.localStorage.setItem(BOT_AI_OPEN_STORAGE_KEY, "true");
+      addBotAiMessage({
+        id: `botai-user-${Date.now()}`,
+        author: "Вы",
+        text: isReply
+          ? "Подготовь черновик ответа по последним сообщениям выбранного чата."
+          : "Сделай выжимку последних сообщений выбранного чата.",
+        time: formatTime(),
+        isMine: true,
+      });
+      setBotAiLoading(true);
+
+      try {
+        const data = await requestBotAiReply(prompt, agentId, context);
+        addBotAiMessage({
+          id: `botai-answer-${Date.now()}`,
+          author: agent.name,
+          text: data.answer || "Не получилось получить ответ от AI.",
+          time: formatTime(),
+          isBot: true,
+          isError: Boolean(data.error),
+        });
+      } finally {
+        setBotAiLoading(false);
+      }
+    },
+    [addBotAiMessage, botAiLoading, threadMessages],
+  );
+
 
   const handleOpenCreateChat = useCallback(() => {
     if (!selectedGroupId) {
@@ -1456,6 +1504,20 @@ function ChatPageContent() {
                   </button>
                 ))}
               </nav>
+            ) : null}
+
+            {isRealChat && !botAiOpen && threadMessages.length > 0 ? (
+              <div className="chat-ai-actions" aria-label="Действия AI по переписке">
+                <span>Последние сообщения будут переданы AI. Ответ откроется в личном чате:</span>
+                <button type="button" onClick={() => runChatHelper("reply")} disabled={botAiLoading}>
+                  <MessageSquareReply size={15} aria-hidden />
+                  Подготовить ответ
+                </button>
+                <button type="button" onClick={() => runChatHelper("summary")} disabled={botAiLoading}>
+                  <ListChecks size={15} aria-hidden />
+                  Сделать выжимку
+                </button>
+              </div>
             ) : null}
 
             <div className="messages-wrap">

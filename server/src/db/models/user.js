@@ -179,6 +179,10 @@ if (models.Task) {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      bio: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+      },
     },
     {
       sequelize,

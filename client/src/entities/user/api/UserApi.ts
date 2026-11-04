@@ -25,6 +25,7 @@ export type UserOAuthLoginData = {
 export type UserUpdateProfileData = {
   name: string;
   phone?: string;
+  bio?: string;
   avatar?: File | null;
 };
 
@@ -81,6 +82,7 @@ export default class UserApi {
 
     formData.append("name", payload.name);
     formData.append("phone", payload.phone?.trim() ?? "");
+    formData.append("bio", payload.bio?.trim() ?? "");
 
     if (payload.avatar) {
       formData.append("avatar", payload.avatar);

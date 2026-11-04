@@ -37,9 +37,14 @@ function parseBotAiPayload(data: unknown): BotAiResponse | null {
 export async function sendBotAiMessage(
   message: string,
   agentId: AiAgentId = "coder",
+  context?: string,
 ): Promise<BotAiResponse> {
   try {
-    const { data } = await axiosInstance.post("ai/chat", { message, agentId });
+    const { data } = await axiosInstance.post("ai/chat", {
+      message,
+      agentId,
+      context,
+    });
     const parsed = parseBotAiPayload(data);
 
     if (parsed) {

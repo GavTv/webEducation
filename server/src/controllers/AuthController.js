@@ -321,6 +321,24 @@ class AuthController {
         updateData.name = name;
       }
 
+      if (req.body.bio !== undefined) {
+        const bio =
+          typeof req.body.bio === 'string' ? req.body.bio.trim() : '';
+
+        if (bio.length > 500) {
+          return res
+            .status(400)
+            .json(
+              formatResponse(
+                400,
+                'Описание профиля должно быть не длиннее 500 символов',
+              ),
+            );
+        }
+
+        updateData.bio = bio || null;
+      }
+
       if (req.file) {
         const current = await AuthService.findPublicUserById(currentUser.id);
 
