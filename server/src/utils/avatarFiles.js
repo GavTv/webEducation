@@ -41,6 +41,7 @@ function deleteAvatarFile(avatarUrl) {
 
 function sanitizeAvatarUrl(avatarUrl) {
   if (!avatarUrl) return null;
+  if (/^\/api\/avatars\/\d+(?:\?v=\d+)?$/.test(avatarUrl)) return avatarUrl;
   return avatarFileExists(avatarUrl) ? avatarUrl : null;
 }
 

@@ -46,7 +46,9 @@ class UserAdminController {
           .json(formatResponse(400, 'Недопустимая роль'));
       }
 
-      const target = await User.findByPk(targetId);
+      const target = await User.findByPk(targetId, {
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      });
       if (!target) {
         return res
           .status(404)
@@ -107,7 +109,9 @@ class UserAdminController {
         );
       }
 
-      const target = await User.findByPk(targetId);
+      const target = await User.findByPk(targetId, {
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      });
       if (!target) {
         return res
           .status(404)

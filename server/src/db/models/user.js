@@ -151,6 +151,14 @@ if (models.Task) {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      avatarData: {
+        type: DataTypes.BLOB,
+        allowNull: true,
+      },
+      avatarMimeType: {
+        type: DataTypes.STRING(32),
+        allowNull: true,
+      },
       username: {
         type: DataTypes.STRING,
         allowNull: false,

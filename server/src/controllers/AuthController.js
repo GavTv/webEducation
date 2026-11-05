@@ -346,7 +346,9 @@ class AuthController {
           deleteAvatarFile(current.avatarUrl);
         }
 
-        updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        updateData.avatarData = req.file.buffer;
+        updateData.avatarMimeType = req.file.mimetype;
+        updateData.avatarUrl = `/api/avatars/${currentUser.id}?v=${Date.now()}`;
       }
 
       if (req.body.phone !== undefined) {

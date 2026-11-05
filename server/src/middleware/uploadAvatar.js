@@ -1,24 +1,5 @@
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
 const formatResponse = require('../utils/formatResponse');
-
-const avatarsDir = path.join(__dirname, '../../public/uploads/avatars');
-
-fs.mkdirSync(avatarsDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, avatarsDir);
-  },
-
-  filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const fileName = `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-
-    cb(null, fileName);
-  },
-});
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -31,7 +12,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: {
     fileSize: 2 * 1024 * 1024,

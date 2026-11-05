@@ -6,22 +6,42 @@ const { sanitizeAvatarUrl } = require('../utils/avatarFiles');
 
 class AuthService {
   static async findUserByEmail(email) {
-    return (await User.findOne({ where: { email } }))?.get();
+    return (
+      await User.findOne({
+        where: { email },
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      })
+    )?.get();
   }
 
   static async findUserByUsername(username) {
     const u = String(username).toLowerCase().trim();
-    return (await User.findOne({ where: { username: u } }))?.get();
+    return (
+      await User.findOne({
+        where: { username: u },
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      })
+    )?.get();
   }
 
   static async findUserByGoogleSub(googleSub) {
     if (!googleSub || typeof googleSub !== 'string') return null;
-    return (await User.findOne({ where: { google_sub: googleSub } }))?.get();
+    return (
+      await User.findOne({
+        where: { google_sub: googleSub },
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      })
+    )?.get();
   }
 
   static async findUserByGithubSub(githubSub) {
     if (!githubSub || typeof githubSub !== 'string') return null;
-    return (await User.findOne({ where: { github_sub: githubSub } }))?.get();
+    return (
+      await User.findOne({
+        where: { github_sub: githubSub },
+        attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+      })
+    )?.get();
   }
 
   /**
@@ -81,18 +101,25 @@ class AuthService {
     if (!userRow) return null;
 
     const user = userRow.get ? userRow.get() : userRow;
-    const safeAvatarUrl = sanitizeAvatarUrl(user.avatarUrl);
+    const hasStoredAvatar = Boolean(
+      (user.avatarData && user.avatarMimeType) ||
+        /^\/api\/avatars\/\d+(?:\?v=\d+)?$/.test(user.avatarUrl || ''),
+    );
+    const safeAvatarUrl = hasStoredAvatar
+      ? sanitizeAvatarUrl(user.avatarUrl) || `/api/avatars/${user.id}`
+      : sanitizeAvatarUrl(user.avatarUrl);
 
-    if (user.avatarUrl && !safeAvatarUrl && user.id) {
+    if (user.avatarUrl && !safeAvatarUrl && !hasStoredAvatar && user.id) {
       await User.update({ avatarUrl: null }, { where: { id: user.id } });
     }
 
-    return { ...user, avatarUrl: safeAvatarUrl };
+    const { avatarData, avatarMimeType, ...publicUser } = user;
+    return { ...publicUser, avatarUrl: safeAvatarUrl };
   }
 
   static async findPublicUserById(id) {
     const user = await User.findByPk(id, {
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password', 'avatarData', 'avatarMimeType'] },
     });
 
     return this.sanitizePublicUser(user);
@@ -105,7 +132,9 @@ class AuthService {
   }
 
   static async deleteUserById(id) {
-    const row = await User.findByPk(id);
+    const row = await User.findByPk(id, {
+      attributes: { exclude: ['avatarData', 'avatarMimeType'] },
+    });
     if (!row) return false;
 
     const { isProtectedMockAdmin } = require('../utils/protectedUsers');
