@@ -4,9 +4,28 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Room extends Model {
     static associate(models) {
+      Room.belongsTo(models.User, {
+        foreignKey: 'createdBy',
+        as: 'creator',
+        onDelete: 'CASCADE',
+      });
       Room.hasMany(models.Message, {
         foreignKey: 'roomId',
         as: 'messages',
+      });
+      if (models.RoomMember) {
+        Room.hasMany(models.RoomMember, {
+          foreignKey: 'roomId',
+          as: 'members',
+        });
+      }
+      Room.belongsTo(models.Room, {
+        foreignKey: 'parentRoomId',
+        as: 'parentGroup',
+      });
+      Room.hasMany(models.Room, {
+        foreignKey: 'parentRoomId',
+        as: 'channels',
       });
     }
   }
@@ -18,12 +37,29 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       type: {
-        type: DataTypes.ENUM('group', 'course'),
+        type: DataTypes.ENUM('group', 'course', 'channel'),
         defaultValue: 'group',
+      },
+      parentRoomId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       createdBy: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      description: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      joinPasswordHash: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      color: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'purple',
       },
     },
     {

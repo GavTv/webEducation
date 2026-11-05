@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const process = require('process');
-process.loadEnvFile(path.join(__dirname, '../../../.env')); // подключаем нативное использование переменных окружения
+require('../../utils/loadEnv')();
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/database.json')[env];
+const config = require(__dirname + '/../config/database.js')[env];
 const db = {};
 
 let sequelize;

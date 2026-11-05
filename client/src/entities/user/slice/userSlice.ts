@@ -1,10 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { initialUserState } from "../model";
 import {
+  deleteAccountThunk,
   loginThunk,
+  loginWithOAuthThunk,
   logoutThunk,
   refreshTokenThunk,
   registerThunk,
+  updateProfileThunk,
 } from "../api/UserApiThunk";
 
 const userSlice = createSlice({
@@ -17,20 +20,21 @@ const userSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
+    clearAuthSuccessToast: (state) => {
+      state.authSuccessToast = null;
+    },
   },
   extraReducers: (builder) => {
+    /** Проверка сессии при старте — не трогаем isLoading (иначе ломается гидратация форм входа). */
     builder.addCase(refreshTokenThunk.pending, (state) => {
       state.error = null;
-      state.isLoading = true;
     });
     builder.addCase(refreshTokenThunk.fulfilled, (state, action) => {
-      state.isLoading = false;
       state.isInitialized = true;
       state.user = action.payload;
       state.error = null;
     });
     builder.addCase(refreshTokenThunk.rejected, (state) => {
-      state.isLoading = false;
       state.isInitialized = true;
     });
 
@@ -43,6 +47,7 @@ const userSlice = createSlice({
       state.isInitialized = true;
       state.user = action.payload;
       state.error = null;
+      state.authSuccessToast = "Регистрация прошла успешно";
     });
     builder.addCase(registerThunk.rejected, (state, action) => {
       state.isLoading = false;
@@ -59,11 +64,29 @@ const userSlice = createSlice({
       state.isInitialized = true;
       state.user = action.payload;
       state.error = null;
+      state.authSuccessToast = "Вы успешно вошли";
     });
     builder.addCase(loginThunk.rejected, (state, action) => {
       state.isLoading = false;
       state.isInitialized = true;
       state.error = action.payload ?? "Ошибка при входе в приложение";
+    });
+
+    builder.addCase(loginWithOAuthThunk.pending, (state) => {
+      state.error = null;
+      state.isLoading = true;
+    });
+    builder.addCase(loginWithOAuthThunk.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.user = action.payload;
+      state.error = null;
+      state.authSuccessToast = "Вы успешно вошли";
+    });
+    builder.addCase(loginWithOAuthThunk.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.error = action.payload ?? "Ошибка при входе через соцсеть";
     });
 
     builder.addCase(logoutThunk.pending, (state) => {
@@ -75,14 +98,50 @@ const userSlice = createSlice({
       state.isInitialized = true;
       state.user = null;
       state.error = null;
+      state.authSuccessToast = null;
     });
     builder.addCase(logoutThunk.rejected, (state, action) => {
       state.isLoading = false;
       state.isInitialized = true;
       state.error = action.payload ?? "Ошибка при выходе из приложения";
     });
+
+
+    builder.addCase(updateProfileThunk.pending, (state) => {
+      state.error = null;
+      state.isLoading = true;
+    });
+
+    builder.addCase(updateProfileThunk.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.user = action.payload;
+      state.error = null;
+    });
+
+    builder.addCase(updateProfileThunk.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload ?? "Ошибка при обновлении профиля";
+    });
+
+    builder.addCase(deleteAccountThunk.pending, (state) => {
+      state.error = null;
+      state.isLoading = true;
+    });
+    builder.addCase(deleteAccountThunk.fulfilled, (state) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.user = null;
+      state.error = null;
+      state.authSuccessToast = null;
+    });
+    builder.addCase(deleteAccountThunk.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isInitialized = true;
+      state.error = action.payload ?? "Ошибка при удалении аккаунта";
+    });
   },
 });
 
-export const { setUser, setError } = userSlice.actions;
+export const { setUser, setError, clearAuthSuccessToast } = userSlice.actions;
 export const userReducer = userSlice.reducer;

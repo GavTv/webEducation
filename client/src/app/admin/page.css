@@ -1,0 +1,318 @@
+/* Оболочка — widgets/appShell/appShell.css */
+
+.admin-content {
+  overflow-x: hidden;
+}
+
+.admin-header.app-content-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-bottom: clamp(12px, 2vw, 24px);
+  padding: 0;
+}
+
+.admin-header__title {
+  margin: 0;
+  padding: 0 52px;
+  width: 100%;
+  max-width: none;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.admin-user-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-table-wrap {
+  margin-top: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(15, 20, 36, 0.72);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-table th {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9aa1b8;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr:hover td {
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.role-select {
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(7, 10, 19, 0.9);
+  color: #f7f7fb;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-select--compact {
+  min-width: 0;
+  flex: 1;
+  max-width: 140px;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.role-select:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.role-saving {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9aa1b8;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.admin-state {
+  margin-top: 24px;
+  color: #9aa1b8;
+  text-align: center;
+  font-size: 14px;
+}
+
+.admin-state--error {
+  color: #fca5a5;
+}
+
+.admin-state .spin {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: admin-spin 0.9s linear infinite;
+}
+
+.admin-table__actions-col {
+  width: 52px;
+  padding-left: 8px !important;
+  padding-right: 12px !important;
+}
+
+.admin-table__actions-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-user-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-user-delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+}
+
+.admin-user-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-user-protected {
+  color: #64748b;
+  font-size: 13px;
+  user-select: none;
+}
+
+.admin-user-delete .spin {
+  animation: admin-spin 0.9s linear infinite;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-page.app-content,
+  .admin-content.app-content {
+    padding: 12px 12px calc(var(--app-mobile-tabbar-height) + 10px);
+  }
+
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-header.app-content-header {
+    min-height: 32px;
+    margin-bottom: 10px;
+  }
+
+  .admin-header__title {
+    padding: 0 48px;
+    font-size: 17px;
+  }
+
+  .admin-state {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+
+  .admin-table-wrap {
+    display: none;
+  }
+
+  .admin-user-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .admin-user-cards__empty {
+    padding: 16px 12px;
+    text-align: center;
+    font-size: 12px;
+    color: #9aa1b8;
+    border-radius: 12px;
+    background: rgba(15, 20, 36, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .admin-user-card {
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(15, 20, 36, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .admin-user-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .admin-user-card__identity {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-user-card__name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f3f4f6;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-user-card__email {
+    font-size: 11px;
+    color: #9aa1b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-user-card__username {
+    font-size: 10px;
+    color: #7f8796;
+  }
+
+  .admin-user-card__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .admin-user-card__date {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #64748b;
+    white-space: nowrap;
+  }
+
+  .admin-user-card .admin-user-delete {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .admin-user-card .admin-user-protected {
+    font-size: 11px;
+    padding: 4px;
+  }
+
+  .admin-user-card .role-saving {
+    margin-top: 2px;
+    font-size: 10px;
+  }
+}

@@ -3,22 +3,21 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
-import EduChatAuthScreen from "../features/auth/ui/EduChatAuthScreen";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
+import { AppLoading } from "@/shared/ui/AppLoading/AppLoading";
 
 /**
- * Корень «/»: форма входа/регистрации.
- * Если после refresh в Redux есть user — уходим на /classes (сессия ещё жива).
+ * Корень «/»: редирект в приложение или на страницу входа.
  */
 export default function HomeGate() {
   const router = useRouter();
   const user = useAppSelector((s) => s.user.user);
+  const isInitialized = useAppSelector((s) => s.user.isInitialized);
 
   useEffect(() => {
-    if (user) router.replace(clientRoutes.classes);
-  }, [user, router]);
+    if (!isInitialized) return;
+    router.replace(user ? clientRoutes.classes : authPath("login"));
+  }, [isInitialized, user, router]);
 
-  if (user) return null;
-
-  return <EduChatAuthScreen hideBack />;
+  return <AppLoading label={isInitialized ? "Перенаправляем…" : "Подключаем аккаунт…"} />;
 }

@@ -1,38 +1,62 @@
 import axios from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
+import type { ServerResponseType } from "@/shared/types";
+import type { UserWithTokenType } from "@/entities/user/model";
+import { getApiBaseUrl } from "./apiOrigin";
+import {
+  getAccessToken,
+  hydrateAccessTokenFromSessionStorage,
+  isAuthBootstrapDone,
+  isPublicAuthPath,
+  refreshSession,
+  registerRefreshRequest,
+  setAccessToken,
+  setAuthBootstrapDone,
+  waitForRefreshInflight,
+} from "./authSession";
 
-/** Origin без хвостовых слэшей и без суффикса `/api`, чтобы не получить `/api/api/`. */
-function getApiBaseUrl() {
-  let raw = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000").trim();
-  raw = raw.replace(/\/+$/, "");
-  raw = raw.replace(/\/api$/i, "");
-  return `${raw}/api/`;
-}
+hydrateAccessTokenFromSessionStorage();
 
 export const axiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true,
+  timeout: 75_000,
 });
 
-let accessToken = "";
+export {
+  getAccessToken,
+  setAccessToken,
+  setAuthBootstrapDone,
+  refreshSession,
+};
 
-export function setAccessToken(newToken: string) {
-  accessToken = newToken;
-}
-
-export function getAccessToken() {
-  return accessToken;
-}
+registerRefreshRequest(async () => {
+  const { data } = await axiosInstance.get<
+    ServerResponseType<UserWithTokenType>
+  >("auth/refresh", { timeout: 20_000 });
+  return data;
+});
 
 function hasAuthHeader(config: InternalAxiosRequestConfig) {
   const h = config.headers?.Authorization;
   return typeof h === "string" && h.length > 0;
 }
 
-axiosInstance.interceptors.request.use((config) => {
-  if (accessToken && !hasAuthHeader(config)) {
-    config.headers.Authorization = `Bearer ${accessToken}`;
+axiosInstance.interceptors.request.use(async (config) => {
+  const url = config.url ?? "";
+
+  if (!url.includes("auth/refresh") && !isPublicAuthPath(url)) {
+    await waitForRefreshInflight();
+    if (!getAccessToken()) {
+      await refreshSession();
+    }
   }
+
+  const token = getAccessToken();
+  if (token && !hasAuthHeader(config)) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
@@ -44,28 +68,32 @@ axiosInstance.interceptors.response.use(
     const shouldTryRefresh =
       error.response?.status === 403 &&
       previousRequest &&
-      hasAuthHeader(previousRequest) &&
+      !previousRequest.url?.includes("auth/refresh") &&
       !previousRequest.sent;
 
     if (shouldTryRefresh) {
       previousRequest.sent = true;
-      try {
-        const { data } = await axiosInstance.get("auth/refresh");
-        const newToken = data.data?.accessToken ?? "";
-        setAccessToken(newToken);
+      const data = await refreshSession();
+      const newToken = data?.data?.accessToken ?? "";
+
+      if (newToken) {
         previousRequest.headers.Authorization = `Bearer ${newToken}`;
         return axiosInstance(previousRequest);
-      } catch {
-        setAccessToken("");
-        if (
-          typeof window !== "undefined" &&
-          window.location.pathname !== "/"
-        ) {
-          window.location.href = "/";
-        }
-        return Promise.reject(error);
       }
+
+      setAccessToken("");
+
+      if (
+        isAuthBootstrapDone() &&
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/auth")
+      ) {
+        window.location.href = "/auth?mode=login";
+      }
+
+      return Promise.reject(error);
     }
+
     return Promise.reject(error);
   },
 );

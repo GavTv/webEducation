@@ -4,9 +4,10 @@ const path = require('path');
 const removeXPoweredHeader = require('../middleware/removeHeader');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { getCorsOrigins } = require('./corsOrigins');
 
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: getCorsOrigins(),
   credentials: true,
 };
 

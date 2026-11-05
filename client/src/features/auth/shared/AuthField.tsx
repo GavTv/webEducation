@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import styles from "./eduChatForm.module.css";
 
 export type AuthFieldProps = {
@@ -16,6 +17,11 @@ export type AuthFieldProps = {
   onBlurField?: () => void;
   onFocusField?: () => void;
   isChecking?: boolean;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  pattern?: string;
+  /** Border/state invalid, but error text is rendered elsewhere (e.g. under «Забыли пароль?»). */
+  hideInlineError?: boolean;
 };
 
 export function AuthField({
@@ -30,6 +36,10 @@ export function AuthField({
   onBlurField,
   onFocusField,
   isChecking,
+  maxLength,
+  inputMode,
+  pattern,
+  hideInlineError,
 }: AuthFieldProps) {
   const invalid = Boolean(errorMessage);
   return (
@@ -48,6 +58,9 @@ export function AuthField({
             onBlur={onBlurField}
             onFocus={onFocusField}
             autoComplete={autoComplete}
+            maxLength={maxLength}
+            inputMode={inputMode}
+            pattern={pattern}
           />
         </div>
         {isChecking ? (
@@ -57,10 +70,8 @@ export function AuthField({
         ) : null}
         {end ? <span className={styles.fieldEnd}>{end}</span> : null}
       </div>
-      {errorMessage ? (
-        <p className={styles.fieldError} role="alert">
-          {errorMessage}
-        </p>
+      {!hideInlineError ? (
+        <FadeAlert text={errorMessage} className={styles.fieldError} />
       ) : null}
     </div>
   );

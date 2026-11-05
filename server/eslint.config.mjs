@@ -1,5 +1,3 @@
-import elbrusConfig from '@elbrus/eslint-config';
-import elbrusPlugin from '@elbrus/eslint-plugin';
 import js from '@eslint/js';
 import json from '@eslint/json';
 import { defineConfig } from 'eslint/config';
@@ -18,15 +16,6 @@ export default defineConfig([
     },
   },
   { files: ['**/*.{js,mjs,cjs}'], plugins: { js }, extends: ['js/recommended'] },
-  ...elbrusConfig,
-  {
-    plugins: {
-      '@elbrus': elbrusPlugin,
-    },
-    rules: {
-      '@elbrus/prefer-for-of': 'error',
-    },
-  },
   {
     files: ['**/*.json'],
     plugins: { json },
@@ -34,4 +23,3 @@ export default defineConfig([
     extends: ['json/recommended'],
   },
 ]);
-

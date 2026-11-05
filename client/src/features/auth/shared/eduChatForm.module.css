@@ -44,10 +44,13 @@
 }
 
 .fieldError {
-  margin: 6px 0 0 4px;
   font-size: 0.78rem;
   line-height: 1.35;
   color: #ff6b8a;
+}
+
+.fieldError[data-visible="true"] {
+  margin: 6px 0 0 4px;
 }
 
 .fieldCheckSpinner {
@@ -145,11 +148,43 @@
   background: rgba(99, 56, 242, 0.12);
 }
 
-.rowBetween {
+.forgotUnderPassword {
+  display: flex;
+  justify-content: flex-start;
+  margin: -0.35rem 0 0;
+}
+
+.forgotRememberRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+  margin: -0.35rem 0 0;
+}
+
+.forgotRememberRow .check {
+  margin-left: auto;
+}
+
+.messagesBelowForgot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0.35rem 0 0;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.messagesBelowForgot .fieldError,
+.messagesBelowForgot .formError {
+  margin: 0;
+}
+
+.rememberBelowLogin {
+  display: flex;
+  justify-content: center;
+  width: 100%;
   margin-top: 0.25rem;
 }
 
@@ -183,6 +218,8 @@
   cursor: pointer;
   padding: 0;
   white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .linkBtn:hover {
@@ -190,9 +227,12 @@
 }
 
 .formError {
-  margin: 0;
   font-size: 0.88rem;
   color: #ff6b8a;
+}
+
+.formError[data-visible="true"] {
+  margin: 0;
 }
 
 .primaryBtn {
@@ -267,4 +307,85 @@
 
 .inlineLink:hover {
   text-decoration: underline;
+}
+
+.oauthRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oauthRowBelowLogin {
+  margin-top: 0.75rem;
+}
+
+.oauthIcon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.googleBtn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--edu-line);
+  background: var(--edu-input);
+  color: #f0f0f5;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.googleBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.googleBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.githubBtn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--edu-line);
+  background: var(--edu-input);
+  color: #f0f0f5;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.githubBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.githubBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.googleIcon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.dividerTight {
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
 }

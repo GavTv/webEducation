@@ -1,8 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { AtSign, Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { registerThunk } from "@/entities/user/api/UserApiThunk";
@@ -15,11 +14,8 @@ import {
   getRegisterUsernameFormatError,
   PASSWORD_RULES_MSG,
 } from "@/shared/lib/registerFieldValidators";
-import {
-  checkEmailAvailability,
-  checkUsernameAvailability,
-} from "@/shared/lib/authAvailabilityApi";
-import { clientRoutes } from "@/shared/consts/clientRoutes";
+import { useAutoDismiss } from "@/shared/hooks/useAutoDismiss";
+import { FadeAlert } from "@/shared/ui/FadeAlert/FadeAlert";
 import { AuthField } from "../../auth/shared/AuthField";
 import styles from "../../auth/shared/eduChatForm.module.css";
 import signUpStyles from "./SignUpForm.module.css";
@@ -37,7 +33,6 @@ export default function SignUpForm({
   rememberMe,
   onRememberMeChange,
 }: SignUpFormProps) {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((s) => s.user);
 
@@ -51,91 +46,15 @@ export default function SignUpForm({
   const [signUpErrors, setSignUpErrors] = useState<
     Partial<Record<SignUpFieldKey, string | null>>
   >({});
-  const [emailChecking, setEmailChecking] = useState(false);
-  const [usernameChecking, setUsernameChecking] = useState(false);
-  const emailCheckGen = useRef(0);
-  const usernameCheckGen = useRef(0);
+  const hasSignUpFieldErrors = Object.values(signUpErrors).some(Boolean);
+
+  useAutoDismiss(hasSignUpFieldErrors, () => {
+    setSignUpErrors({});
+  });
 
   const clearSignUpField = useCallback((key: SignUpFieldKey) => {
     setSignUpErrors((p) => ({ ...p, [key]: null }));
   }, []);
-
-  const runEmailValidation = useCallback(async (raw: string): Promise<boolean> => {
-    const gen = ++emailCheckGen.current;
-    const formatErr = getRegisterEmailFormatError(raw);
-    if (formatErr) {
-      if (gen === emailCheckGen.current) {
-        setSignUpErrors((p) => ({ ...p, email: formatErr }));
-      }
-      return false;
-    }
-    if (gen === emailCheckGen.current) {
-      setSignUpErrors((p) => ({ ...p, email: null }));
-    }
-    setEmailChecking(true);
-    try {
-      const res = await checkEmailAvailability(raw);
-      if (gen !== emailCheckGen.current) return false;
-      if (!res.formatOk) {
-        setSignUpErrors((p) => ({
-          ...p,
-          email: res.message ?? "Некорректный email",
-        }));
-        return false;
-      }
-      if (res.available === false) {
-        setSignUpErrors((p) => ({
-          ...p,
-          email: res.message ?? "Email уже занят",
-        }));
-        return false;
-      }
-      setSignUpErrors((p) => ({ ...p, email: null }));
-      return true;
-    } finally {
-      if (gen === emailCheckGen.current) setEmailChecking(false);
-    }
-  }, []);
-
-  const runUsernameValidation = useCallback(
-    async (raw: string): Promise<boolean> => {
-      const gen = ++usernameCheckGen.current;
-      const formatErr = getRegisterUsernameFormatError(raw);
-      if (formatErr) {
-        if (gen === usernameCheckGen.current) {
-          setSignUpErrors((p) => ({ ...p, username: formatErr }));
-        }
-        return false;
-      }
-      if (gen === usernameCheckGen.current) {
-        setSignUpErrors((p) => ({ ...p, username: null }));
-      }
-      setUsernameChecking(true);
-      try {
-        const res = await checkUsernameAvailability(raw);
-        if (gen !== usernameCheckGen.current) return false;
-        if (!res.formatOk) {
-          setSignUpErrors((p) => ({
-            ...p,
-            username: res.message ?? "Некорректное имя пользователя",
-          }));
-          return false;
-        }
-        if (res.available === false) {
-          setSignUpErrors((p) => ({
-            ...p,
-            username: res.message ?? "Имя уже занято",
-          }));
-          return false;
-        }
-        setSignUpErrors((p) => ({ ...p, username: null }));
-        return true;
-      } finally {
-        if (gen === usernameCheckGen.current) setUsernameChecking(false);
-      }
-    },
-    [],
-  );
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,21 +75,6 @@ export default function SignUpForm({
     setSignUpErrors((p) => ({ ...p, ...patch }));
     if (Object.keys(patch).length > 0) return;
 
-    const okEmail = await runEmailValidation(signUpEmail);
-    const okUser = await runUsernameValidation(signUpUsername);
-    if (!okEmail || !okUser) return;
-
-    const pe2 = getRegisterPasswordError(signUpPassword);
-    if (pe2) {
-      setSignUpErrors((p) => ({ ...p, password: pe2 }));
-      return;
-    }
-    const ce2 = getRegisterConfirmError(signUpPassword, signUpConfirm);
-    if (ce2) {
-      setSignUpErrors((p) => ({ ...p, confirm: ce2 }));
-      return;
-    }
-
     try {
       await dispatch(
         registerThunk({
@@ -181,7 +85,6 @@ export default function SignUpForm({
           rememberMe,
         }),
       ).unwrap();
-      router.push(clientRoutes.classes);
     } catch {
       /* ошибка уже в store */
     }
@@ -192,7 +95,7 @@ export default function SignUpForm({
   );
 
   const signUpSubmitDisabled = useMemo(() => {
-    if (isLoading || emailChecking || usernameChecking) return true;
+    if (isLoading) return true;
     if (getRegisterNameError(signUpName)) return true;
     if (getRegisterUsernameFormatError(signUpUsername)) return true;
     if (getRegisterEmailFormatError(signUpEmail)) return true;
@@ -202,8 +105,6 @@ export default function SignUpForm({
     return false;
   }, [
     isLoading,
-    emailChecking,
-    usernameChecking,
     signUpName,
     signUpUsername,
     signUpEmail,
@@ -216,7 +117,7 @@ export default function SignUpForm({
     <>
       <h1 className={styles.title}>Создайте аккаунт</h1>
       <p className={styles.subtitle}>
-        Присоединяйтесь к EduChat и общайтесь в учебных чатах
+        Присоединяйтесь к My Work Chat и общайтесь в рабочих чатах
       </p>
 
       <form className={styles.form} onSubmit={handleSignUp}>
@@ -246,11 +147,11 @@ export default function SignUpForm({
             clearSignUpField("username");
           }}
           onBlurField={() => {
-            void runUsernameValidation(signUpUsername);
+            const err = getRegisterUsernameFormatError(signUpUsername);
+            setSignUpErrors((p) => ({ ...p, username: err }));
           }}
           autoComplete="username"
           errorMessage={signUpErrors.username}
-          isChecking={usernameChecking}
         />
         <AuthField
           label="Email"
@@ -262,11 +163,11 @@ export default function SignUpForm({
             clearSignUpField("email");
           }}
           onBlurField={() => {
-            void runEmailValidation(signUpEmail);
+            const err = getRegisterEmailFormatError(signUpEmail);
+            setSignUpErrors((p) => ({ ...p, email: err }));
           }}
           autoComplete="email"
           errorMessage={signUpErrors.email}
-          isChecking={emailChecking}
         />
         <AuthField
           label="Пароль"
@@ -280,9 +181,6 @@ export default function SignUpForm({
           onBlurField={() => {
             const err = getRegisterPasswordError(signUpPassword);
             setSignUpErrors((p) => ({ ...p, password: err }));
-          }}
-          onFocusField={() => {
-            void runEmailValidation(signUpEmail);
           }}
           autoComplete="new-password"
           errorMessage={signUpErrors.password}
@@ -299,7 +197,6 @@ export default function SignUpForm({
             </button>
           }
         />
-        <p className={signUpStyles.hint}>{PASSWORD_RULES_MSG}</p>
         <AuthField
           label="Подтвердите пароль"
           icon={purpleIcon(<Lock size={20} strokeWidth={2} />)}
@@ -312,10 +209,6 @@ export default function SignUpForm({
           onBlurField={() => {
             const err = getRegisterConfirmError(signUpPassword, signUpConfirm);
             setSignUpErrors((p) => ({ ...p, confirm: err }));
-          }}
-          onFocusField={() => {
-            const pe = getRegisterPasswordError(signUpPassword);
-            setSignUpErrors((p) => ({ ...p, password: pe }));
           }}
           autoComplete="new-password"
           errorMessage={signUpErrors.confirm}
@@ -332,6 +225,7 @@ export default function SignUpForm({
             </button>
           }
         />
+        <p className={signUpStyles.hint}>{PASSWORD_RULES_MSG}</p>
 
         <div className={styles.rowRememberOnly}>
           <label className={styles.check}>
@@ -344,7 +238,7 @@ export default function SignUpForm({
           </label>
         </div>
 
-        {error ? <p className={styles.formError}>{error}</p> : null}
+        <FadeAlert text={error} className={styles.formError} />
 
         <button
           type="submit"
@@ -361,19 +255,11 @@ export default function SignUpForm({
 
       <p className={signUpStyles.legal}>
         Нажимая «Создать аккаунт», вы принимаете{" "}
-        <a
-          href="https://elbrusboot.camp/docs/end_user_license_agreement.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="#" target="_blank" rel="noopener noreferrer">
           Пользовательское соглашение
         </a>{" "}
         и{" "}
-        <a
-          href="https://elbrusboot.camp/privacy-policy/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="#" target="_blank" rel="noopener noreferrer">
           Политику конфиденциальности
         </a>
         .

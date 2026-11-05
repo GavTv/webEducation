@@ -1,10 +1,14 @@
 const jwt = require('jsonwebtoken');
 const formatResponse = require('../utils/formatResponse');
-process.loadEnvFile();
+require('../utils/loadEnv')();
 
 function verifyRefreshToken(req, res, next) {
   try {
     const { refreshToken } = req.cookies;
+
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      return res.status(401).json(formatResponse(401, 'Невалидный refreshToken'));
+    }
 
     const decoded = jwt.verify(
       refreshToken,
@@ -24,8 +28,7 @@ function verifyRefreshToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.log('======== verifyRefreshToken =========');
-    console.log(error);
+    console.error(error);
     return res.status(401).json(formatResponse(401, 'Невалидный refreshToken'));
   }
 }

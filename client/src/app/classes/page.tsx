@@ -1,150 +1,500 @@
-import Link from "next/link";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  BookOpen,
+  ChevronRight,
+  Loader2,
+  Lock,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { authPath, clientRoutes } from "@/shared/consts/clientRoutes";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { AppBackButton } from "@/widgets/appShell/AppBackButton";
+import { AppNav } from "@/widgets/appShell/AppNav";
+import { AppProfileChip } from "@/widgets/appShell/AppProfileChip";
+import { BrandLogo } from "@/widgets/appShell/BrandLogo";
+import { MobileBottomNav } from "@/widgets/appShell/MobileBottomNav";
+import {
+  createClass,
+  deleteClass,
+  fetchClasses,
+  joinClass,
+  setClassPassword,
+  updateClass,
+  type ClassRoomItem,
+} from "@/shared/lib/classesApi";
+import { getAvatarSrc } from "@/shared/lib/getAvatarSrc";
+import { getNameInitials } from "@/shared/lib/getNameInitials";
+import { canManageClasses, isAdmin } from "@/shared/lib/permissions";
+import { ClassJoinPasswordModal } from "@/features/classes/ui/ClassJoinPasswordModal";
+import {
+  ClassManageModal,
+  type ClassManageModalMode,
+} from "@/features/classes/ui/ClassManageModal";
+import { ConfirmModal } from "@/shared/ui/ConfirmModal/ConfirmModal";
 import "./page.css";
 
-const classes = [
-  {
-    id: 1,
-    title: "1 класс",
-    description: "Учебный чат для 1 класса",
-    students: 24,
-    color: "purple",
-  },
-  {
-    id: 2,
-    title: "2 класс",
-    description: "Учебный чат для 2 класса",
-    students: 27,
-    color: "blue",
-  },
-  {
-    id: 3,
-    title: "3 класс",
-    description: "Учебный чат для 3 класса",
-    students: 30,
-    color: "green",
-  },
-];
+function canEditClass(
+  item: ClassRoomItem,
+  userId: number | undefined,
+  role?: string | null,
+) {
+  if (!userId) return false;
+  if (role === "admin") return true;
+  if (role === "teacher" && item.createdBy === userId) return true;
+  return false;
+}
 
 export default function ClassesPage() {
+  const router = useRouter();
+  const user = useAppSelector((state) => state.user.user);
+  const isInitialized = useAppSelector((state) => state.user.isInitialized);
+
+  const [classes, setClasses] = useState<ClassRoomItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ClassManageModalMode>("create");
+  const [activeClass, setActiveClass] = useState<ClassRoomItem | null>(null);
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<ClassRoomItem | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinTarget, setJoinTarget] = useState<ClassRoomItem | null>(null);
+  const [joinSaving, setJoinSaving] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [enteringId, setEnteringId] = useState<number | null>(null);
+
+  const userName = user?.name?.trim() || "";
+  const nameParts = userName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Пользователь";
+  const lastName = nameParts[1] || "";
+  const avatarInitials = getNameInitials(firstName, lastName, user?.name);
+  const avatarSrc = getAvatarSrc(user?.avatarUrl);
+  const manageClasses = canManageClasses(user?.role);
+  const showAdminLink = isAdmin(user?.role);
+
+  const loadClasses = useCallback(async () => {
+    setLoading(true);
+    setListError(null);
+    try {
+      const list = await fetchClasses();
+      setClasses(list);
+    } catch (err) {
+      setListError(
+        err instanceof Error ? err.message : "Не удалось загрузить группы",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (!user) {
+      router.replace(authPath("login"));
+      return;
+    }
+    void loadClasses();
+  }, [isInitialized, user, router, loadClasses]);
+
+  const openCreate = () => {
+    setActiveClass(null);
+    setModalMode("create");
+    setModalError(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: ClassRoomItem) => {
+    setActiveClass(item);
+    setModalMode("edit");
+    setModalError(null);
+    setModalOpen(true);
+  };
+
+  const openDelete = (item: ClassRoomItem) => {
+    setDeleteTarget(item);
+    setDeleteError(null);
+  };
+
+  const goToChat = useCallback(
+    (classId: number) => {
+      router.push(`${clientRoutes.chat}?classId=${classId}`);
+    },
+    [router],
+  );
+
+  const markJoinedLocally = useCallback((classId: number) => {
+    setClasses((prev) =>
+      prev.map((c) => (c.id === classId ? { ...c, isMember: true } : c)),
+    );
+  }, []);
+
+  const handleEnterClass = async (classItem: ClassRoomItem) => {
+    if (!user) return;
+
+    const editable = canEditClass(classItem, user.id, user.role);
+
+    if (editable || classItem.isMember) {
+      setEnteringId(classItem.id);
+      try {
+        await joinClass(classItem.id);
+        markJoinedLocally(classItem.id);
+        goToChat(classItem.id);
+      } catch (err) {
+        setListError(
+          err instanceof Error ? err.message : "Не удалось войти в группу",
+        );
+      } finally {
+        setEnteringId(null);
+      }
+      return;
+    }
+
+    if (!classItem.hasPassword) {
+      setEnteringId(classItem.id);
+      try {
+        await joinClass(classItem.id);
+        markJoinedLocally(classItem.id);
+        goToChat(classItem.id);
+      } catch (err) {
+        setListError(
+          err instanceof Error ? err.message : "Не удалось войти в группу",
+        );
+      } finally {
+        setEnteringId(null);
+      }
+      return;
+    }
+
+    setJoinTarget(classItem);
+    setJoinError(null);
+    setJoinModalOpen(true);
+  };
+
+  const handleJoinSubmit = async (password: string) => {
+    if (!joinTarget) return;
+    setJoinSaving(true);
+    setJoinError(null);
+    try {
+      await joinClass(joinTarget.id, password);
+      markJoinedLocally(joinTarget.id);
+      setJoinModalOpen(false);
+      setJoinTarget(null);
+      goToChat(joinTarget.id);
+    } catch (err) {
+      setJoinError(err instanceof Error ? err.message : "Неверный пароль");
+    } finally {
+      setJoinSaving(false);
+    }
+  };
+
+  const handleModalSubmit = async (payload: {
+    title: string;
+    description: string;
+    joinPassword: string;
+    clearPassword?: boolean;
+  }) => {
+    setModalSaving(true);
+    setModalError(null);
+    try {
+      if (modalMode === "create") {
+        await createClass({
+          title: payload.title,
+          description: payload.description,
+          joinPassword: payload.joinPassword || undefined,
+        });
+      } else if (modalMode === "edit" && activeClass) {
+        await updateClass(activeClass.id, {
+          title: payload.title,
+          description: payload.description,
+        });
+        if (payload.clearPassword) {
+          await setClassPassword(activeClass.id, "");
+        } else if (payload.joinPassword.trim()) {
+          await setClassPassword(activeClass.id, payload.joinPassword);
+        }
+      } else if (modalMode === "password" && activeClass) {
+        await setClassPassword(activeClass.id, payload.joinPassword);
+      }
+      setModalOpen(false);
+      await loadClasses();
+    } catch (err) {
+      setModalError(
+        err instanceof Error ? err.message : "Не удалось сохранить",
+      );
+    } finally {
+      setModalSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteSaving(true);
+    setDeleteError(null);
+    try {
+      await deleteClass(deleteTarget.id);
+      setDeleteTarget(null);
+      await loadClasses();
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Не удалось удалить группу",
+      );
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
+
+  if (!isInitialized || !user) {
+    return (
+      <main className="classes-page">
+        <p className="classes-state">Загрузка…</p>
+      </main>
+    );
+  }
+
   return (
-    <main className="classes-page">
-      <section className="classes-shell">
-        <aside className="classes-sidebar">
-          <div className="brand">
-            <div className="brand-icon">
-              <span>✦</span>
-            </div>
-            <span className="brand-name">EduChat</span>
-          </div>
+    <main className="classes-page app-page app-page--with-tabbar">
+      <section className="classes-shell app-shell">
+        <aside className="classes-sidebar app-sidebar">
+          <BrandLogo />
 
-          <nav className="sidebar-nav">
-            <Link className="nav-link active" href="/classes">
-              <span className="nav-icon">●</span>
-              Классы
-            </Link>
-
-            <Link className="nav-link" href="/profile">
-              <span className="nav-icon">♙</span>
-              Профиль
-            </Link>
-          </nav>
+          <AppNav active="classes" showAdminLink={showAdminLink} />
 
           <div className="sidebar-info">
             <div className="shield-mini">🛡</div>
             <div>
               <h3>Безопасное обучение</h3>
-              <p>Все классы защищены паролем.</p>
+              <p>
+                {manageClasses
+                  ? "Вы можете создавать группы и задавать пароль для входа."
+                  : "Выберите группу для общения."}
+              </p>
             </div>
           </div>
         </aside>
 
-        <section className="classes-content">
-          <header className="classes-header">
-            <div>
-              <p className="eyebrow">Учебная платформа</p>
-              <h1>Добро пожаловать, Иван! 👋</h1>
-              <p>Выберите класс, чтобы начать общение</p>
-            </div>
+        <section className="classes-content app-content">
+          <header
+            className={`classes-header app-content-header${
+              showAdminLink ? " classes-header--admin-view" : ""
+            }`}
+          >
+            {showAdminLink ? (
+              <>
+                <AppBackButton
+                  href={clientRoutes.chat}
+                  className="app-header__back"
+                />
+                <AppProfileChip
+                  firstName={firstName}
+                  avatarSrc={avatarSrc}
+                  avatarInitials={avatarInitials}
+                  interactive={false}
+                  ariaLabel={`${firstName}, онлайн`}
+                />
+              </>
+            ) : (
+              <>
+                <div>
+                  <h1>
+                    <span className="app-heading-mobile">Группы</span>
+                    <span className="app-heading-desktop">
+                      Добро пожаловать, {firstName}! 👋
+                    </span>
+                  </h1>
+                  <p className="app-header-subtitle">
+                    Выберите группу, чтобы начать общение
+                  </p>
+                </div>
 
-            <div className="profile-card">
-              <div className="profile-avatar">И</div>
-              <div>
-                <strong>Иван</strong>
-                <span>Онлайн</span>
-              </div>
-            </div>
+                <AppProfileChip
+                  firstName={firstName}
+                  avatarSrc={avatarSrc}
+                  avatarInitials={avatarInitials}
+                  interactive={false}
+                  ariaLabel={`${firstName}, онлайн`}
+                />
+              </>
+            )}
           </header>
 
           <div className="classes-top">
-            <div>
-              <h2>Ваши классы</h2>
-              <p>Доступные учебные чаты</p>
+            <div className="classes-top__headings">
+              <h2>Ваши группы</h2>
+              <p>Учебные группы с чатами внутри</p>
             </div>
 
-            <button type="button" className="add-button">
-              + Добавить класс
-            </button>
+            {manageClasses ? (
+              <button type="button" className="add-button" onClick={openCreate}>
+                + Добавить группу
+              </button>
+            ) : null}
           </div>
 
-          <div className="classes-grid">
-            {classes.map((classItem) => (
-              <Link
-                href={`/chat?classId=${classItem.id}`}
-                className="class-card"
-                key={classItem.id}
-              >
-                <div className={`class-icon ${classItem.color}`}>
-                  <svg
-                    width="30"
-                    height="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 5.5C4 4.67 4.67 4 5.5 4H9C10.66 4 12 5.34 12 7V20C12 18.34 10.66 17 9 17H5.5C4.67 17 4 16.33 4 15.5V5.5Z"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M20 5.5C20 4.67 19.33 4 18.5 4H15C13.34 4 12 5.34 12 7V20C12 18.34 13.34 17 15 17H18.5C19.33 17 20 16.33 20 15.5V5.5Z"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+          {loading ? (
+            <p className="classes-state">
+              <Loader2 size={20} className="classes-spin" /> Загрузка групп…
+            </p>
+          ) : null}
 
-                <div className="class-info">
-                  <h3>{classItem.title}</h3>
-                  <p>{classItem.description}</p>
-                  <span>Участников: {classItem.students}</span>
-                </div>
+          {listError ? (
+            <p className="classes-state classes-state--error" role="alert">
+              {listError}
+            </p>
+          ) : null}
 
-                <div className="class-meta">
-                  <div className="password-label">
-                    <span>🔒</span>
-                    Требуется пароль
-                  </div>
-                  <span className="arrow">›</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {!loading && !listError ? (
+            <div className="classes-list">
+              {classes.length === 0 ? (
+                <p className="classes-state">Групп пока нет</p>
+              ) : (
+                classes.map((classItem) => {
+                  const editable = canEditClass(
+                    classItem,
+                    user.id,
+                    user.role,
+                  );
+                  const isEntering = enteringId === classItem.id;
 
-          <section className="safe-card">
-            <div className="safe-icon">🛡</div>
-            <div>
-              <h3>Безопасное обучение</h3>
-              <p>
-                Все классы защищены паролем. Только участники вашего класса
-                могут присоединиться к чату.
-              </p>
+                  return (
+                    <article className="class-card" key={classItem.id}>
+                      <div
+                        className="class-card-main"
+                        role="button"
+                        tabIndex={0}
+                        aria-disabled={isEntering}
+                        onClick={() => {
+                          if (!isEntering) void handleEnterClass(classItem);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (!isEntering) void handleEnterClass(classItem);
+                          }
+                        }}
+                      >
+                        <div className={`class-icon ${classItem.color}`}>
+                          <BookOpen size={30} strokeWidth={1.8} aria-hidden />
+                        </div>
+
+                        <div className="class-info">
+                          <h3>{classItem.title}</h3>
+                          <p>
+                            {classItem.description || "Учебная группа"}
+                          </p>
+                          <span className="class-members">
+                            <Users size={15} strokeWidth={2} aria-hidden />
+                            Участников: {classItem.memberCount}
+                          </span>
+                        </div>
+
+                        <div className="class-meta">
+                          {classItem.hasPassword ? (
+                            <span className="class-password-hint">
+                              <Lock
+                                size={16}
+                                strokeWidth={2.2}
+                                className="class-lock-icon"
+                                aria-hidden
+                              />
+                              Требуется пароль
+                            </span>
+                          ) : null}
+                          <ChevronRight
+                            size={22}
+                            className="class-chevron"
+                            aria-hidden
+                          />
+                        </div>
+                      </div>
+
+                      {editable ? (
+                        <div className="class-card-actions">
+                          <button
+                            type="button"
+                            className="class-btn class-btn--edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(classItem);
+                            }}
+                          >
+                            <Pencil size={16} strokeWidth={2} aria-hidden />
+                            Изменить
+                          </button>
+                          <button
+                            type="button"
+                            className="class-btn class-btn--delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDelete(classItem);
+                            }}
+                          >
+                            <Trash2 size={16} strokeWidth={2} aria-hidden />
+                            Удалить
+                          </button>
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })
+              )}
             </div>
-          </section>
+          ) : null}
         </section>
       </section>
+
+      <ClassManageModal
+        open={modalOpen}
+        mode={modalMode}
+        initialTitle={activeClass?.title ?? ""}
+        initialDescription={activeClass?.description ?? ""}
+        saving={modalSaving}
+        error={modalError}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleModalSubmit}
+      />
+
+      {deleteTarget ? (
+        <ConfirmModal
+          title={`Удалить группу «${deleteTarget.title}»?`}
+          lines={[
+            "Группа, все чаты внутри неё и участники будут удалены без возможности восстановления.",
+          ]}
+          confirmLabel="Удалить"
+          cancelLabel="Отмена"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => {
+            if (!deleteSaving) setDeleteTarget(null);
+          }}
+          isBusy={deleteSaving}
+          errorMessage={deleteError}
+        />
+      ) : null}
+
+      <ClassJoinPasswordModal
+        open={joinModalOpen}
+        classTitle={joinTarget?.title ?? ""}
+        saving={joinSaving}
+        error={joinError}
+        onClose={() => {
+          setJoinModalOpen(false);
+          setJoinTarget(null);
+          setJoinError(null);
+        }}
+        onSubmit={handleJoinSubmit}
+      />
+
+      <MobileBottomNav active="classes" showAdminLink={showAdminLink} />
     </main>
   );
 }

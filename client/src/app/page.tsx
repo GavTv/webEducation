@@ -1,9 +1,13 @@
+import AuthSessionProvider from "@/application/AuthSessionProvider";
 import HomeGate from "./HomeGate";
 
 /**
- * «/» — вход / регистрация (если нет пользователя в store) или заглушка после входа.
- * Dev: http://localhost:5173/
+ * «/» — редирект: авторизован → классы, иначе → `/auth?mode=login`.
  */
 export default function HomePage() {
-  return <HomeGate />;
+  return (
+    <AuthSessionProvider>
+      <HomeGate />
+    </AuthSessionProvider>
+  );
 }

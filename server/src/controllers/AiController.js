@@ -1,61 +1,106 @@
-const formatResponse = require('../utils/formatResponse');
-const AiService = require('../services/AiService');
+const GrokService = require('../services/GrokService');
 
 class AiController {
-  static async getAiResponse(req, res) {
-    const { title, text } = req.body;
-
-    if (!title || !text) {
-      return res
-        .status(400)
-        .json(
-          formatResponse(
-            400,
-            'Заголовок и текст обязательны',
-            null,
-            'Заголовок и текст обязательны',
-          ),
-        );
-    }
-
-    if (text.length > 200 || title.length > 100) {
-      return res
-        .status(400)
-        .json(
-          formatResponse(
-            400,
-            'Заголовок и текст не должны превышать 100 и 200 символов соответственно',
-            null,
-            '',
-          ),
-        );
-    }
-
+  static async chat(req, res) {
     try {
-      const result = await AiService.generateText({ title, text });
+      const message =
+        typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+      const requestedAgentId = req.body?.agentId;
+      const supportedAgents = [
+        'coder',
+        'study',
+        'writer',
+        'career',
+        'profile',
+        'reply',
+        'summary',
+      ];
+      const agentId = supportedAgents.includes(requestedAgentId)
+        ? requestedAgentId
+        : 'coder';
+      const context =
+        typeof req.body?.context === 'string'
+          ? req.body.context.trim().slice(0, 3000)
+          : '';
 
-      if (!result) {
-        return res
-          .status(500)
-          .json(
-            formatResponse(
-              500,
-              'Ошибка при генерации текста',
-              null,
-              'Ошибка при генерации текста',
-            ),
-          );
+      if (!message) {
+        return res.status(400).json({
+          error: 'MESSAGE_REQUIRED',
+          answer: 'Напиши сообщение для бота.',
+        });
       }
 
-      return res
-        .status(200)
-        .json(formatResponse(200, 'Ответ получен', result, null));
+      if (message.length > 1500) {
+        return res.status(400).json({
+          error: 'MESSAGE_TOO_LONG',
+          answer: 'Сообщение слишком длинное. Сократи вопрос до 1500 символов.',
+        });
+      }
+
+      const userId = res.locals.user?.id;
+      const limit = GrokService.checkDailyLimit(userId);
+
+      if (!limit.allowed) {
+        return res.status(429).json({
+          error: 'DAILY_LIMIT_REACHED',
+          answer: `Лимит AI-запросов на сегодня исчерпан: ${limit.used}/${limit.limit}. Попробуй завтра.`,
+          used: limit.used,
+          limit: limit.limit,
+        });
+      }
+
+      if (!GrokService.isConfigured()) {
+        return res.status(503).json({
+          error: 'GROK_API_KEY_NOT_SET',
+          answer: GrokService.getMissingKeyMessage(),
+          used: limit.used,
+          limit: limit.limit,
+        });
+      }
+
+      try {
+        const answer = await GrokService.chat(message, agentId, context);
+
+        return res.status(200).json({
+          answer,
+          used: limit.used,
+          limit: limit.limit,
+        });
+      } catch (error) {
+        console.error('[AiController.chat]', error);
+
+        if (error.code === 'GROK_API_KEY_NOT_SET') {
+          return res.status(503).json({
+            error: 'GROK_API_KEY_NOT_SET',
+            answer: GrokService.getMissingKeyMessage(),
+            used: limit.used,
+            limit: limit.limit,
+          });
+        }
+
+        const answer =
+          error.code === 'GROK_API_ERROR'
+            ? GrokService.formatGrokError(error.message)
+            : 'Сейчас AI не ответил. Попробуй позже.';
+        const timedOut =
+          error.code === 'GROK_API_ERROR' &&
+          /timeout|timed out|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|ABORT_ERR/i.test(
+            error.message,
+          );
+
+        return res.status(timedOut ? 504 : 502).json({
+          error: timedOut ? 'GROK_UPSTREAM_TIMEOUT' : 'GROK_UPSTREAM_ERROR',
+          answer,
+          used: limit.used,
+          limit: limit.limit,
+        });
+      }
     } catch (error) {
-      console.log('==== AiController.getAiResponse ==== ');
-      console.log(error);
-      res
-        .status(500)
-        .json(formatResponse(500, 'Внутренняя ошибка сервера', null, error));
+      console.error('[AiController.chat]', error);
+      return res.status(500).json({
+        error: 'AI_ROUTE_ERROR',
+        answer: 'Ошибка AI route.',
+      });
     }
   }
 }

@@ -1,13 +1,16 @@
 const AuthService = require('../services/AuthService');
+const { deleteAvatarFile } = require('../utils/avatarFiles');
 const formatResponse = require('../utils/formatResponse');
 const { User } = require('../db/models');
 const bcrypt = require('bcrypt');
 const generateTokens = require('../utils/generateTokens');
+
 const {
   getRefreshCookieConfig,
   clearRefreshCookie,
 } = require('../config/cookieConfig');
 
+/** Регистрация, вход по паролю, сессия, профиль. OAuth и сброс пароля — отдельные контроллеры. */
 class AuthController {
   /** Проверка email: формат name@domain.com и свободен ли адрес. */
   static async checkEmailAvailability(req, res) {
@@ -52,7 +55,7 @@ class AuthController {
         }),
       );
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при проверке email'));
@@ -101,8 +104,7 @@ class AuthController {
         }),
       );
     } catch (error) {
-      console.log('======== AuthController.checkUsernameAvailability =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при проверке имени'));
@@ -188,8 +190,7 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.register =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(
@@ -231,7 +232,15 @@ class AuthController {
             ),
           );
       }
-      // Сравниваем хэши паролей
+      if (!existingUser.password) {
+        return res.status(400).json(
+          formatResponse(
+            400,
+            'Этот аккаунт без пароля. Войдите через Google или GitHub.',
+          ),
+        );
+      }
+
       const isValidPassword = await bcrypt.compare(
         password,
         existingUser.password,
@@ -265,8 +274,7 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.login =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при входе в приложение'));
@@ -281,32 +289,203 @@ class AuthController {
         .clearCookie('refreshToken', clearRefreshCookie)
         .json(formatResponse(200, 'Успешный выход '));
     } catch (error) {
-      console.log('======== AuthController.logout =========');
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json(formatResponse(500, 'Ошибка сервера при выходе из приложения'));
     }
   }
 
-  static async refreshTokens(req, res) {
-    // Достаём данные о пользователе из res.locals (их туда положила мидлварка verifyRefreshToken)
 
-    const { user, rememberMe } = res.locals;
-
+  static async updateProfile(req, res) {
     try {
+      const currentUser = res.locals.user;
+
+      if (!currentUser?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
+
+      const updateData = {};
+
+      if (typeof req.body.name === 'string') {
+        const name = req.body.name.trim();
+
+        if (name.length < 2) {
+          return res
+            .status(400)
+            .json(formatResponse(400, 'ФИО должно быть минимум 2 символа'));
+        }
+
+        updateData.name = name;
+      }
+
+      if (req.body.bio !== undefined) {
+        const bio =
+          typeof req.body.bio === 'string' ? req.body.bio.trim() : '';
+
+        if (bio.length > 500) {
+          return res
+            .status(400)
+            .json(
+              formatResponse(
+                400,
+                'Описание профиля должно быть не длиннее 500 символов',
+              ),
+            );
+        }
+
+        updateData.bio = bio || null;
+      }
+
+      if (req.file) {
+        const current = await AuthService.findPublicUserById(currentUser.id);
+
+        if (current?.avatarUrl) {
+          deleteAvatarFile(current.avatarUrl);
+        }
+
+        updateData.avatarData = req.file.buffer;
+        updateData.avatarMimeType = req.file.mimetype;
+        updateData.avatarUrl = `/api/avatars/${currentUser.id}?v=${Date.now()}`;
+      }
+
+      if (req.body.phone !== undefined) {
+        const rawPhone =
+          typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+
+        if (!rawPhone) {
+          updateData.phone = null;
+        } else {
+          const digits = rawPhone.replace(/\D/g, '');
+
+          if (digits.length < 10 || digits.length > 15) {
+            return res
+              .status(400)
+              .json(
+                formatResponse(
+                  400,
+                  'Телефон должен содержать от 10 до 15 цифр',
+                ),
+              );
+          }
+
+          updateData.phone = rawPhone;
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        const user = await AuthService.findPublicUserById(currentUser.id);
+
+        return res
+          .status(200)
+          .json(formatResponse(200, 'Нет изменений', { user }));
+      }
+
+      const user = await AuthService.updateUserProfileById(
+        currentUser.id,
+        updateData,
+      );
+
+      if (!user) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
       const { accessToken, refreshToken } = generateTokens(
         { user },
-        { rememberMe },
+        { rememberMe: true },
       );
 
       return res
         .status(200)
-        .cookie(
-          'refreshToken',
-          refreshToken,
-          getRefreshCookieConfig(rememberMe),
-        )
+        .cookie('refreshToken', refreshToken, getRefreshCookieConfig(true))
+        .json(
+          formatResponse(200, 'Профиль обновлён', {
+            user,
+            accessToken,
+          }),
+        );
+    } catch (error) {
+      console.error(error);
+
+      return res
+        .status(500)
+        .json(formatResponse(500, 'Ошибка сервера при обновлении профиля'));
+    }
+  }
+
+  static async deleteAccount(req, res) {
+    try {
+      const user = res.locals.user;
+      if (!user?.id) {
+        return res
+          .status(403)
+          .json(formatResponse(403, 'Невалидный пользователь'));
+      }
+
+      let deleted;
+      try {
+        deleted = await AuthService.deleteUserById(user.id);
+      } catch (deleteError) {
+        if (deleteError?.code === 'PROTECTED_MOCK_ADMIN') {
+          const { protectedMockAdminMessage } = require('../utils/protectedUsers');
+          return res
+            .status(403)
+            .json(formatResponse(403, protectedMockAdminMessage()));
+        }
+        throw deleteError;
+      }
+
+      if (!deleted) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      return res
+        .status(200)
+        .clearCookie('refreshToken', clearRefreshCookie)
+        .json(formatResponse(200, 'Аккаунт удалён'));
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json(
+          formatResponse(500, 'Ошибка сервера при удалении аккаунта'),
+        );
+    }
+  }
+
+  static async refreshTokens(req, res) {
+    const tokenUser = res.locals.user;
+
+    try {
+      if (!tokenUser?.id) {
+        return res
+          .status(401)
+          .json(formatResponse(401, 'Пользователь не авторизован'));
+      }
+
+      const user = await AuthService.findPublicUserById(tokenUser.id);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json(formatResponse(404, 'Пользователь не найден'));
+      }
+
+      const remember = Boolean(res.locals.rememberMe);
+      const { accessToken, refreshToken } = generateTokens(
+        { user },
+        { rememberMe: remember },
+      );
+
+      return res
+        .status(200)
+        .cookie('refreshToken', refreshToken, getRefreshCookieConfig(remember))
         .json(
           formatResponse(200, 'Пользовательская сессия продлена', {
             user,
@@ -314,11 +493,11 @@ class AuthController {
           }),
         );
     } catch (error) {
-      console.log('======== AuthController.refreshTokens =========');
-      console.log(error);
+      console.error(error);
+
       return res
         .status(500)
-        .json(formatResponse(500, 'Ошибка сервера при продлении сессии'));
+        .json(formatResponse(500, 'Ошибка сервера при обновлении токена'));
     }
   }
 }

@@ -5,8 +5,24 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      if (models.Task) {
+      User.hasMany(models.RoomMember, {
+        foreignKey: 'userId',
+        as: 'roomMembers',
+      });
+if (models.Task) {
         User.hasMany(models.Task, { foreignKey: 'user_id', as: 'tasks' });
+      }
+      if (models.Room) {
+        User.hasMany(models.Room, {
+          foreignKey: 'createdBy',
+          as: 'createdRooms',
+        });
+      }
+      if (models.RoomMember) {
+        User.hasMany(models.RoomMember, {
+          foreignKey: 'userId',
+          as: 'roomMemberships',
+        });
       }
     }
 
@@ -131,6 +147,18 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+      avatarUrl: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      avatarData: {
+        type: DataTypes.BLOB,
+        allowNull: true,
+      },
+      avatarMimeType: {
+        type: DataTypes.STRING(32),
+        allowNull: true,
+      },
       username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -138,7 +166,30 @@ module.exports = (sequelize, DataTypes) => {
       },
       password: {
         type: DataTypes.STRING,
+        allowNull: true,
+      },
+      google_sub: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      github_sub: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      role: {
+        type: DataTypes.ENUM('student', 'teacher', 'admin'),
         allowNull: false,
+        defaultValue: 'student',
+      },
+      phone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      bio: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
       },
     },
     {
